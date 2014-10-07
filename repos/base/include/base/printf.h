@@ -15,6 +15,7 @@
 #define _INCLUDE__BASE__PRINTF_H_
 
 #include <stdarg.h>
+#include <util/ansi_esc.h>
 
 namespace Genode {
 
@@ -26,29 +27,23 @@ namespace Genode {
 	void vprintf(const char *format, va_list) __attribute__((format(printf, 1, 0)));
 }
 
-#define ESC_LOG  "\033[33m"
-#define ESC_DBG  "\033[33m"
-#define ESC_INF  "\033[32m"
-#define ESC_WRN  "\033[34m"
-#define ESC_ERR  "\033[31m"
-#define ESC_END  "\033[0m"
-
 /**
  * Remove colored output from release version
  */
 #ifdef GENODE_RELEASE
-#undef ESC_LOG
-#undef ESC_DBG
-#undef ESC_INF
-#undef ESC_WRN
-#undef ESC_ERR
-#undef ESC_END
 #define ESC_LOG
 #define ESC_DBG
 #define ESC_INF
 #define ESC_WRN
 #define ESC_ERR
 #define ESC_END
+#else
+#define ESC_LOG ANSI_ESC_YELLOW
+#define ESC_DBG ANSI_ESC_YELLOW
+#define ESC_INF ANSI_ESC_GREEN
+#define ESC_WRN ANSI_ESC_BLUE
+#define ESC_ERR ANSI_ESC_RED
+#define ESC_END ANSI_ESC_RESET
 #endif /* GENODE_RELEASE */
 
 /**
