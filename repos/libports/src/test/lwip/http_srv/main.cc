@@ -22,6 +22,7 @@
 #include <base/thread.h>
 #include <util/string.h>
 #include <nic/packet_allocator.h>
+#include <os/config.h>
 
 /* LwIP includes */
 extern "C" {
@@ -85,11 +86,32 @@ int main()
 
 	lwip_tcpip_init();
 
+#if 0
 	/* Initialize network stack and do DHCP */
 	if (lwip_nic_init(0, 0, 0, BUF_SIZE, BUF_SIZE)) {
 		PERR("We got no IP address!");
 		return -1;
 	}
+#else
+	/* Initialize network stack for static operation */
+	char ip[16]; strcpy(ip, "10.0.2.15");
+	char nm[16]; strcpy(nm, "255.255.255.0");
+	char gw[16]; strcpy(gw, "10.0.2.1");
+
+	try { Genode::config()->xml_node().attribute("ip").value(ip, sizeof(ip)); }
+	catch (...) { }
+	try { Genode::config()->xml_node().attribute("nm").value(nm, sizeof(nm)); }
+	catch (...) { }
+	try { Genode::config()->xml_node().attribute("gw").value(gw, sizeof(gw)); }
+	catch (...) { }
+
+	PINF("Will use ip=%s nm=%s gw=%s", ip, nm, gw);
+
+	if (lwip_nic_init(inet_addr(ip), inet_addr(nm), inet_addr(gw), BUF_SIZE, BUF_SIZE)) {
+		PERR("static NIC config failed");
+		return -99;
+	}
+#endif
 
 	PLOG("Create new socket ...");
 	if((s = lwip_socket(AF_INET, SOCK_STREAM, 0)) < 0) {
