@@ -1,0 +1,118 @@
+#
+# Twonics on Linux
+#
+# The scenario includes two separated network stacks of NIC driver and HTTP
+# server test for an inner and an outer LAN.
+#
+# The TAP devices driven by the nic_drv hybrid server (tap-inner and tap-outer)
+# must be set up by, e.g.,
+#
+# ! sudo ip tuntap add dev tap-inner mode tap user $USER
+# ! sudo ip address add 10.0.11.1/24 dev tap-inner
+# ! sudo ip link set dev tap-inner up
+# ! sudo ip tuntap add dev tap-outer mode tap user $USER
+# ! sudo ip address add 10.0.66.1/24 dev tap-outer
+# ! sudo ip link set dev tap-outer up
+#
+# A running scenario can be tested by your favorite tools, e.g.,
+#
+# ! ping 10.0.66.15
+# ! wget -O /dev/null http://10.0.11.15/
+# ! ab -c 2 -n 200 http://10.0.66.15/
+#
+# One-way ping (Ubuntu package iputils-arping)
+#
+# ! sudo arping -I tap-outer 10.0.11.1
+# ! sudo arping -I tap-inner 10.0.66.1
+
+assert_spec linux
+
+set build_components {
+	core init drivers/timer drivers/nic
+	test/lwip/http_srv
+}
+
+build $build_components
+
+create_boot_directory
+
+set config {
+<config verbose="yes">
+	<parent-provides>
+		<service name="ROM"/>
+		<service name="RAM"/>
+		<service name="IRQ"/>
+		<service name="IO_MEM"/>
+		<service name="IO_PORT"/>
+		<service name="CAP"/>
+		<service name="PD"/>
+		<service name="RM"/>
+		<service name="CPU"/>
+		<service name="LOG"/>
+		<service name="SIGNAL"/>
+	</parent-provides>
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+
+	<start name="timer">
+		<resource name="RAM" quantum="1M"/>
+		<provides> <service name="Timer"/> </provides>
+	</start>
+
+	<start name="INNER-NIC">
+		<binary name="nic_drv"/>
+		<resource name="RAM" quantum="8M"/>
+		<provides> <service name="Nic"/> </provides>
+		<config>
+			<nic mac="52:54:00:12:34:56" tap="tap-inner"/>
+		</config>
+	</start>
+	<start name="INNER-TEST">
+		<binary name="test-lwip_httpsrv"/>
+		<resource name="RAM" quantum="5M"/>
+		<config ip="10.0.11.15">
+			<libc stdout="/dev/log" stderr="/dev/log">
+				<vfs> <dir name="dev"> <log/> </dir> </vfs>
+			</libc>
+		</config>
+		<route>
+			<service name="Nic"> <child name="INNER-NIC"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
+
+	<start name="OUTER-NIC">
+		<binary name="nic_drv"/>
+		<resource name="RAM" quantum="8M"/>
+		<provides> <service name="Nic"/> </provides>
+		<config>
+			<nic mac="52:54:00:12:34:57" tap="tap-outer"/>
+		</config>
+	</start>
+	<start name="OUTER-TEST">
+		<binary name="test-lwip_httpsrv"/>
+		<resource name="RAM" quantum="5M"/>
+		<config ip="10.0.66.15">
+			<libc stdout="/dev/log" stderr="/dev/log">
+				<vfs> <dir name="dev"> <log/> </dir> </vfs>
+			</libc>
+		</config>
+		<route>
+			<service name="Nic"> <child name="OUTER-NIC"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
+</config>
+}
+
+install_config $config
+
+set boot_modules {
+	core init timer nic_drv
+	ld.lib.so libc.lib.so lwip.lib.so test-lwip_httpsrv
+}
+
+build_boot_image $boot_modules
+
+run_genode_until forever
