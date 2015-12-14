@@ -171,7 +171,7 @@ int main(int, char **)
 	if (config_test_roundtrip) {
 		printf("-- test roundtrip two times (packet offsets should be the same) --\n");
 		Allocator_avl tx_block_alloc(env()->heap());
-		Nic::Connection nic(&tx_block_alloc, BUF_SIZE, BUF_SIZE);
+		Nic::Connection nic(&tx_block_alloc, BUF_SIZE, BUF_SIZE, "bar");
 		single_packet_roundtrip(&nic, 'a', 100);
 		single_packet_roundtrip(&nic, 'b', 100);
 	}
@@ -179,7 +179,7 @@ int main(int, char **)
 	if (config_test_batch) {
 		printf("-- test submitting and receiving batches of packets --\n");
 		Allocator_avl tx_block_alloc(env()->heap());
-		Nic::Connection nic(&tx_block_alloc, BUF_SIZE, BUF_SIZE);
+		Nic::Connection nic(&tx_block_alloc, BUF_SIZE, BUF_SIZE, "bar");
 		enum { NUM_PACKETS = 1000 };
 		batch_packets(&nic, NUM_PACKETS);
 	}

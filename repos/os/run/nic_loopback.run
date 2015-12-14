@@ -40,6 +40,10 @@ append config {
 	</start>
 	<start name="test-nic_loopback">
 		<resource name="RAM" quantum="2M"/>
+		<route>
+			<service name="Nic" label="bar"> <child name="nic_loopback"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
 	</start>
 </config>}
 
