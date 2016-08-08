@@ -116,16 +116,16 @@ append config {
 					<inline description="set system state to 'normal'">
 						<system state="normal"/>
 					</inline>
+<!--
 					<sleep milliseconds="5000" />
 					<inline description="set system state to 'reset'">
 						<system state="reset"/>
 					</inline>
-<!--
 					<inline description="set system state to 'poweroff'">
 						<system state="poweroff"/>
 					</inline>
 -->
-					<sleep milliseconds="500" />
+					<sleep milliseconds="10000" />
 				</rom>
 			</config>
 		</start>}
@@ -181,9 +181,18 @@ append config {
 				<map acpi="fixed"   value="0"       to_key="KEY_POWER"  as="PRESS_RELEASE"/>
 				<map acpi="lid"     value="CLOSED"  to_key="KEY_SLEEP"  as="PRESS"/>
 				<map acpi="lid"     value="OPEN"    to_key="KEY_SLEEP"  as="RELEASE"/>
-				<map acpi="ac"      value="ONLINE"  to_key="KEY_WAKEUP"/>
-				<map acpi="ac"      value="OFFLINE" to_key="KEY_SLEEP"/>
-				<map acpi="battery" value="0"       to_key="KEY_BATTERY"/>
+
+				<!-- plumbum -->
+				<map acpi="ec" value="68" to_key="KEY_BRIGHTNESSDOWN"/>
+				<map acpi="ec" value="67" to_key="KEY_BRIGHTNESSUP"/>
+				<!--map acpi="ec" value="69" /lid close-->
+				<!--map acpi="ec" value="70" /lid open-->
+				<!--map acpi="ec" value="49" /ac unplug-->
+				<!--map acpi="ec" value="41" /ac plug-->
+
+				<!--map acpi="ac"      value="ONLINE"  to_key="KEY_WAKEUP"/-->
+				<!--map acpi="ac"      value="OFFLINE" to_key="KEY_SLEEP"/-->
+				<!--map acpi="battery" value="0"       to_key="KEY_BATTERY"/-->
 			</config>
 			<route>
 				<service name="ROM" label="acpi_ac"> <child name="acpi_state"/> </service>
@@ -223,4 +232,5 @@ build_boot_image $boot_modules
 
 append qemu_args "-nographic -m 128"
 
+run_genode_until forever
 run_genode_until {\[init -\> acpica\].*SCI IRQ:.*\n} 30

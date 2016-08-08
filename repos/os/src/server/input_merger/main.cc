@@ -46,14 +46,18 @@ namespace Input_merger
 			Input::Session_client session_client;
 			Attached_dataspace    dataspace;
 
+			Genode::String<32> label;
+
 			Input_source(const char *label)
 			: session_client(_create_session(label)),
-		  	  dataspace(session_client.dataspace()) { }
+			  dataspace(session_client.dataspace()),
+			  label(label)
+			{ }
 
-		  	~Input_source()
-		  	{
+			~Input_source()
+			{
 				env()->parent()->close(session_client);
-		  	}
+			}
 	};
 
 	struct Main;
@@ -89,8 +93,10 @@ struct Input_merger::Main
 				input_source->dataspace.local_addr<Input::Event>();
 
 			unsigned const num = input_source->session_client.flush();
-			for (unsigned i = 0; i < num; i++)
+			for (unsigned i = 0; i < num; i++) {
 				input_session_component.submit(events[i]);
+				Genode::log("submit for ", input_source->label);
+			}
 		}
 	}
 
