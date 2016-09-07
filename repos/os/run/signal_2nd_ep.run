@@ -1,0 +1,35 @@
+build { core init drivers/timer test/signal_2nd_ep }
+
+create_boot_directory
+
+install_config {
+<config>
+	<parent-provides>
+		<service name="PD"/>
+		<service name="CPU"/>
+		<service name="ROM"/>
+		<service name="RAM"/>
+		<service name="RM"/>
+		<service name="LOG"/>
+		<service name="IO_MEM"/>
+		<service name="IO_PORT"/>
+		<service name="IRQ"/>
+	</parent-provides>
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+
+	<start name="timer">
+		<resource name="RAM" quantum="4M"/>
+		<provides> <service name="Timer"/> </provides>
+	</start>
+	<start name="test-signal_2nd_ep">
+		<resource name="RAM" quantum="4M"/>
+	</start>
+</config>}
+
+build_boot_image { core init timer test-signal_2nd_ep }
+
+append qemu_args " -nographic "
+
+run_genode_until ".*timeout 11.*\n" 15
