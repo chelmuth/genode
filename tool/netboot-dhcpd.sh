@@ -7,7 +7,7 @@
 set -e
 
     DEFAULT_NETDEV=enp0s25
-    DEFAULT_PREFIX=10.0.42
+    DEFAULT_PREFIX=10.0.0
 DEFAULT_DHCPD_CONF=netboot-dhcpd.conf
 
 if [ "$1" == "-h" ]; then
