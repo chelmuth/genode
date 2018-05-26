@@ -1,0 +1,69 @@
+##
+# Load files needed by the scenario via iPXE/HTTP
+#
+# \param --load-ipxe-base-dir    base directory of iPXE/HTTP server
+# \param --load-ipxe-boot-dir    boot directory relative to HTTP base
+# \param --load-ipxe-http-port   listen port of the HTTP server
+#
+
+source [genode_dir]/tool/run/load.inc
+
+
+##
+# The files are loaded implicitly via iPXE/HTTP to the target machine
+#
+proc run_load { } {
+	global load_spawn_id
+	set load_spawn_id -1
+	return true
+}
+
+
+proc load_ipxe_base_dir { } { return [get_cmd_arg --load-ipxe-base-dir ""] }
+
+
+proc load_ipxe_boot_dir { } { return [get_cmd_arg --load-ipxe-boot-dir ""] }
+
+
+proc load_ipxe_http_port { } { return [get_cmd_arg --load-ipxe-http-port "80"] }
+
+
+##
+# Install files needed to boot
+#
+proc install_ipxe_bootloader_to_run_dir { } {
+	exec mkdir -p [run_dir]/boot
+	exec cp [genode_dir]/tool/boot/bender [run_dir]/boot/bender
+	exec chmod a+r [run_dir]/boot/bender
+	exec cp [genode_dir]/tool/boot/unzip [run_dir]/boot/unzip
+	exec chmod a+r [run_dir]/boot/unzip
+}
+
+
+##
+# Update iPXE boot directory to point to current run directory.
+#
+proc update_ipxe_boot_dir { } {
+	exec ln -sfn [pwd]/[run_dir] [load_ipxe_base_dir]/[load_ipxe_boot_dir]
+}
+
+##
+# Create iPXE config file which directly boots an ISO file.
+#
+proc create_ipxe_boot_script { } {
+	set fh [open "[run_dir]/ipxe.cfg" "WRONLY CREAT TRUNC"]
+	set base_uri "http://\${net0/next-server}:[load_ipxe_http_port]/[load_ipxe_boot_dir]"
+	puts $fh "#!ipxe"
+	puts $fh ""
+	puts $fh "kernel ${base_uri}/boot/bender  || goto failed"
+	puts $fh "module ${base_uri}/boot/unzip   || goto failed"
+	puts $fh "module ${base_uri}/hypervisor   || goto failed"
+	puts $fh "module ${base_uri}/image.elf.gz || goto failed"
+	puts $fh "boot"
+	puts $fh ""
+	puts $fh ":failed"
+	puts $fh "echo Booting failed, dropping to shell"
+	puts $fh "shell"
+	puts $fh "boot"
+	close $fh
+}
