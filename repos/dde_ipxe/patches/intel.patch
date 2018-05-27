@@ -2,6 +2,27 @@ diff --git a/src/drivers/net/intel.c b/src/drivers/net/intel.c
 index c3a7d407..8e8cea67 100644
 --- a/src/drivers/net/intel.c
 +++ b/src/drivers/net/intel.c
+@@ -219,16 +219,16 @@ static int intel_fetch_mac ( struct intel_nic *intel, uint8_t *hw_addr ) {
+ 	DBGC ( intel, "INTEL %p has autoloaded MAC address %s\n",
+ 	       intel, eth_ntoa ( mac.raw ) );
+ 
+-	/* Try to read address from EEPROM */
+-	if ( ( rc = intel_fetch_mac_eeprom ( intel, hw_addr ) ) == 0 )
+-		return 0;
+-
+ 	/* Use current address if valid */
+ 	if ( is_valid_ether_addr ( mac.raw ) ) {
+ 		memcpy ( hw_addr, mac.raw, ETH_ALEN );
+ 		return 0;
+ 	}
+ 
++	/* Otherwise, try to read address from EEPROM */
++	if ( ( rc = intel_fetch_mac_eeprom ( intel, hw_addr ) ) == 0 )
++		return 0;
++
+ 	DBGC ( intel, "INTEL %p has no MAC address to use\n", intel );
+ 	return -ENOENT;
+ }
 @@ -305,6 +305,9 @@ static int intel_reset ( struct intel_nic *intel ) {
  		return 0;
  	}
