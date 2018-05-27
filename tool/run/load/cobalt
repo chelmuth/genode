@@ -57,7 +57,7 @@ proc create_ipxe_boot_script { } {
 	puts $fh ""
 	puts $fh "kernel ${base_uri}/boot/bender  || goto failed"
 	puts $fh "module ${base_uri}/boot/unzip   || goto failed"
-	puts $fh "module ${base_uri}/hypervisor   || goto failed"
+	puts $fh "module ${base_uri}/hypervisor iommu serial novpid novga || goto failed"
 	puts $fh "module ${base_uri}/image.elf.gz || goto failed"
 	puts $fh "boot"
 	puts $fh ""
