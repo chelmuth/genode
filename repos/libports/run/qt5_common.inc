@@ -22,9 +22,11 @@ proc qt5_build_components { feature_arg } {
 	append build_components {
 		server/nitpicker
 		server/report_rom
+		server/rom_filter
 		app/floating_window_layouter
 		app/decorator
 		app/pointer
+		app/global_keys_handler
 		server/wm
 	}
 
@@ -75,6 +77,9 @@ proc qt5_start_nodes { feature_arg } {
 
 				<policy label_prefix="pointer" domain="pointer"/>
 				<default-policy domain="default"/>
+
+				<global-key name="KEY_CAPSLOCK"  label="global_keys_handler -> input" />
+				<global-key name="KEY_NUMLOCK"   label="global_keys_handler -> input" />
 			</config>
 		</start>
 
@@ -108,7 +113,33 @@ proc qt5_start_nodes { feature_arg } {
 				<policy label="layouter -> decorator_margins" report="decorator -> decorator_margins"/>
 				<policy label="pointer -> hover"              report="nitpicker -> hover"/>
 				<policy label="pointer -> xray"               report="nitpicker -> xray"/>
+				<policy label="input_filter -> capslock"      report="global_keys_handler -> capslock"/>
+				<policy label="numlock_remap_rom -> numlock"  report="global_keys_handler -> numlock"/>
+				<policy label="ps2_drv -> capslock"           report="global_keys_handler -> capslock"/>
+				<policy label="ps2_drv -> numlock"            report="global_keys_handler -> numlock"/>
+				<policy label="usb_drv -> capslock"           report="global_keys_handler -> capslock"/>
+				<policy label="usb_drv -> numlock"            report="global_keys_handler -> numlock"/>
 			</config>
+		</start>
+
+		<start name="global_keys_handler">
+			<resource name="RAM" quantum="1M"/>
+			<config>
+				<bool name="capslock" initial="no"/>
+				<bool name="numlock"  initial="no"/>
+
+				<press name="KEY_CAPSLOCK" bool="capslock" change="toggle"/>
+				<press name="KEY_NUMLOCK"  bool="numlock"  change="toggle"/>
+
+				<report name="capslock">     <bool name="capslock"/>     </report>
+				<report name="numlock">      <bool name="numlock"/>      </report>
+			</config>
+			<route>
+				<service name="Report">    <child name="report_rom"/> </service>
+				<service name="Nitpicker"> <child name="nitpicker"/>  </service>
+				<service name="Timer">     <child name="timer"/>      </service>
+				<any-service> <parent/> <any-child/> </any-service>
+			</route>
 		</start>
 
 		<start name="wm" caps="150">
@@ -180,10 +211,12 @@ proc qt5_boot_modules { feature_arg } {
 	append boot_modules {
 		nitpicker
 		report_rom
+		rom_filter
 		floating_window_layouter
 		decorator
 		wm
 		pointer
+		global_keys_handler
 	}
 
 	return $boot_modules
