@@ -163,11 +163,36 @@ void QNitpickerPlatformWindow::_process_key_event(Input::Event const &ev)
 	const bool pressed = (ev.type() == Input::Event::PRESS);
 	const int keycode = ev.code();
 
+	/*
+	 * Numlock is handled in input_filter by remapping the keypad keys to
+	 * normal control keys (e.g., KEY_LEFT) when enabled. As the
+	 * QEvdevKeyboardHandler does not know about the global numlock state, we
+	 * just filter all numlock-sensitive keypad keys as either the normal
+	 * control key is sent or a character event occurs.
+	 */
+	switch (ev.keycode()) {
+	case Input::KEY_KP0:
+	case Input::KEY_KP1:
+	case Input::KEY_KP2:
+	case Input::KEY_KP3:
+	case Input::KEY_KP4:
+	case Input::KEY_KP5:
+	case Input::KEY_KP6:
+	case Input::KEY_KP7:
+	case Input::KEY_KP8:
+	case Input::KEY_KP9:
+	case Input::KEY_KPDOT:
+		return;
+
+	default: break;
+	}
+
 	if (pressed) {
 		_last_keycode = keycode;
 		_key_repeat_timer->start(KEY_REPEAT_DELAY_MS);
-	} else
+	} else {
 		_key_repeat_timer->stop();
+	}
 
 	_keyboard_handler.processKeycode(keycode, pressed, false);
 }
