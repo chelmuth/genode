@@ -65,6 +65,7 @@ class Net::Main
 
 Net::Main::Main(Env &env) : _env(env)
 {
+Genode::log("DEBUG BUILD ", __DATE__, " ", __TIME__);
 	_config_rom.sigh(_config_handler);
 	_handle_config();
 	env.parent().announce(env.ep().manage(_root));
