@@ -38,6 +38,7 @@ namespace Genode {
 
 namespace Net {
 
+	class Link_statistics;
 	class Interface;
 	class Configuration;
 	class Domain_base;
@@ -57,6 +58,26 @@ class Net::Domain_base
 		Domain_name const _name;
 
 		Domain_base(Genode::Xml_node const node);
+};
+
+
+struct Net::Link_statistics
+{
+	Genode::size_t refused_for_ram   { 0 };
+	Genode::size_t refused_for_ports { 0 };
+
+	Genode::size_t opening { 0 };
+	Genode::size_t open    { 0 };
+	Genode::size_t closing { 0 };
+	Genode::size_t closed  { 0 };
+
+	Genode::size_t dissolved_timeout_opening { 0 };
+	Genode::size_t dissolved_timeout_open    { 0 };
+	Genode::size_t dissolved_timeout_closing { 0 };
+	Genode::size_t dissolved_timeout_closed  { 0 };
+	Genode::size_t dissolved_no_timeout      { 0 };
+
+	void report(Genode::Xml_generator &xml);
 };
 
 
@@ -116,6 +137,10 @@ class Net::Domain : public Domain_base,
 		void __FIXME__dissolve_foreign_arp_waiters();
 
 	public:
+
+		Link_statistics udp_stats  { };
+		Link_statistics tcp_stats  { };
+		Link_statistics icmp_stats { };
 
 		struct Invalid          : Genode::Exception { };
 		struct Ip_config_static : Genode::Exception { };

@@ -57,7 +57,7 @@ static void _destroy_link(Link        &link,
                           Link_list   &links,
                           Deallocator &dealloc)
 {
-	link.dissolve();
+	link.dissolve(false);
 	links.remove(&link);
 	destroy(dealloc, static_cast<LINK_TYPE *>(&link));
 }
@@ -89,10 +89,22 @@ static void _link_packet(L3_protocol  const  prot,
 			return;
 		}
 	case L3_protocol::UDP:
-		static_cast<Udp_link *>(&link)->packet();
+		if (client) {
+			static_cast<Udp_link *>(&link)->client_packet();
+			return;
+		} else {
+			static_cast<Udp_link *>(&link)->server_packet();
+			return;
+		}
 		return;
 	case L3_protocol::ICMP:
-		static_cast<Icmp_link *>(&link)->packet();
+		if (client) {
+			static_cast<Icmp_link *>(&link)->client_packet();
+			return;
+		} else {
+			static_cast<Icmp_link *>(&link)->server_packet();
+			return;
+		}
 		return;
 	default: throw Interface::Bad_transport_protocol(); }
 }
@@ -350,6 +362,7 @@ void Interface::_detach_from_domain()
 void
 Interface::_new_link(L3_protocol             const  protocol,
                      Link_side_id            const &local,
+                     Domain                        &local_domain,
                      Pointer<Port_allocator_guard>  remote_port_alloc,
                      Domain                        &remote_domain,
                      Link_side_id            const &remote)
@@ -359,30 +372,30 @@ Interface::_new_link(L3_protocol             const  protocol,
 		try {
 			new (_alloc)
 				Tcp_link { *this, local, remote_port_alloc, remote_domain,
-				           remote, _timer, _config(), protocol };
+				           remote, _timer, _config(), protocol, local_domain.tcp_stats };
 		}
 		catch (Quota_guard<Ram_quota>::Limit_exceeded) {
-			throw Free_resources_and_retry_handle_eth(); }
+			throw Free_resources_and_retry_handle_eth(L3_protocol::TCP); }
 
 		break;
 	case L3_protocol::UDP:
 		try {
 			new (_alloc)
 				Udp_link { *this, local, remote_port_alloc, remote_domain,
-				           remote, _timer, _config(), protocol };
+				           remote, _timer, _config(), protocol, local_domain.udp_stats };
 		}
 		catch (Quota_guard<Ram_quota>::Limit_exceeded) {
-			throw Free_resources_and_retry_handle_eth(); }
+			throw Free_resources_and_retry_handle_eth(L3_protocol::UDP); }
 
 		break;
 	case L3_protocol::ICMP:
 		try {
 			new (_alloc)
 				Icmp_link { *this, local, remote_port_alloc, remote_domain,
-				            remote, _timer, _config(), protocol };
+				            remote, _timer, _config(), protocol, local_domain.icmp_stats };
 		}
 		catch (Quota_guard<Ram_quota>::Limit_exceeded) {
-			throw Free_resources_and_retry_handle_eth(); }
+			throw Free_resources_and_retry_handle_eth(L3_protocol::ICMP); }
 
 		break;
 	default: throw Bad_transport_protocol(); }
@@ -451,23 +464,31 @@ void Interface::_nat_link_and_pass(Ethernet_frame        &eth,
                                    Domain                &local_domain,
                                    Domain                &remote_domain)
 {
-	Pointer<Port_allocator_guard> remote_port_alloc;
 	try {
-		Nat_rule &nat = remote_domain.nat_rules().find_by_domain(local_domain);
-		if(_config().verbose()) {
-			log("[", local_domain, "] using NAT rule: ", nat); }
+		Pointer<Port_allocator_guard> remote_port_alloc;
+		try {
+			Nat_rule &nat = remote_domain.nat_rules().find_by_domain(local_domain);
+			if(_config().verbose()) {
+				log("[", local_domain, "] using NAT rule: ", nat); }
 
-		_src_port(prot, prot_base, nat.port_alloc(prot).alloc());
-		ip.src(remote_domain.ip_config().interface.address);
-		remote_port_alloc = nat.port_alloc(prot);
+			_src_port(prot, prot_base, nat.port_alloc(prot).alloc());
+			ip.src(remote_domain.ip_config().interface.address);
+			remote_port_alloc = nat.port_alloc(prot);
+		}
+		catch (Nat_rule_tree::No_match) { }
+		Link_side_id const remote_id = { ip.dst(), _dst_port(prot, prot_base),
+		                                 ip.src(), _src_port(prot, prot_base) };
+		_new_link(prot, local_id, local_domain, remote_port_alloc, remote_domain, remote_id);
+		remote_domain.interfaces().for_each([&] (Interface &interface) {
+			interface._pass_prot(eth, size_guard, ip, prot, prot_base, prot_size);
+		});
+	} catch (Port_allocator_guard::Out_of_indices) {
+		switch (prot) {
+		case L3_protocol::TCP:  local_domain.tcp_stats.refused_for_ports++;  break;
+		case L3_protocol::UDP:  local_domain.udp_stats.refused_for_ports++;  break;
+		case L3_protocol::ICMP: local_domain.icmp_stats.refused_for_ports++; break;
+		default: throw Bad_transport_protocol(); }
 	}
-	catch (Nat_rule_tree::No_match) { }
-	Link_side_id const remote_id = { ip.dst(), _dst_port(prot, prot_base),
-	                                 ip.src(), _src_port(prot, prot_base) };
-	_new_link(prot, local_id, remote_port_alloc, remote_domain, remote_id);
-	remote_domain.interfaces().for_each([&] (Interface &interface) {
-		interface._pass_prot(eth, size_guard, ip, prot, prot_base, prot_size);
-	});
 }
 
 
@@ -1403,7 +1424,14 @@ void Interface::_handle_eth(void              *const  eth_base,
 						/* retry to handle ethernet frame */
 						_handle_eth(eth, size_guard, pkt, local_domain);
 					}
-					catch (Free_resources_and_retry_handle_eth) {
+					catch (Free_resources_and_retry_handle_eth exception) {
+						if (exception.prot != (L3_protocol)0) {
+							switch (exception.prot) {
+							case L3_protocol::TCP:  local_domain.tcp_stats.refused_for_ram++;  break;
+							case L3_protocol::UDP:  local_domain.udp_stats.refused_for_ram++;  break;
+							case L3_protocol::ICMP: local_domain.icmp_stats.refused_for_ram++; break;
+							default: throw Bad_transport_protocol(); }
+						}
 
 						/* give up if the resources still not suffice */
 						throw Drop_packet("insufficient resources");

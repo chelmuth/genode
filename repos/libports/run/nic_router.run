@@ -286,7 +286,7 @@ append config {
 		        tcp_idle_timeout_sec="30"
 		        tcp_max_segm_lifetime_sec="15">
 
-			<report bytes="yes" config="yes" interval_sec="60" />
+			<report bytes="yes" config="yes" links="yes" interval_sec="60" />
 
 			<uplink domain="uplink"/>
 

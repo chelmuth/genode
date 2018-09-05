@@ -39,6 +39,7 @@ class Net::Report
 		bool const                       _config;
 		bool const                       _config_triggers;
 		bool const                       _bytes;
+		bool const                       _links;
 		Genode::Reporter                &_reporter;
 		Domain_tree                     &_domains;
 		Timer::Periodic_timeout<Report>  _timeout;
@@ -64,6 +65,7 @@ class Net::Report
 
 		bool config() const { return _config; }
 		bool bytes()  const { return _bytes; }
+		bool links()  const { return _links; }
 };
 
 #endif /* _REPORT_H_ */
