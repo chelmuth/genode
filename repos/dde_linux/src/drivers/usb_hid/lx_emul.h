@@ -606,6 +606,7 @@ int module_usbhid_init();
 int module_hid_init();
 int module_hid_generic_init();
 int module_ch_driver_init();
+int module_holtek_mouse_driver_init();
 int module_ms_driver_init();
 int module_mt_driver_init();
 int module_wacom_driver_init();
