@@ -121,8 +121,7 @@ Link::Link(Interface                     &cln_interface,
            Timer::Connection             &timer,
            Configuration                 &config,
            L3_protocol             const  protocol,
-           Microseconds            const  dissolve_timeout,
-           Link_statistics               &stats)
+           Microseconds            const  dissolve_timeout)
 :
 	_config(config),
 	_client_interface(cln_interface),
@@ -131,11 +130,8 @@ Link::Link(Interface                     &cln_interface,
 	_dissolve_timeout_us(dissolve_timeout),
 	_protocol(protocol),
 	_client(cln_interface.domain(), cln_id, *this),
-	_server(srv_domain, srv_id, *this),
-	_stats(stats),
-	_stats_curr(stats.opening)
+	_server(srv_domain, srv_id, *this)
 {
-	_stats_curr()++;
 	_client_interface.links(_protocol).insert(this);
 	_client.domain().links(_protocol).insert(&_client);
 	_server.domain().links(_protocol).insert(&_server);
@@ -145,26 +141,14 @@ Link::Link(Interface                     &cln_interface,
 
 void Link::_handle_dissolve_timeout(Duration)
 {
-	dissolve(true);
+	dissolve();
 	_client_interface.links(_protocol).remove(this);
 	_client_interface.dissolved_links(_protocol).insert(this);
 }
 
 
-void Link::dissolve(bool timeout)
+void Link::dissolve()
 {
-
-	_stats_curr()--;
-	if (timeout) {
-		if (&_stats_curr() == &_stats.opening) { _stats_curr = _stats.dissolved_timeout_opening; }
-		if (&_stats_curr() == &_stats.open)    { _stats_curr = _stats.dissolved_timeout_open; }
-		if (&_stats_curr() == &_stats.closing) { _stats_curr = _stats.dissolved_timeout_closing; }
-		if (&_stats_curr() == &_stats.closed)  { _stats_curr = _stats.dissolved_timeout_closed; }
-	} else {
-		_stats_curr = _stats.dissolved_no_timeout;
-	}
-	_stats_curr()++;
-
 	_client.domain().links(_protocol).remove(&_client);
 	_server.domain().links(_protocol).remove(&_server);
 	if (_config().verbose()) {
@@ -227,30 +211,11 @@ Tcp_link::Tcp_link(Interface                     &cln_interface,
                    Link_side_id            const &srv_id,
                    Timer::Connection             &timer,
                    Configuration                 &config,
-                   L3_protocol             const  protocol,
-                   Link_statistics               &stats)
+                   L3_protocol             const  protocol)
 :
 	Link(cln_interface, cln_id, srv_port_alloc, srv_domain, srv_id, timer,
-	     config, protocol, config.tcp_idle_timeout(), stats)
+	     config, protocol, config.tcp_idle_timeout())
 { }
-
-
-void Tcp_link::_closing()
-{
-	_state = State::CLOSING;
-	_stats_curr()--;
-	_stats_curr = _stats.closing;
-	_stats_curr()++;
-}
-
-
-void Tcp_link::_closed()
-{
-	_state = State::CLOSED;
-	_stats_curr()--;
-	_stats_curr = _stats.closed;
-	_stats_curr()++;
-}
 
 
 void Tcp_link::_tcp_packet(Tcp_packet &tcp,
@@ -261,19 +226,18 @@ void Tcp_link::_tcp_packet(Tcp_packet &tcp,
 		return; }
 
 	if (tcp.rst()) {
-		_closed();
+		_state = State::CLOSED;
 	} else {
 		if (tcp.fin()) {
 			sender.fin = true;
-			_closing();
+			_state = State::CLOSING;
 		}
 		if (receiver.fin && tcp.ack()) {
 			receiver.fin_acked = true;
 			if (sender.fin_acked) {
-				_closed(); }
+				_state = State::CLOSED; }
 			else {
-				_closing();
-			}
+				_state = State::CLOSING; }
 		}
 	}
 	if (_state == State::OPEN) {
@@ -282,18 +246,6 @@ void Tcp_link::_tcp_packet(Tcp_packet &tcp,
 		_dissolve_timeout.schedule(
 			Microseconds(_config().tcp_max_segm_lifetime().value << 1));
 	}
-}
-
-
-void Tcp_link::server_packet(Tcp_packet &tcp)
-{
-	if (_opening) {
-		_opening = false;
-		_stats_curr()--;
-		if (&_stats_curr() == &_stats.opening) { _stats_curr = _stats.open; }
-		_stats_curr()++;
-	}
-	_tcp_packet(tcp, _server, _client);
 }
 
 
@@ -308,24 +260,11 @@ Udp_link::Udp_link(Interface                     &cln_interface,
                    Link_side_id            const &srv_id,
                    Timer::Connection             &timer,
                    Configuration                 &config,
-                   L3_protocol             const  protocol,
-                   Link_statistics               &stats)
+                   L3_protocol             const  protocol)
 :
 	Link(cln_interface, cln_id, srv_port_alloc, srv_domain, srv_id, timer,
-	     config, protocol, config.udp_idle_timeout(), stats)
+	     config, protocol, config.udp_idle_timeout())
 { }
-
-
-void Udp_link::server_packet()
-{
-	if (_opening) {
-		_opening = false;
-		_stats_curr()--;
-		if (&_stats_curr() == &_stats.opening) { _stats_curr = _stats.open; }
-		_stats_curr()++;
-	}
-	_packet();
-}
 
 
 /***************
@@ -339,21 +278,8 @@ Icmp_link::Icmp_link(Interface                     &cln_interface,
                      Link_side_id            const &srv_id,
                      Timer::Connection             &timer,
                      Configuration                 &config,
-                     L3_protocol             const  protocol,
-                     Link_statistics               &stats)
+                     L3_protocol             const  protocol)
 :
 	Link(cln_interface, cln_id, srv_port_alloc, srv_domain, srv_id, timer,
-	     config, protocol, config.icmp_idle_timeout(), stats)
+	     config, protocol, config.icmp_idle_timeout())
 { }
-
-
-void Icmp_link::server_packet()
-{
-	if (_opening) {
-		_opening = false;
-		_stats_curr()--;
-		if (&_stats_curr() == &_stats.opening) { _stats_curr = _stats.open; }
-		_stats_curr()++;
-	}
-	_packet();
-}

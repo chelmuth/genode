@@ -448,7 +448,7 @@ The NIC router can be configured to send reports about its state.
 Configuration example (shows default values of attributes):
 
 <config>
-    <report interval_sec="5" bytes="yes" links="yes" config="yes" config_triggers="no">
+    <report interval_sec="5" bytes="yes" config="yes" config_triggers="no">
 </config>
 
 If the 'report' tag is not available, no reports are send.
@@ -456,7 +456,6 @@ The attributes of the 'report' tag:
 
 'bytes'           : Boolean : Whether to report sent bytes and received bytes
                               per domain
-'links'           : Boolean : Whether to report link statistics per domain
 'config'          : Boolean : Whether to report IPv4 interface and gateway per
                               domain
 'config_triggers' : Boolean : Wether to force a report each time the IPv4

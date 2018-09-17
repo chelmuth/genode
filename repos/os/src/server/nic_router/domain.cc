@@ -358,9 +358,8 @@ void Domain::detach_interface(Interface &interface)
 void Domain::report(Xml_generator &xml)
 {
 	bool const bytes  = _config.report().bytes();
-	bool const links  = _config.report().links();
 	bool const config = _config.report().config();
-	if (!bytes && !config && !links) {
+	if (!bytes && !config) {
 		return;
 	}
 	xml.node("domain", [&] () {
@@ -374,28 +373,5 @@ void Domain::report(Xml_generator &xml)
 			xml.attribute("gw",   String<16>(ip_config().gateway));
 			xml.attribute("dns",  String<16>(ip_config().dns_server));
 		}
-		if (links) {
-			xml.node("tcp-links",  [&] () { tcp_stats.report(xml); });
-			xml.node("udp-links",  [&] () { udp_stats.report(xml); });
-			xml.node("icmp-links", [&] () { icmp_stats.report(xml); });
-		}
 	});
-}
-
-
-void Link_statistics::report(Xml_generator &xml)
-{
-	if (refused_for_ram)   xml.node("refused_for_ram",   [&] () { xml.attribute("value", refused_for_ram); });
-	if (refused_for_ports) xml.node("refused_for_ports", [&] () { xml.attribute("value", refused_for_ports); });
-
-	if (opening) xml.node("opening", [&] () { xml.attribute("value", opening); });
-	if (open)    xml.node("open",    [&] () { xml.attribute("value", open); });
-	if (closing) xml.node("closing", [&] () { xml.attribute("value", closing); });
-	if (closed)  xml.node("closed",  [&] () { xml.attribute("value", closed); });
-
-	if (dissolved_timeout_opening) xml.node("dissolved_timeout_opening", [&] () { xml.attribute("value", dissolved_timeout_opening); });
-	if (dissolved_timeout_open)    xml.node("dissolved_timeout_open",    [&] () { xml.attribute("value", dissolved_timeout_open); });
-	if (dissolved_timeout_closing) xml.node("dissolved_timeout_closing", [&] () { xml.attribute("value", dissolved_timeout_closing); });
-	if (dissolved_timeout_closed)  xml.node("dissolved_timeout_closed",  [&] () { xml.attribute("value", dissolved_timeout_closed); });
-	if (dissolved_no_timeout)      xml.node("dissolved_no_timeout",      [&] () { xml.attribute("value", dissolved_no_timeout); });
 }

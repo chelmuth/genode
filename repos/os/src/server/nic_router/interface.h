@@ -115,7 +115,6 @@ class Net::Interface : private Interface_list::Element
 
 		void _new_link(L3_protocol             const  protocol,
 		               Link_side_id            const &local_id,
-		               Domain                        &local_domain,
 		               Pointer<Port_allocator_guard>  remote_port_alloc,
 		               Domain                        &remote_domain,
 		               Link_side_id            const &remote_id);
@@ -315,7 +314,7 @@ class Net::Interface : private Interface_list::Element
 
 	public:
 
-		struct Free_resources_and_retry_handle_eth : Genode::Exception { L3_protocol prot; Free_resources_and_retry_handle_eth(L3_protocol prot = (L3_protocol)0) : prot(prot) { } };
+		struct Free_resources_and_retry_handle_eth : Genode::Exception { };
 		struct Bad_send_dhcp_args                  : Genode::Exception { };
 		struct Bad_transport_protocol              : Genode::Exception { };
 		struct Bad_network_protocol                : Genode::Exception { };
