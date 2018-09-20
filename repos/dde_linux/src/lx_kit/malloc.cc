@@ -3,11 +3,12 @@
  * \author Sebastian Sumpf
  * \author Josef Soentgen
  * \author Norman Feske
+ * \author Christian Helmuth
  * \date   2014-10-10
  */
 
 /*
- * Copyright (C) 2014-2017 Genode Labs GmbH
+ * Copyright (C) 2014-2018 Genode Labs GmbH
  *
  * This file is distributed under the terms of the GNU General Public License
  * version 2.
@@ -98,18 +99,16 @@ class Lx_kit::Slab_backend_alloc : public Lx::Slab_backend_alloc,
 
 		bool alloc(size_t size, void **out_addr) override
 		{
-			bool done = _range.alloc(size, out_addr);
+			/* ensure back-end allocations are 16-byte aligned */
+			if (_range.alloc_aligned(size, out_addr, Genode::log2(16)).ok())
+				return true;
 
-			if (done)
-				return done;
+			/* expand the back-end allocator and retry alloc */
+			if (_alloc_block())
+				return _range.alloc_aligned(size, out_addr, Genode::log2(16)).ok();
 
-			done = _alloc_block();
-			if (!done) {
-				Genode::error("backend allocator exhausted");
-				return false;
-			}
-
-			return _range.alloc(size, out_addr);
+			Genode::error("backend allocator exhausted");
+			return false;
 		}
 
 		void free(void *addr) {
@@ -221,6 +220,13 @@ class Lx_kit::Malloc : public Lx::Malloc
 		:
 			_back_allocator(alloc), _cached(cached), _start(alloc.start()),
 			_end(alloc.end())
+//		Malloc(Slab_backend_alloc      &alloc,
+//		       Slab_backend_alloc      &large_alloc,
+//		       Genode::Cache_attribute  cached)
+//		:
+//			_back_allocator(alloc), _large_allocator(large_alloc), _cached(cached),
+//			_start(alloc.start()), _end(alloc.end()),
+//			_large_start(large_alloc.start()), 
 		{
 			/* init slab allocators */
 			for (unsigned i = SLAB_START_LOG2; i <= SLAB_STOP_LOG2; i++)
@@ -282,11 +288,13 @@ class Lx_kit::Malloc : public Lx::Malloc
 
 			if (phys)
 				*phys = _back_allocator.phys_addr(addr);
+//Genode::log(__func__, " a=", addr);
 			return (addr_t *)addr;
 		}
 
 		void free(void const *a)
 		{
+//Genode::log(__func__, " a=", a);
 			using namespace Genode;
 			addr_t *addr = (addr_t *)a;
 
@@ -294,6 +302,11 @@ class Lx_kit::Malloc : public Lx::Malloc
 			unsigned nr = _slab_index(&addr);
 			/* we need to decrease addr by 2, orig_size and index come first */
 			_allocator[nr]->free((void *)(addr - 2));
+		}
+
+		bool requires_large_alloc(size_t size) const override
+		{
+			return size > (1UL << SLAB_STOP_LOG2);
 		}
 
 		void *alloc_large(size_t size)
@@ -304,11 +317,13 @@ class Lx_kit::Malloc : public Lx::Malloc
 				return nullptr;
 			}
 
+Genode::log(__func__, " a=", addr);
 			return addr;
 		}
 
 		void free_large(void *ptr)
 		{
+Genode::log(__func__, " a=", ptr);
 			_back_allocator.free(ptr);
 		}
 

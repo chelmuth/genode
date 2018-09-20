@@ -24,16 +24,16 @@ void *kmalloc(size_t size, gfp_t flags)
 		Genode::warning("GFP_DMA32 memory (below 4 GiB) requested"
 		                "(", __builtin_return_address(0), ")");
 
-	void *addr = nullptr;
+	Lx::Malloc &alloc = (flags & GFP_LX_DMA)
+	                  ? Lx::Malloc::dma() : Lx::Malloc::mem();
 
-	addr = (flags & GFP_LX_DMA)
-		? Lx::Malloc::dma().alloc(size)
-		: Lx::Malloc::mem().alloc(size);
+	void * const addr = alloc.requires_large_alloc(size)
+	                  ? alloc.alloc_large(size) : alloc.alloc(size);
 
-	if ((Genode::addr_t)addr & 0x3)
+	if ((Genode::addr_t)addr & 0x7)
 		Genode::error("unaligned kmalloc ", (Genode::addr_t)addr);
 
-	if (flags & __GFP_ZERO)
+	if (addr && (flags & __GFP_ZERO))
 		Genode::memset(addr, 0, size);
 
 	return addr;

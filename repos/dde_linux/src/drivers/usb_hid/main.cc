@@ -163,6 +163,11 @@ void Driver::main_task_entry(void * arg)
 	module_hid_init();
 	module_hid_generic_init();
 	module_ch_driver_init();
+
+	void *a = kmalloc(128*1024, GFP_KERNEL);
+	Genode::log("----------------------- ", a);
+	kfree(a);
+
 	module_holtek_mouse_driver_init();
 	module_apple_driver_init();
 	module_ms_driver_init();
