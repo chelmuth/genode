@@ -41,6 +41,9 @@ typedef __u32 __le32;
 typedef __u64 __le64;
 typedef __u64 __be64;
 
+#define DECLARE_BITMAP(name,bits) \
+	unsigned long name[BITS_TO_LONGS(bits)]
+
 #include <lx_emul/byteorder.h>
 #include <lx_emul/atomic.h>
 #include <lx_emul/work.h>
