@@ -29,6 +29,29 @@ void Sculpt::Network::_generate_nic_router_uplink(Xml_generator &xml,
 			xml.attribute("udp-ports", "1000");
 			xml.attribute("icmp-ids",  "1000");
 		});
+
+		/* buildbot NAPT and forwards */
+		xml.node("nat", [&] () {
+			xml.attribute("domain",    "vm");
+			xml.attribute("tcp-ports", "1000");
+			xml.attribute("udp-ports", "1000");
+			xml.attribute("icmp-ids",  "1000");
+		});
+		xml.node("tcp-forward", [&] () {
+			xml.attribute("port",   "1811");
+			xml.attribute("domain", "ssh");
+			xml.attribute("to",     "10.0.2.2");
+		});
+		xml.node("tcp-forward", [&] () {
+			xml.attribute("port",   "22");
+			xml.attribute("domain", "vm");
+			xml.attribute("to",     "10.0.3.2");
+		});
+		xml.node("tcp-forward", [&] () {
+			xml.attribute("port",   "8080");
+			xml.attribute("domain", "vm");
+			xml.attribute("to",     "10.0.3.2");
+		});
 	});
 }
 
@@ -85,6 +108,16 @@ void Sculpt::Network::_generate_nic_router_config()
 			xml.attribute("config_triggers", "yes");
 		});
 
+		/* buildbot policies */
+		xml.node("policy", [&] () {
+			xml.attribute("label_prefix", "noux-system-ssh");
+			xml.attribute("domain", "ssh");
+		});
+		xml.node("policy", [&] () {
+			xml.attribute("label_prefix", "vm");
+			xml.attribute("domain", "vm");
+		});
+
 		xml.node("default-policy", [&] () {
 			xml.attribute("domain", "default"); });
 
@@ -100,6 +133,37 @@ void Sculpt::Network::_generate_nic_router_config()
 			xml.node("dhcp-server", [&] () {
 				xml.attribute("ip_first", "10.0.1.2");
 				xml.attribute("ip_last",  "10.0.1.200");
+				if (_nic_target.type() != Nic_target::LOCAL) {
+					xml.attribute("dns_server_from", "uplink"); }
+			});
+
+			if (uplink_exists) {
+				xml.node("tcp", [&] () {
+					xml.attribute("dst", "0.0.0.0/0");
+					xml.node("permit-any", [&] () {
+						xml.attribute("domain", "uplink"); }); });
+
+				xml.node("udp", [&] () {
+					xml.attribute("dst", "0.0.0.0/0");
+					xml.node("permit-any", [&] () {
+						xml.attribute("domain", "uplink"); }); });
+
+				xml.node("icmp", [&] () {
+					xml.attribute("dst", "0.0.0.0/0");
+					xml.attribute("domain", "uplink"); });
+			}
+		});
+
+		/* buildbot domains */
+		gen_named_node(xml, "domain", "ssh", [&] () {
+			xml.attribute("interface", "10.0.2.1/24");
+		});
+		gen_named_node(xml, "domain", "vm", [&] () {
+			xml.attribute("interface", "10.0.3.1/24");
+
+			xml.node("dhcp-server", [&] () {
+				xml.attribute("ip_first", "10.0.3.2");
+				xml.attribute("ip_last",  "10.0.3.2");
 				if (_nic_target.type() != Nic_target::LOCAL) {
 					xml.attribute("dns_server_from", "uplink"); }
 			});

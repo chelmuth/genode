@@ -9,9 +9,6 @@
 		<service name="File_system" label="report">
 			<parent label="report"/>
 		</service>
-		<service name="File_system" label="ssh">
-			<child name="ssh_fs"/>
-		</service>
 		<service name="ROM" label_last="vimrc">
 			<parent label="config -> vimrc"/>
 		</service>
