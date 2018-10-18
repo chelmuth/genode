@@ -1,4 +1,4 @@
-<launcher ram="4300M" pkg="vbox5-nova-sculpt">
+<launcher ram="8300M" pkg="vbox5-nova-sculpt">
 	<route>
 		<service name="File_system" label="vm"> <child name="vm_fs"/> </service>
 		<service name="ROM"    label="capslock"> <parent label="capslock"/> </service>
