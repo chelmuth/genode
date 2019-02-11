@@ -242,6 +242,7 @@ unsigned Seoul::Console::_handle_fb()
 				                    ((fg & 0x2) >> 1)*127+lum, /* G+luminosity */
 				                     (fg & 0x1)*127+lum        /* B+luminosity */);
 
+if (_surface.constructed())
 				Text_painter::paint(*_surface, where, default_font, color, buffer);
 
 				/* Checksum for comparing */
@@ -255,6 +256,7 @@ unsigned Seoul::Console::_handle_fb()
 		/* compare checksums to detect changed buffer */
 		if (fb_state.checksum1 != fb_state.checksum2) {
 			fb_state.unchanged = 0;
+if (_framebuffer.constructed())
 			_framebuffer->refresh(0, 0, _fb_mode.width(), _fb_mode.height());
 			return 100;
 		}
@@ -274,6 +276,7 @@ unsigned Seoul::Console::_handle_fb()
 		return 0;
 	}
 
+if (_framebuffer.constructed())
 	if (!fb_state.revoked) {
 
 		_env.rm().detach((void *)_guest_fb);
@@ -291,6 +294,7 @@ unsigned Seoul::Console::_handle_fb()
 
 		fb_state.revoked = true;
 	}
+if (_framebuffer.constructed())
 	_framebuffer->refresh(0, 0, _fb_mode.width(), _fb_mode.height());
 	return 10;
 }

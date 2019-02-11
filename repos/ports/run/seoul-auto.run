@@ -27,7 +27,7 @@ set use_nic_bridge    0
 
 set use_usb           0
 
-set use_framebuffer   1
+set use_framebuffer   0
 set use_fancy_stuff   0
 
 set memory_vmm_vm     "128M"
@@ -66,5 +66,5 @@ append qemu_args " -nographic "
 run_genode_until {\[init -\> seoul\] VMM: #   Hello Genode world!} 300
 
 foreach binary $guest_os_binaries {
-	exec rm -f bin/$binary
+	#exec rm -f bin/$binary
 }
