@@ -15,6 +15,7 @@
 #include <base/log.h>
 #include <base/signal.h>
 #include <base/heap.h>
+#include <os/backtrace.h>
 #include <irq_session/connection.h>
 #include <io_port_session/connection.h>
 
@@ -38,6 +39,7 @@ namespace Acpica {
 	struct Main;
 	struct Statechange;
 	class Reportstate;
+	struct Heap;
 };
 
 #include "util.h"
@@ -99,10 +101,119 @@ struct Acpica::Statechange
 	}
 };
 
+
+struct Acpica::Heap : Genode::Heap
+{
+#if 0
+	enum Op { ALLOC, FREE };
+
+	unsigned long  _op_count     { 0 };
+	unsigned long  _alloc_count  { 0 };
+	Genode::size_t _max_consumed { 0 };
+	Genode::size_t _last_consumed { 0 };
+
+	void _check_consumed(Op op, void *p)
+	{
+		switch (op) {
+		case ALLOC: ++_op_count; ++_alloc_count; break;
+		case FREE:  ++_op_count; --_alloc_count; break;
+		}
+
+		Genode::size_t const c = consumed();
+		if (c > _max_consumed) {
+			_max_consumed = c;
+			Genode::error("  --->"
+			              , " consumed=", c
+			              , " _max_consumed=", _max_consumed
+			              , " _op_count=", _op_count
+			              , " _alloc_count=", _alloc_count
+			              , " p=", p
+			              , " ", (void *)__builtin_return_address(0)
+			              );
+		} else {
+//			Genode::warning("--->"
+//			              , " consumed=", c
+//			              , " _max_consumed=", _max_consumed
+//			              , " _op_count=", _op_count
+//			              , " _alloc_count=", _alloc_count
+//			              , " p=", p
+//			              , " ", (void *)__builtin_return_address(0)
+//			              );
+		}
+		if (_last_consumed && (signed long)c - _last_consumed == 12)
+			Genode::backtrace();
+		_last_consumed = c;
+	}
+#endif
+
+	enum { MAX_ALLOCATION = 20000, MAX_GENERATION = 100 };
+
+	struct T
+	{
+		struct A
+		{
+			void     *p { nullptr };
+			unsigned  s { 0 };
+			unsigned  g { 0 };
+			/* TODO backtrace elements */
+
+			A() { }
+			A(void *p, unsigned s) : p(p), s(s) { }
+		} allocations[MAX_ALLOCATION];
+
+		T() { }
+
+		void alloc(void *p, Genode::size_t s)
+		{
+			bool stored = false;
+			for (A &a : allocations) {
+				if (a.p == nullptr) {
+					a = A(p, (unsigned)s);
+				} else {
+					++a.g;
+				}
+			}
+			if (!stored)
+				Genode::error(__PRETTY_FUNCTION__, ": MAX_ALLOCATION (",
+				              (int)MAX_ALLOCATION, ") exceeded!");
+		}
+
+		void free(void *p)
+		{
+			for (A &a : allocations) {
+				if (a.p == p) {
+					a = A();
+				} else {
+					if (++a.g > MAX_GENERATION)
+						Genode::log("a {", a.p, ",", a.s, "}");
+				}
+			}
+		}
+	} t;
+
+	using Genode::Heap::Heap;
+
+	bool alloc(Genode::size_t s, void **p) override
+	{
+		bool const r = Genode::Heap::alloc(s, p);
+//		_check_consumed(ALLOC, *p);
+		t.alloc(*p, s);
+		return r;
+	}
+
+	void free(void *p, Genode::size_t s) override
+	{
+//		Genode::Heap::free(p, s);
+//		_check_consumed(FREE, p);
+		t.free(p);
+	}
+};
+
+
 struct Acpica::Main
 {
 	Genode::Env  &env;
-	Genode::Heap  heap { env.ram(), env.rm() };
+	Acpica::Heap  heap { env.ram(), env.rm() };
 
 	Genode::Attached_rom_dataspace config { env, "config" };
 

@@ -74,8 +74,8 @@ set config {
 		</start>}
 
 append_if [expr !$use_acpica_as_acpi_drv] config {
-		<start name="acpica" caps="150">
-			<resource name="RAM" quantum="5M"/>
+		<start name="acpica" caps="1500">
+			<resource name="RAM" quantum="300M"/>
 			<config ld_verbose="yes" reset="no" poweroff="no" report="yes" acpi_ready="yes">
 			</config>
 			<route>
@@ -219,4 +219,5 @@ build_boot_image $boot_modules
 
 append qemu_args "-nographic "
 
+run_genode_until forever
 run_genode_until {\[init -\> acpi.*SCI IRQ:.*\n} 30
