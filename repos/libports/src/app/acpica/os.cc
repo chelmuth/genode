@@ -146,7 +146,12 @@ struct Acpica::Heap : Genode::Heap
 	}
 #endif
 
-	enum { MAX_ALLOCATION = 20000, MAX_GENERATION = 100 };
+	enum {
+		MAX_ALLOCATION      = 40000,
+		MAX_GENERATION      =   480,
+		START_FREE_COUNT    = 10000,
+		LOG_FREE_COUNT_STEP =   500,
+	};
 
 	struct T
 	{
@@ -154,40 +159,75 @@ struct Acpica::Heap : Genode::Heap
 		{
 			void     *p { nullptr };
 			unsigned  s { 0 };
+			unsigned  c { 0 };
 			unsigned  g { 0 };
-			/* TODO backtrace elements */
+
+			Genode::addr_t bt[4] { 0, 0, 0, 0}; /* backtrace elements */
 
 			A() { }
-			A(void *p, unsigned s) : p(p), s(s) { }
-		} allocations[MAX_ALLOCATION];
+			A(void *p, unsigned s, unsigned c) : p(p), s(s), c(c) { }
+
+			void print(Genode::Output &out) const
+			{
+				Genode::print(out, "[", c, "]");
+				Genode::print(out, " ", p, " s=", s, " g=", g);
+				Genode::print(out, " {", " ", (void *)bt[0]
+				                       , " ", (void *)bt[1]
+				                       , " ", (void *)bt[2]
+				                       , " ", (void *)bt[3]
+				                 , " }");
+			}
+		};
+
+		unsigned long free_count { 0 };
+
+		A allocations[MAX_ALLOCATION];
 
 		T() { }
 
 		void alloc(void *p, Genode::size_t s)
 		{
+			if (!p || free_count < START_FREE_COUNT) return;
+
 			bool stored = false;
 			for (A &a : allocations) {
-				if (a.p == nullptr) {
-					a = A(p, (unsigned)s);
-				} else {
-					++a.g;
-				}
+				if (a.p != nullptr) continue;
+
+				a = A(p, (unsigned)s, free_count);
+				Genode::backtrace(sizeof(a.bt)/sizeof(*a.bt), a.bt);
+				stored = true;
+				break;
 			}
-			if (!stored)
+			if (!stored) {
 				Genode::error(__PRETTY_FUNCTION__, ": MAX_ALLOCATION (",
 				              (int)MAX_ALLOCATION, ") exceeded!");
+			}
 		}
 
 		void free(void *p)
 		{
+			if (!p || ++free_count < START_FREE_COUNT) return;
+
+			bool const do_log = (free_count % LOG_FREE_COUNT_STEP == 0);
+
+			if (do_log)
+				Genode::error("--------------- free_count=", free_count, " ---------------");
+
+			unsigned index = 0;
 			for (A &a : allocations) {
 				if (a.p == p) {
 					a = A();
 				} else {
-					if (++a.g > MAX_GENERATION)
-						Genode::log("a {", a.p, ",", a.s, "}");
+					if (a.p && ++a.g > MAX_GENERATION && do_log) {
+						Genode::warning("[", index, "] ", a);
+						a.g = 1;
+					}
 				}
+				++index;
 			}
+
+			if (do_log)
+				Genode::error("------------------------------------------------");
 		}
 	} t;
 
