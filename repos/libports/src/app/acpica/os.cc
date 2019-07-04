@@ -33,6 +33,7 @@ extern "C" {
 #include "accommon.h"
 #include "acevents.h"
 #include "acnamesp.h"
+#include "acutils.h"
 }
 
 namespace Acpica {
@@ -104,52 +105,10 @@ struct Acpica::Statechange
 
 struct Acpica::Heap : Genode::Heap
 {
-#if 0
-	enum Op { ALLOC, FREE };
-
-	unsigned long  _op_count     { 0 };
-	unsigned long  _alloc_count  { 0 };
-	Genode::size_t _max_consumed { 0 };
-	Genode::size_t _last_consumed { 0 };
-
-	void _check_consumed(Op op, void *p)
-	{
-		switch (op) {
-		case ALLOC: ++_op_count; ++_alloc_count; break;
-		case FREE:  ++_op_count; --_alloc_count; break;
-		}
-
-		Genode::size_t const c = consumed();
-		if (c > _max_consumed) {
-			_max_consumed = c;
-			Genode::error("  --->"
-			              , " consumed=", c
-			              , " _max_consumed=", _max_consumed
-			              , " _op_count=", _op_count
-			              , " _alloc_count=", _alloc_count
-			              , " p=", p
-			              , " ", (void *)__builtin_return_address(0)
-			              );
-		} else {
-//			Genode::warning("--->"
-//			              , " consumed=", c
-//			              , " _max_consumed=", _max_consumed
-//			              , " _op_count=", _op_count
-//			              , " _alloc_count=", _alloc_count
-//			              , " p=", p
-//			              , " ", (void *)__builtin_return_address(0)
-//			              );
-		}
-		if (_last_consumed && (signed long)c - _last_consumed == 12)
-			Genode::backtrace();
-		_last_consumed = c;
-	}
-#endif
-
 	enum {
 		MAX_ALLOCATION      = 40000,
-		MAX_GENERATION      =   480,
-		START_FREE_COUNT    = 10000,
+		MAX_GENERATION      =   100,
+		START_FREE_COUNT    =  8000,
 		LOG_FREE_COUNT_STEP =   500,
 	};
 
@@ -162,7 +121,9 @@ struct Acpica::Heap : Genode::Heap
 			unsigned  c { 0 };
 			unsigned  g { 0 };
 
-			Genode::addr_t bt[4] { 0, 0, 0, 0}; /* backtrace elements */
+			Genode::addr_t bt[15] { 0, 0, 0, 0, 0,
+			                        0, 0, 0, 0, 0,
+			                        0, 0, 0, 0, 0}; /* backtrace elements */
 
 			A() { }
 			A(void *p, unsigned s, unsigned c) : p(p), s(s), c(c) { }
@@ -171,11 +132,15 @@ struct Acpica::Heap : Genode::Heap
 			{
 				Genode::print(out, "[", c, "]");
 				Genode::print(out, " ", p, " s=", s, " g=", g);
-				Genode::print(out, " {", " ", (void *)bt[0]
-				                       , " ", (void *)bt[1]
-				                       , " ", (void *)bt[2]
-				                       , " ", (void *)bt[3]
-				                 , " }");
+				Genode::print(out, " {");
+				for (unsigned i = 0; i < sizeof(bt)/sizeof(*bt); ++i) {
+					Genode::print(out, " ", (void *)bt[i]);
+				}
+				Genode::print(out, " }");
+				ACPI_OBJECT_COMMON *o = (ACPI_OBJECT_COMMON *)p;
+				Genode::print(out, " ", o->DescriptorType);
+				Genode::print(out, " ", o->Type);
+				Genode::print(out, " ", o->ReferenceCount);
 			}
 		};
 
@@ -213,6 +178,7 @@ struct Acpica::Heap : Genode::Heap
 			if (do_log)
 				Genode::error("--------------- free_count=", free_count, " ---------------");
 
+			unsigned sum = 0;
 			unsigned index = 0;
 			for (A &a : allocations) {
 				if (a.p == p) {
@@ -220,14 +186,16 @@ struct Acpica::Heap : Genode::Heap
 				} else {
 					if (a.p && ++a.g > MAX_GENERATION && do_log) {
 						Genode::warning("[", index, "] ", a);
-						a.g = 1;
+						sum += a.s;
 					}
 				}
 				++index;
 			}
 
-			if (do_log)
-				Genode::error("------------------------------------------------");
+			if (do_log) {
+				Genode::error("---------------- sum=", sum, " ------------------------");
+				AcpiUtDumpAllocations ((UINT32) -1, nullptr);
+			}
 		}
 	} t;
 
@@ -236,16 +204,14 @@ struct Acpica::Heap : Genode::Heap
 	bool alloc(Genode::size_t s, void **p) override
 	{
 		bool const r = Genode::Heap::alloc(s, p);
-//		_check_consumed(ALLOC, *p);
 		t.alloc(*p, s);
 		return r;
 	}
 
 	void free(void *p, Genode::size_t s) override
 	{
-//		Genode::Heap::free(p, s);
-//		_check_consumed(FREE, p);
 		t.free(p);
+		/* we keep all allocations for now Genode::Heap::free(p, s); */
 	}
 };
 
