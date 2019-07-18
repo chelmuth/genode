@@ -14,6 +14,8 @@ extern "C" {
 #include "acpi.h"
 }
 
+extern "C" void krishna_log_consumed(char const *f, unsigned long l);
+
 class Bridge;
 
 namespace Acpica {

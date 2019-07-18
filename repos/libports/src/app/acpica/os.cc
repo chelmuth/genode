@@ -103,17 +103,22 @@ struct Acpica::Statechange
 };
 
 
+/******************* XXX DEBUG ***************************/
+static Acpica::Heap *krishna_heap = nullptr;
+/*********************************************************/
+
 struct Acpica::Heap : Genode::Heap
 {
-	enum {
-		MAX_ALLOCATION      = 40000,
-		MAX_GENERATION      =   100,
-		START_FREE_COUNT    =  8000,
-		LOG_FREE_COUNT_STEP =   500,
-	};
-
+#if 0
 	struct T
 	{
+		enum {
+			MAX_ALLOCATION      = 40000,
+			MAX_GENERATION      =   100,
+			START_FREE_COUNT    =  5000,
+			LOG_FREE_COUNT_STEP =   500,
+		};
+
 		struct A
 		{
 			void     *p { nullptr };
@@ -152,6 +157,8 @@ struct Acpica::Heap : Genode::Heap
 
 		void alloc(void *p, Genode::size_t s)
 		{
+			/* FIXME */ return;
+
 			if (!p || free_count < START_FREE_COUNT) return;
 
 			bool stored = false;
@@ -169,14 +176,16 @@ struct Acpica::Heap : Genode::Heap
 			}
 		}
 
-		void free(void *p)
+		bool free(void *p)
 		{
-			if (!p || ++free_count < START_FREE_COUNT) return;
+			if (!p || ++free_count < START_FREE_COUNT) return false;
 
 			bool const do_log = (free_count % LOG_FREE_COUNT_STEP == 0);
 
 			if (do_log)
 				Genode::error("--------------- free_count=", free_count, " ---------------");
+
+			/* FIXME */ return do_log;
 
 			unsigned sum = 0;
 			unsigned index = 0;
@@ -185,35 +194,68 @@ struct Acpica::Heap : Genode::Heap
 					a = A();
 				} else {
 					if (a.p && ++a.g > MAX_GENERATION && do_log) {
-						Genode::warning("[", index, "] ", a);
+//						Genode::warning("[", index, "] ", a);
 						sum += a.s;
 					}
 				}
 				++index;
 			}
 
-			if (do_log) {
+			if (do_log)
 				Genode::error("---------------- sum=", sum, " ------------------------");
-				AcpiUtDumpAllocations ((UINT32) -1, nullptr);
-			}
+
+			return do_log;
 		}
 	} t;
+#endif
 
-	using Genode::Heap::Heap;
+	Heap(Genode::Ram_allocator &ram, Genode::Region_map &rm) : Genode::Heap::Heap(ram, rm)
+	{
+		krishna_heap = this;
+	}
+
+	unsigned long _max_consumed { 0 };
 
 	bool alloc(Genode::size_t s, void **p) override
 	{
 		bool const r = Genode::Heap::alloc(s, p);
-		t.alloc(*p, s);
+//		t.alloc(*p, s);
+
+		unsigned long consumed = Genode::Heap::consumed();
+
+		if (consumed > _max_consumed) {
+			if (consumed > 764*1024) {
+				Genode::log("+++++++++++++++++ max_consumed=", consumed);
+			}
+			_max_consumed = consumed;
+		}
+
 		return r;
 	}
 
 	void free(void *p, Genode::size_t s) override
 	{
-		t.free(p);
-		/* we keep all allocations for now Genode::Heap::free(p, s); */
+//		bool const do_log = t.free(p);
+		Genode::Heap::free(p, s);
+
+//		if (do_log) {
+//			Genode::log("+++++++++++++++++ consumed=", Genode::Heap::consumed());
+//			AcpiUtDumpAllocations (ACPI_UINT32_MAX, nullptr);
+//			Genode::log("+++++++++++++++++++++++++++++++++++++++++++++++++");
+//		}
 	}
 };
+
+/******************* XXX DEBUG ***************************/
+void krishna_log_consumed(char const *f, unsigned long l)
+{
+	if (krishna_heap) {
+		Genode::log("+++++++++++++++++ ", f, ":", l, " consumed=", krishna_heap->consumed());
+	} else {
+		Genode::warning("heap = ", krishna_heap);
+	}
+}
+/*********************************************************/
 
 
 struct Acpica::Main
@@ -431,6 +473,7 @@ void Acpica::Main::init_acpica(Wait_acpi_ready wait_acpi_ready,
 		return;
 	}
 
+#if 1 /* disabled in acpica-100.log */
 	/* note: ACPI_EVENT_PMTIMER claimed by nova kernel - not usable by us */
 	Fixed * acpi_fixed = new (heap) Fixed(report);
 
@@ -445,21 +488,25 @@ void Acpica::Main::init_acpica(Wait_acpi_ready wait_acpi_ready,
 	                                      acpi_fixed);
 	if (status != AE_OK)
 		Genode::log("failed   - sleep button registration - error=", status);
+#endif
 
-
+#if 1 /* disabled in acpica-101.log */
 	/* AC Adapters and Power Source Objects */
 	status = AcpiGetDevices(ACPI_STRING("ACPI0003"), Ac::detect, this, nullptr);
 	if (status != AE_OK) {
 		Genode::error("AcpiGetDevices (ACPI0003) failed, status=", status);
 		return;
 	}
+#endif
 
+#if 1 /* disabled in acpica-102.log */
 	/* Smart battery control devices */
 	status = AcpiGetDevices(ACPI_STRING("PNP0C0A"), Battery::detect, this, nullptr);
 	if (status != AE_OK) {
 		Genode::error("AcpiGetDevices (PNP0C0A) failed, status=", status);
 		return;
 	}
+#endif
 
 	/* LID device */
 	status = AcpiGetDevices(ACPI_STRING("PNP0C0D"), Lid::detect, this, nullptr);
