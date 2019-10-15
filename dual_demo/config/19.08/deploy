@@ -1,0 +1,94 @@
+<config arch="x86_64">
+	<common_routes>
+		<service name="ROM" label_last="ld.lib.so">  <parent/> </service>
+		<service name="ROM" label_last="vfs.lib.so"> <parent/> </service>
+		<service name="ROM" label_last="init">       <parent/> </service>
+		<service name="CPU">   <parent/> </service>
+		<service name="PD">    <parent/> </service>
+		<service name="LOG">   <parent/> </service>
+		<service name="Timer"> <parent/> </service>
+	</common_routes>
+
+	<start name="recall_fs"/>
+	<start name="shared_fs"/>
+	<start name="usb_devices_rom"/>
+	<start name="vm_1_fs"/>
+	<start name="vm_2_fs"/>
+	<start name="vm_1"/>
+	<start name="vm_2"/>
+
+	<start name="wm" pkg="chelmuth_demo/pkg/wm/2019-08-27">
+		<route>
+			<service name="Nitpicker" label="focus">
+				<parent label="focus"/>
+			</service>
+			<service name="Nitpicker">
+				<parent/>
+			</service>
+			<service name="Report" label_last="shape">
+				<parent/>
+			</service>
+			<service name="Report" label_last="clipboard">
+				<parent/>
+			</service>
+			<service name="ROM" label_last="clipboard">
+				<parent/>
+			</service>
+		</route>
+	</start>
+	<start name="themed_decorator" pkg="chelmuth_demo/pkg/themed_decorator/2019-08-27">
+		<route>
+			<service name="ROM" label="window_layout">
+				<child name="wm"/>
+			</service>
+			<service name="ROM" label="pointer">
+				<child name="wm"/>
+			</service>
+			<service name="Report">
+				<child name="wm"/>
+			</service>
+			<service name="Nitpicker">
+				<child name="wm"/>
+			</service>
+		</route>
+		<config>
+			<vfs>
+				<dir name="theme">
+					<inline name="metadata">
+						<theme>
+							<aura  top="0" bottom="0" left="0" right="0"/>
+							<decor top="0" bottom="0" left="0" right="0"/>
+						</theme>
+					</inline>
+				</dir>
+			</vfs>
+			<libc/>
+			<default-policy/>
+		</config>
+	</start>
+	<start name="window_layouter" pkg="chelmuth_demo/pkg/window_layouter/2019-08-27">
+		<route>
+			<service name="Nitpicker">
+				<child name="wm"/>
+			</service>
+			<service name="ROM" label="window_list">
+				<child name="wm"/>
+			</service>
+			<service name="ROM" label="focus_request">
+				<child name="wm"/>
+			</service>
+			<service name="ROM" label="hover">
+				<child name="wm"/>
+			</service>
+			<service name="ROM" label="decorator_margins">
+				<child name="wm"/>
+			</service>
+			<service name="Report">
+				<child name="wm"/>
+			</service>
+			<service name="File_system" label="recall">
+				<child name="recall_fs"/>
+			</service>
+		</route>
+	</start>
+</config>

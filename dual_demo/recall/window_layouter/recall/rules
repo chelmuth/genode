@@ -1,0 +1,7 @@
+<rules>
+	<screen name="screen"/>
+
+	<assign label="vm_1 -> " target="screen" xpos="0" ypos="0" width="1920" height="1080"/>
+	<assign label="vm_2 -> " target="screen" xpos="0" ypos="0" width="1920" height="1080"/>
+	<assign label_prefix="" target="screen" xpos="any" ypos="any"/>
+</rules>

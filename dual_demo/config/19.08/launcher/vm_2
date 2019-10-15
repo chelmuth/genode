@@ -1,0 +1,43 @@
+<launcher ram="7000M" pkg="chelmuth_demo/pkg/vbox5-nova-sculpt/2019-10-14">
+	<route>
+		<service name="File_system" label="vm">
+			<child name="vm_2_fs"/>
+		</service>
+		<service name="File_system" label="shared">
+			<child name="shared_fs"/>
+		</service>
+		<service name="Nitpicker">
+			<child name="wm"/>
+		</service>
+		<service name="Nic">
+			<child name="nic_router"/>
+		</service>
+		<service name="ROM" label="capslock">
+			<parent label="capslock"/>
+		</service>
+		<service name="ROM" label="platform_info">
+			<parent label="platform_info"/>
+		</service>
+		<service name="Report" label_last="shape">
+			<child name="wm"/>
+		</service>
+		<service name="Report" label_last="clipboard">
+			<child name="wm"/>
+		</service>
+		<service name="ROM" label_last="clipboard">
+			<child name="wm"/>
+		</service>
+		<service name="RM">
+			<parent/>
+		</service>
+		<service name="Rtc">
+			<parent/>
+		</service>
+		<service name="ROM" label="usb_devices">
+			<child name="usb_devices_rom"/>
+		</service>
+		<service name="Usb">
+			<parent/>
+		</service>
+	</route>
+</launcher>
