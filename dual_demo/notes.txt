@@ -1,0 +1,20 @@
+- create archive on demo notebook
+
+  tar -cf tmp/GENODE.tar config depot/local recall vm/1/machine.vbox vm/2/machine.vbox
+
+- extract archive on demo notebook
+
+  tar --no-same-owner -xf tmp/GENODE.tar
+
+- create archvie from Genode sources
+
+  tar -C dual_demo/ --owner=0 --group=0 -cf /tmp/GENODE.tar .
+
+- duplicate (partial) config tree to /tmp/GENODE
+
+  tar -cf - config vm/1/machine.vbox vm/2/machine.vbox | tar -C /tmp/GENODE -xf -
+
+- VDI UUIDs
+
+  win7: d583423a-c476-4264-8bf7-1d1c14d516a2
+  win10: 687a3121-43ce-4cc0-a0f4-61d706bc4b6b
