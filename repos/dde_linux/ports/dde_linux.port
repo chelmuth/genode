@@ -1,9 +1,10 @@
 LICENSE     := GPLv2
 VERSION     := 2
-DOWNLOADS   := dwc_otg.git usb.archive intel_fb.archive lxip.archive \
-               wifi.archive fec.archive libnl.archive wpa_supplicant.git \
-               fw.archive usb_host.archive dwc_otg_host.git usb_hid.archive \
-               usb_net.archive
+DOWNLOADS   := cpsw_nic.archive
+#DOWNLOADS   := dwc_otg.git usb.archive intel_fb.archive lxip.archive \
+#               wifi.archive fec.archive libnl.archive wpa_supplicant.git \
+#               fw.archive usb_host.archive dwc_otg_host.git usb_hid.archive \
+#               usb_net.archive
 
 #
 # Tools
@@ -117,6 +118,17 @@ TAR_OPT(fec) := --strip-components=1  --files-from - < <(sed 's/-x.x.x/-$(VERSIO
 HASH_INPUT   += $(REP_DIR)/fec.list
 
 #
+# Texas Instruments CPSW Ethernet switch
+#
+SRC_DIR_CPSW_NIC  := src/drivers/nic/cpsw
+VERSION_CPSW_NIC  := 4.16.3
+URL(cpsw_nic)     := https://www.kernel.org/pub/linux/kernel/v4.x/linux-$(VERSION_CPSW_NIC).tar.xz
+SHA(cpsw_nic)     := 0d6971a81da97e38b974c5eba31a74803bfe41aabc46d406c3acda56306c81a3
+DIR(cpsw_nic)     := $(SRC_DIR_CPSW_NIC)
+TAR_OPT(cpsw_nic) := --strip-components=1 --files-from - < <(sed 's/-x.x.x/-$(VERSION_CPSW_NIC)/g' $(REP_DIR)/cpsw_nic.list)
+HASH_INPUT        += $(REP_DIR)/cpsw_nic.list
+
+#
 # libnl sources
 #
 URL(libnl) := https://github.com/thom311/libnl/releases/download/libnl3_2_25/libnl-3.2.25.tar.gz
@@ -141,16 +153,17 @@ DIR(fw) := firmware
 #
 # Patches
 #
-PATCHES := $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/wpa*.patch)))
-PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/libnl*.patch)))
-PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/wifi*.patch)))
-PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/lxip*.patch)))
-PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/intel*.patch)))
-PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/usb_host*.patch)))
-PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/usb*.patch)))
-PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/intel*.patch)))
-PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/fec_*.patch)))
-PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/usb_hid*.patch)))
+#PATCHES := $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/wpa*.patch)))
+#PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/libnl*.patch)))
+#PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/wifi*.patch)))
+#PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/lxip*.patch)))
+#PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/intel*.patch)))
+#PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/usb_host*.patch)))
+#PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/usb*.patch)))
+#PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/intel*.patch)))
+#PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/fec_*.patch)))
+##PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/cpsw_*.patch)))
+#PATCHES += $(addprefix patches/,$(notdir $(wildcard $(REP_DIR)/patches/usb_hid*.patch)))
 
 #IP stack
 LXIP_OPT = -p1 -d$(SRC_DIR_LXIP)
