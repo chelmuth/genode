@@ -221,7 +221,7 @@ install_config {
 		<route>
 			<service name="ROM" label="log"> <parent label="kernel_log"/> </service>
 			<service name="Timer"> <child name="timer"/> </service>
-			<service name="LOG" label="log"> <child name="log" label="kernel"/> </service>
+			<service name="LOG" label="log"> <parent/> </service>
 			<any-service> <parent/> </any-service>
 		</route>
 	</start>
@@ -240,7 +240,7 @@ install_config {
 		<resource name="RAM" quantum="96M" constrain_phys="yes"/>
 		<binary name="init"/>
 		<route>
-			<service name="LOG"> <child name="log"/> </service>
+			<service name="LOG"> <parent/> </service>
 			<service name="ROM" label="config">
 				<child name="config_fs_rom" label="drivers"/> </service>
 			<service name="ROM" label_last="capslock"> <child name="report_rom"/> </service>
@@ -403,7 +403,7 @@ install_config {
 		<affinity xpos="1" width="1"/> <!-- decouple leitzentrale from boot CPU -->
 		<provides> <service name="Nitpicker"/> </provides>
 		<route>
-			<service name="LOG"> <child name="log"/> </service>
+			<service name="LOG"> <parent/> </service>
 			<service name="ROM" label="config">
 				<child name="leitzentrale_config"/> </service>
 			<service name="ROM" label_prefix="report -> ">
@@ -482,7 +482,7 @@ install_config {
 				<child name="report_rom"/> </service>
 			<service name="Report"> <child name="fs_report"/> </service>
 			<service name="LOG" label="unlogged"> <parent/> </service>
-			<service name="LOG"> <child name="log"/> </service>
+			<service name="LOG"> <parent/> </service>
 			<service name="Rtc"> <child name="rtc_drv"/> </service>
 			<any-service> <parent/> </any-service>
 		</route>
@@ -668,6 +668,8 @@ exec sh -c "tar cf [run_dir]/genode/depot_users.tar -C [genode_dir] \
 # Create boot image
 #
 
-append boot_modules { }
+build { lib/ld app/sculpt_manager virtualbox5/nova }
+
+append boot_modules { ld.lib.so sculpt_manager libc.lib.so virtualbox5-nova }
 
 build_boot_image $boot_modules
