@@ -44,6 +44,7 @@ namespace Libc {
 		 */
 		virtual uint64_t suspend(Suspend_functor &, uint64_t timeout_ms = 0) = 0;
 	};
+
 }
 
 #endif /* _LIBC__INTERNAL__SUSPEND_H_ */

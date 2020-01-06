@@ -49,6 +49,8 @@ void Libc::init_pthread_support(Genode::Env &env, Suspend &suspend, Resume &resu
 	_main_thread_ptr = Thread::myself();
 	_suspend_ptr     = &suspend;
 	_resume_ptr      = &resume;
+
+	Genode::warning("pthread - ", __TIME__, " - ", __DATE__, " -");
 }
 
 
@@ -87,7 +89,7 @@ void Libc::Pthread::join(void **retval)
 		Pthread &_thread;
 
 		Check(Pthread &thread) : _thread(thread) { }
-
+		
 		bool suspend() override
 		{
 			retry = !_thread._exiting;
@@ -199,24 +201,11 @@ struct pthread_mutex_attr { pthread_mutextype type; };
  */
 struct pthread_mutex
 {
-	pthread_t _owner { nullptr };
-	Lock      _data_mutex;
+	Lock      _lock; /* actual lock for blocking/deblocking */
 
-	struct Missing_call_of_init_pthread_support : Exception { };
-
-	void _suspend(Suspend_functor &func)
-	{
-		if (!_suspend_ptr)
-			throw Missing_call_of_init_pthread_support();
-		_suspend_ptr->suspend(func);
-	}
-
-	void _resume_all()
-	{
-		if (!_resume_ptr)
-			throw Missing_call_of_init_pthread_support();
-		_resume_ptr->resume_all();
-	}
+	pthread_t _owner      { nullptr };
+	unsigned  _lock_count { 0 };
+	Lock      _owner_and_counter_mutex;
 
 	pthread_mutex() { }
 
@@ -237,32 +226,25 @@ struct Libc::Pthread_mutex_normal : pthread_mutex
 {
 	int lock() override final
 	{
-		struct Try_lock : Suspend_functor
-		{
-			bool retry { false }; /* have to try after resume */
-
-			Pthread_mutex_normal &_mutex;
-
-			Try_lock(Pthread_mutex_normal &mutex) : _mutex(mutex) { }
-
-			bool suspend() override
-			{
-				retry = _mutex.trylock() == EBUSY;
-				return retry;
-			}
-		} try_lock(*this);
-
-		do { _suspend(try_lock); } while (try_lock.retry);
+		while (trylock() == EBUSY) {
+			/*
+			 * We did not get the lock, so, yield the CPU and retry. This
+			 * may implicitly dead-lock if we are already the lock owner.
+			 */
+			_lock.lock();
+			_lock.unlock();
+		}
 
 		return 0;
 	}
 
 	int trylock() override final
 	{
-		Lock::Guard lock_guard(_data_mutex);
+		Lock::Guard lock_guard(_owner_and_counter_mutex);
 
 		if (!_owner) {
 			_owner = pthread_self();
+			_lock.lock(); /* always succeeds */
 			return 0;
 		}
 
@@ -271,13 +253,13 @@ struct Libc::Pthread_mutex_normal : pthread_mutex
 
 	int unlock() override final
 	{
-		Lock::Guard lock_guard(_data_mutex);
+		Lock::Guard lock_guard(_owner_and_counter_mutex);
 
 		if (_owner != pthread_self())
 			return EPERM;
 
 		_owner = nullptr;
-		_resume_all();
+		_lock.unlock();
 
 		return 0;
 	}
@@ -292,45 +274,31 @@ struct Libc::Pthread_mutex_errorcheck : pthread_mutex
 		 * We can't use trylock() as it returns EBUSY also for the
 		 * EDEADLK case.
 		 */
-		struct Try_lock : Suspend_functor
-		{
-			bool retry  { false }; /* have to try after resume */
-			int  result { 0 };
-
-			Pthread_mutex_errorcheck &_mutex;
-
-			Try_lock(Pthread_mutex_errorcheck &mutex) : _mutex(mutex) { }
-
-			bool suspend() override
+		while (true) {
 			{
-				Lock::Guard lock_guard(_mutex._data_mutex);
+				Lock::Guard lock_guard(_owner_and_counter_mutex);
 
-				if (!_mutex._owner) {
-					_mutex._owner = pthread_self();
-					retry         = false;
-					result        = 0;
-				} else if (_mutex._owner == pthread_self()) {
-					retry  = false;
-					result = EDEADLK;
-				} else {
-					retry = true;
+				if (!_owner) {
+					_owner = pthread_self();
+					_lock.lock(); /* always succeeds */
+					return 0;
+				} else if (_owner == pthread_self()) {
+					return EDEADLK;
 				}
-
-				return retry;
 			}
-		} try_lock(*this);
-
-		do { _suspend(try_lock); } while (try_lock.retry);
-
-		return try_lock.result;
+			/* mutex has another owner, so, yield the CPU and retry */
+			_lock.lock();
+			_lock.unlock();
+		}
 	}
 
 	int trylock() override final
 	{
-		Lock::Guard lock_guard(_data_mutex);
+		Lock::Guard lock_guard(_owner_and_counter_mutex);
 
 		if (!_owner) {
 			_owner = pthread_self();
+			_lock.lock(); /* always succeeds */
 			return 0;
 		}
 
@@ -339,13 +307,13 @@ struct Libc::Pthread_mutex_errorcheck : pthread_mutex
 
 	int unlock() override final
 	{
-		Lock::Guard lock_guard(_data_mutex);
+		Lock::Guard lock_guard(_owner_and_counter_mutex);
 
 		if (_owner != pthread_self())
 			return EPERM;
 
 		_owner = nullptr;
-		_resume_all();
+		_lock.unlock();
 
 		return 0;
 	}
@@ -354,40 +322,28 @@ struct Libc::Pthread_mutex_errorcheck : pthread_mutex
 
 struct Libc::Pthread_mutex_recursive : pthread_mutex
 {
-	unsigned _nesting_level { 0 };
-
 	int lock() override final
 	{
-		struct Try_lock : Suspend_functor
-		{
-			bool retry { false }; /* have to try after resume */
-
-			Pthread_mutex_recursive &_mutex;
-
-			Try_lock(Pthread_mutex_recursive &mutex) : _mutex(mutex) { }
-
-			bool suspend() override
-			{
-				retry = _mutex.trylock() == EBUSY;
-				return retry;
-			}
-		} try_lock(*this);
-
-		do { _suspend(try_lock); } while (try_lock.retry);
+		while (trylock() == EBUSY) {
+			/* mutex has another owner, so, yield the CPU and retry */
+			_lock.lock();
+			_lock.unlock();
+		}
 
 		return 0;
 	}
 
 	int trylock() override final
 	{
-		Lock::Guard lock_guard(_data_mutex);
+		Lock::Guard lock_guard(_owner_and_counter_mutex);
 
 		if (!_owner) {
-			_owner         = pthread_self();
-			_nesting_level = 1;
+			_owner      = pthread_self();
+			_lock_count = 1;
+			_lock.lock(); /* always succeeds */
 			return 0;
 		} else if (_owner == pthread_self()) {
-			++_nesting_level;
+			++_lock_count;
 			return 0;
 		}
 
@@ -396,15 +352,15 @@ struct Libc::Pthread_mutex_recursive : pthread_mutex
 
 	int unlock() override final
 	{
-		Lock::Guard lock_guard(_data_mutex);
+		Lock::Guard lock_guard(_owner_and_counter_mutex);
 
 		if (_owner != pthread_self())
 			return EPERM;
 
-		--_nesting_level;
-		if (_nesting_level == 0) {
+		--_lock_count;
+		if (_lock_count == 0) {
 			_owner = nullptr;
-			_resume_all();
+			_lock.unlock();
 		}
 
 		return 0;

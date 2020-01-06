@@ -409,7 +409,7 @@ struct Test_mutex_stress
 		{
 			sem_wait(&_startup_sem);
 
-			enum { ROUNDS = 800 };
+			enum { ROUNDS = 200000 };
 
 			for (unsigned i = 0; i < ROUNDS; ++i) {
 				_lock();
@@ -419,7 +419,7 @@ struct Test_mutex_stress
 				}
 
 				/* stay in mutex for some time */
-				for (unsigned volatile d = 0; d < 30000; ++d) ;
+				for (unsigned volatile d = 0; d < 1000; ++d) ;
 
 				if (MUTEX_TYPE == PTHREAD_MUTEX_RECURSIVE) {
 					_unlock();
@@ -630,11 +630,11 @@ int main(int argc, char **argv)
 	if (!pthread_main)
 		exit(-1);
 
-	test_interplay();
-	test_self_destruct();
-	test_mutex();
+//	test_interplay();
+//	test_self_destruct();
+//	test_mutex();
 	test_mutex_stress();
-	test_lock_and_sleep();
+//	test_lock_and_sleep();
 
 	printf("--- returning from main ---\n");
 	return 0;

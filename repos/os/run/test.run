@@ -242,7 +242,7 @@ foreach rom [content_rom_modules] {
 # Build
 #
 
-lappend build_targets core init timer
+lappend build_targets core init timer app/top
 
 # strip duplications
 set sorted_build_targets [lsort -unique $build_targets]
@@ -260,7 +260,7 @@ foreach file $files_from_raw_archives {
 	file copy -force $file [run_dir]/genode/ }
 
 install_config {
-	<config>
+	<config verbose="yes" prio_levels="2">
 		<parent-provides>
 			<service name="ROM"/>
 			<service name="IRQ"/>
@@ -287,7 +287,20 @@ install_config {
 			</route>
 		</start>
 
-		<start name="test" caps="} $caps {">
+		<start name="top" caps="100">
+			<resource name="RAM" quantum="2M"/>
+			<config period_ms="10000"/>
+			<route>
+				<service name="PD">    <parent/> </service>
+				<service name="CPU">   <parent/> </service>
+				<service name="LOG">   <parent/> </service>
+				<service name="ROM">   <parent/> </service>
+				<service name="TRACE"> <parent/> </service>
+				<service name="Timer"> <child name="timer"/> </service>
+			</route>
+		</start>
+
+		<start name="test" caps="} $caps {" priority="-1">
 			<resource name="RAM" quantum="} $ram {"/>
 			<binary name="init"/>
 			<route>
@@ -304,7 +317,7 @@ install_config {
 	</config>
 }
 
-lappend boot_modules core ld.lib.so init timer
+lappend boot_modules core ld.lib.so init timer top
 
 build_boot_image [lsort -unique $boot_modules]
 
@@ -383,5 +396,6 @@ if {$failure_timeout == 0} {
 
 append qemu_args " -nographic "
 
+run_genode_until forever
 run_genode_until $expected_pattern $failure_timeout
 

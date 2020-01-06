@@ -768,7 +768,21 @@ extern "C" void PGMFlushVMMemory()
 
 extern "C" int sched_yield(void)
 {
-	return (Nova::ec_ctrl(Nova::EC_YIELD) == Nova::NOVA_OK) ? 0 : -1;
+	static unsigned long counter = 0;
+	static unsigned long ok = 0, fail = 0;
+
+	if (++counter % 25000 == 0)
+		Genode::warning(__func__, " called ", counter, " times (ok=",
+		                ok, ",fail=", fail, ")");
+
+	int result = (Nova::ec_ctrl(Nova::EC_YIELD) == Nova::NOVA_OK) ? 0 : -1;
+
+	if (result == 0)
+		ASMAtomicIncU64(&ok);
+	else
+		ASMAtomicIncU64(&fail);
+
+	return result;
 }
 
 
