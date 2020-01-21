@@ -62,7 +62,7 @@ struct Ps2::Main
 	Genode::Reconstructible<Verbose> _verbose { _config.xml() };
 
 	Keyboard _keyboard { _i8042.kbd_interface(), _session.event_queue(),
-	                     _i8042.kbd_xlate(), *_verbose };
+	                     _i8042.kbd_xlate(), _timer, *_verbose };
 
 	Mouse _mouse { _i8042.aux_interface(), _session.event_queue(), _timer, *_verbose };
 

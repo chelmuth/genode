@@ -39,6 +39,7 @@ class Ps2::Keyboard : public Input_driver
 		Serial_interface   &_kbd;
 		Input::Event_queue &_ev_queue;
 		bool         const  _xlate_mode;
+		Timer::Connection  &_timer;
 		Verbose      const &_verbose;
 
 		/**
@@ -419,9 +420,9 @@ class Ps2::Keyboard : public Input_driver
 		 * keyboard to scan code set 2 but just decode the scan-code set 1.
 		 */
 		Keyboard(Serial_interface &kbd, Input::Event_queue &ev_queue,
-		         bool xlate_mode, Verbose const &verbose)
+		         bool xlate_mode, Timer::Connection &timer, Verbose const &verbose)
 		:
-			_kbd(kbd), _ev_queue(ev_queue), _xlate_mode(xlate_mode),
+			_kbd(kbd), _ev_queue(ev_queue), _xlate_mode(xlate_mode), _timer(timer),
 			_verbose(verbose)
 		{
 			for (int i = 0; i <= Input::KEY_MAX; i++)
@@ -453,6 +454,8 @@ class Ps2::Keyboard : public Input_driver
 
 		void reset()
 		{
+			Genode::log("about to reset LEDs in 2 s");
+			_timer.msleep(3000);
 			/*
 			 * We enforce an initial LED state with all indicators switched
 			 * off. This also informs notebook keyboards (which use normal keys
@@ -460,6 +463,9 @@ class Ps2::Keyboard : public Input_driver
 			 * assumption.
 			 */
 			_set_leds(false, false, false);
+			Genode::log("LEDs resetted");
+			_timer.msleep(1000);
+			Genode::log("do more");
 
 			/* scan-code request/config commands */
 			enum { SCAN_CODE_REQUEST = 0, SCAN_CODE_SET_1 = 1, SCAN_CODE_SET_2 = 2 };
