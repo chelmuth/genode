@@ -28,6 +28,9 @@
 #include <base/thread.h>
 
 
+/* for debugging */
+extern "C" void wait_for_continue();
+
 struct Thread_args {
 	int thread_num;
 	sem_t thread_finished_sem;
@@ -325,7 +328,7 @@ static void *thread_mutex_func(void *arg)
 	/* unlock normal mutex */
 
 	if (pthread_mutex_unlock(&test_mutex_data->normal_mutex) != 0) {
-		printf("Error: could not lock normal mutex\n");
+		printf("Error: could not unlock normal mutex\n");
 		exit(-1);
 	}
 
@@ -476,6 +479,8 @@ struct Mutex
 	pthread_mutexattr_t _attr;
 	pthread_mutex_t     _mutex;
 
+	Genode::Lock _genode_lock;
+
 	Mutex()
 	{
 		pthread_mutexattr_init(&_attr);
@@ -504,6 +509,10 @@ struct Test_mutex_stress
 		sem_t            _startup_sem;
 		pthread_t        _thread;
 
+		Genode::Lock &_genode_lock;
+
+		unsigned long volatile counter { 0 };
+
 		static void * _entry_trampoline(void *arg)
 		{
 			Thread *t = (Thread *)arg;
@@ -511,6 +520,7 @@ struct Test_mutex_stress
 			return nullptr;
 		}
 
+#if 1
 		void _lock()
 		{
 			if (int const err = pthread_mutex_lock(_mutex))
@@ -522,12 +532,23 @@ struct Test_mutex_stress
 			if (int const err = pthread_mutex_unlock(_mutex))
 				Genode::error("unlock() returned ", err);
 		}
+#else
+		void _lock()
+		{
+			_genode_lock.lock();
+		}
+
+		void _unlock()
+		{
+			_genode_lock.unlock();
+		}
+#endif
 
 		void _entry()
 		{
 			sem_wait(&_startup_sem);
 
-			enum { ROUNDS = 800 };
+			enum { ROUNDS = 1000 };
 
 			for (unsigned i = 0; i < ROUNDS; ++i) {
 				_lock();
@@ -536,8 +557,10 @@ struct Test_mutex_stress
 					_lock();
 				}
 
+				++counter;
+
 				/* stay in mutex for some time */
-				for (unsigned volatile d = 0; d < 30000; ++d) ;
+				for (unsigned volatile d = 0; d < 3000; ++d) ;
 
 				if (MUTEX_TYPE == PTHREAD_MUTEX_RECURSIVE) {
 					_unlock();
@@ -548,7 +571,9 @@ struct Test_mutex_stress
 			Genode::log("thread ", this, ": ", (int)ROUNDS, " rounds done");
 		}
 
-		Thread(pthread_mutex_t *mutex) : _mutex(mutex)
+		Thread(pthread_mutex_t *mutex, Genode::Lock &genode_lock)
+		:
+			_mutex(mutex), _genode_lock(genode_lock)
 		{
 			sem_init(&_startup_sem, 0, 0);
 
@@ -561,29 +586,54 @@ struct Test_mutex_stress
 		void start() { sem_post(&_startup_sem); }
 		void join()  { pthread_join(_thread, nullptr); }
 	} threads[10] = {
-		mutex.mutex(), mutex.mutex(), mutex.mutex(), mutex.mutex(), mutex.mutex(),
-		mutex.mutex(), mutex.mutex(), mutex.mutex(), mutex.mutex(), mutex.mutex(),
+		{ mutex.mutex(), mutex._genode_lock },
+		{ mutex.mutex(), mutex._genode_lock },
+		{ mutex.mutex(), mutex._genode_lock },
+		{ mutex.mutex(), mutex._genode_lock },
+		{ mutex.mutex(), mutex._genode_lock },
+		{ mutex.mutex(), mutex._genode_lock },
+		{ mutex.mutex(), mutex._genode_lock },
+		{ mutex.mutex(), mutex._genode_lock },
+		{ mutex.mutex(), mutex._genode_lock },
+		{ mutex.mutex(), mutex._genode_lock },
+//		mutex.mutex(), mutex.mutex(), mutex.mutex(), mutex.mutex(), mutex.mutex(),
+//		mutex.mutex(), mutex.mutex(), mutex.mutex(), mutex.mutex(), mutex.mutex(),
 	};
 
 	Test_mutex_stress()
 	{
 		printf("main thread: start %s stress test\n", mutex.type_string());
 		for (Thread &t : threads) t.start();
+
+		if (0) {
+			constexpr int sleep_ms = 10000;
+			usleep(sleep_ms*1000);
+
+			unsigned long overall_counter = 0;
+			for (Thread &t : threads) {
+				unsigned long const counter = t.counter;
+
+				Genode::log("thread ", &t, " counted ", t.counter,
+				            " rounds in ", sleep_ms, " ms");
+
+				overall_counter += counter;
+			}
+			Genode::log("-> overall_counter = ", overall_counter);
+		}
+
 		for (Thread &t : threads) t.join();
 		printf("main thread: finished %s stress test\n", mutex.type_string());
 	}
 };
 
 
-extern "C" void wait_for_continue();
-
 static void test_mutex_stress()
 {
 	printf("main thread: stressing mutexes\n");
 
 	{ Test_mutex_stress<PTHREAD_MUTEX_NORMAL>     test_normal; }
-	{ Test_mutex_stress<PTHREAD_MUTEX_ERRORCHECK> test_errorcheck; }
-	{ Test_mutex_stress<PTHREAD_MUTEX_RECURSIVE>  test_recursive; }
+//	{ Test_mutex_stress<PTHREAD_MUTEX_ERRORCHECK> test_errorcheck; }
+//	{ Test_mutex_stress<PTHREAD_MUTEX_RECURSIVE>  test_recursive; }
 
 	printf("main thread: mutex stress testing done\n");
 };
@@ -653,8 +703,8 @@ static void test_lock_and_sleep()
 	printf("main thread: test resume in contended lock\n");
 
 	{ Test_lock_and_sleep<PTHREAD_MUTEX_NORMAL>     test_normal; }
-	{ Test_lock_and_sleep<PTHREAD_MUTEX_ERRORCHECK> test_errorcheck; }
-	{ Test_lock_and_sleep<PTHREAD_MUTEX_RECURSIVE>  test_recursive; }
+//	{ Test_lock_and_sleep<PTHREAD_MUTEX_ERRORCHECK> test_errorcheck; }
+//	{ Test_lock_and_sleep<PTHREAD_MUTEX_RECURSIVE>  test_recursive; }
 
 	printf("main thread: resume in contended lock testing done\n");
 }
@@ -689,7 +739,7 @@ struct Test_cond
 
 	void signaller()
 	{
-		printf("signaller: started\n");
+		Genode::log("signaller: started");
 
 		unsigned num_events = 0;
 		bool test_done = false;
@@ -708,7 +758,7 @@ struct Test_cond
 				pthread_cond_signal(_cond.cond());
 				break;
 			case State::SHUTDOWN:
-				printf("signaller: shutting down\n");
+				Genode::log("signaller: shutting down");
 				_shared_state = State::END;
 				++num_events;
 				pthread_cond_broadcast(_cond.cond());
@@ -720,10 +770,10 @@ struct Test_cond
 
 			pthread_mutex_unlock(_mutex.mutex());
 
-			usleep(1000);
+//			usleep(1000);
 		}
 
-		printf("signaller: finished after %u state changes\n", num_events);
+		Genode::log("signaller: finished after ", num_events, " state changes");
 	}
 
 	static void *waiter_fn(void *arg)
@@ -736,7 +786,7 @@ struct Test_cond
 	{
 		char const * const note =  main_thread ? "(main thread)" : "";
 
-		printf("waiter%s: started\n", note);
+		Genode::log("waiter", note, ": started");
 
 		unsigned pings = 0, pongs = 0;
 		unsigned long iterations = 0;
@@ -746,8 +796,8 @@ struct Test_cond
 
 			auto handle_state = [&] {
 				unsigned const num_events = pings + pongs;
-				if (num_events == 2000) {
-					printf("waiter%s: request shutdown\n", note);
+				if (num_events == 10'000) {
+					Genode::log("waiter", note, ": request shutdown");
 					_shared_state = State::SHUTDOWN;
 				} else if (num_events % 2 == 0) {
 					pthread_cond_wait(_cond.cond(), _mutex.mutex());
@@ -773,12 +823,12 @@ struct Test_cond
 
 			pthread_mutex_unlock(_mutex.mutex());
 
-			usleep(3000);
+//			usleep(3000);
 			++iterations;
 		}
 
-		printf("waiter%s: finished (pings=%u, pongs=%u, iterations=%lu)\n",
-		       note, pings, pongs, iterations);
+		Genode::log("waiter", note, ": finished (pings=", pings, ", pongs=",
+		            pongs, ", iterations=", iterations, ")");
 	}
 
 	Test_cond()

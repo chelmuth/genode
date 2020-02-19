@@ -40,8 +40,59 @@
 #include <internal/watch.h>
 #include <internal/signal.h>
 #include <internal/monitor.h>
+#include <internal/pthread.h>
 
-namespace Libc { class Kernel; }
+namespace Libc {
+	class Kernel;
+	class Main_blockade;
+	class Main_job;
+}
+
+
+class Libc::Main_blockade : public Blockade
+{
+	private:
+
+		Kernel &_kernel;
+
+		uint64_t   _timeout_ms;
+		bool const _timeout_valid { _timeout_ms != 0 };
+
+		struct Check : Suspend_functor
+		{
+			bool const &woken_up;
+
+			Check(bool const &woken_up) : woken_up(woken_up) { }
+
+			bool suspend() override { return !woken_up; }
+		};
+
+	public:
+
+		Main_blockade(Kernel &kernel, uint64_t timeout_ms)
+		: _kernel(kernel), _timeout_ms(timeout_ms)
+		{ }
+
+		void block() override;
+		void wakeup() override;
+};
+
+
+struct Libc::Main_job : Monitor::Job
+{
+	private:
+
+		Main_blockade _blockade;
+
+	public:
+
+		Main_job(Monitor::Function &fn,
+		         Kernel &kernel, uint64_t timeout_ms)
+		:
+			Job(fn, _blockade),
+			_blockade(kernel, timeout_ms)
+		{ }
+};
 
 
 /**
@@ -485,12 +536,13 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 		{
 			if (_main_context()) {
 
+#if 0
 				struct Job : Monitor::Job
 				{
 					Kernel &_kernel;
 
-					uint64_t _timeout_ms;
-					bool     _timeout_valid { _timeout_ms != 0 };
+					uint64_t   _timeout_ms;
+					bool const _timeout_valid { _timeout_ms != 0 };
 
 					struct Check : Suspend_functor
 					{
@@ -522,15 +574,25 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 					void complete() override
 					{
 						_completed = true;
-						_kernel._resume_main();
+						if (_kernel._main_context())
+							_kernel._resume_main();
+						else
+							Signal_transmitter(*_kernel._resume_main_handler).submit();
 					}
 				} job { fn, *this, _timer_accessor, timeout_ms };
+#else
+				Main_job job { fn, *this, timeout_ms };
+#endif
 
 				_monitors.monitor(mutex, job);
 				return job.completed();
 
 			} else {
+#if 0
 				Monitor::Job job { fn, _timer_accessor, timeout_ms };
+#else
+				Pthread_job job { fn, _timer_accessor, timeout_ms };
+#endif
 
 				_monitors.monitor(mutex, job);
 				return job.completed();
@@ -609,6 +671,16 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 		 */
 		bool main_context() const { return _main_context(); }
 
+		void resume_main()
+		{
+			if (_main_context())
+				_resume_main();
+			else
+				Signal_transmitter(*_resume_main_handler).submit();
+		}
+
+		Timer_accessor & timer_accessor() { return _timer_accessor; }
+
 		/**
 		 * Execute application code while already executing in run()
 		 */
@@ -673,5 +745,22 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 			return *_kernel_ptr;
 		}
 };
+
+
+inline void Libc::Main_blockade::block()
+{
+	Check check { _woken_up };
+
+	do {
+		_timeout_ms = _kernel.suspend(check, _timeout_ms);
+		_expired    = _timeout_valid && !_timeout_ms;
+	} while (!woken_up() && !expired());
+}
+
+inline void Libc::Main_blockade::wakeup()
+{
+	_woken_up = true;
+	_kernel.resume_main();
+}
 
 #endif /* _LIBC__INTERNAL__KERNEL_H_ */

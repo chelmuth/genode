@@ -24,13 +24,16 @@
 #include <time.h>
 
 /* libc-internal includes */
-#include <internal/monitor.h>
 #include <internal/errno.h>
-#include <internal/types.h>
-#include <internal/time.h>
 #include <internal/init.h>
+#include <internal/kernel.h>
+#include <internal/monitor.h>
+#include <internal/time.h>
+#include <internal/types.h>
 
 using namespace Libc;
+
+#define NEW_SEMA 1
 
 
 static Monitor *_monitor_ptr;
@@ -53,9 +56,86 @@ extern "C" {
 		int      _count;
 		unsigned _applicants { 0 };
 		Lock     _data_mutex;
-		Lock     _monitor_mutex;
+		Lock     _monitor_mutex; /* TODO remove this one with NEW_SEMA */
 
-		struct Missing_call_of_init_pthread_support : Exception { };
+		struct Applicant_
+		{
+			Applicant_ *next { nullptr };
+
+			Blockade &blockade;
+
+			Applicant_(Blockade &blockade) : blockade(blockade) { }
+		};
+
+		Applicant_ *_applicants_ { nullptr };
+
+		void _append_applicant(Applicant_ *applicant)
+		{
+			Applicant_ **tail = &_applicants_;
+
+			for (; *tail; tail = &(*tail)->next) ;
+
+			*tail = applicant;
+		}
+
+		void _remove_applicant(Applicant_ *applicant)
+		{
+			Applicant_ **a = &_applicants_;
+
+			for (; *a && *a != applicant; a = &(*a)->next) ;
+
+			*a = applicant->next;
+		}
+
+		void _count_up()
+		{
+			if (Applicant_ *next = _applicants_) {
+				_remove_applicant(next);
+				next->blockade.wakeup();
+			} else {
+				++_count;
+			}
+		}
+
+		bool _applicant_for_semaphore(Blockade &blockade)
+		{
+			Applicant_ applicant { blockade };
+
+			_append_applicant(&applicant);
+
+			_data_mutex.unlock();
+
+			blockade.block();
+
+			_data_mutex.lock();
+
+			if (blockade.woken_up()) {
+				return true;
+			} else {
+				_remove_applicant(&applicant);
+				return false;
+			}
+		}
+
+		/**
+		 * Enqueue current context as applicant for semaphore
+		 *
+		 * Return true if down was successful, false on timeout expiration.
+		 */
+		bool _apply_for_semaphore(Libc::uint64_t timeout_ms)
+		{
+			/* XXX _data_mutex must be hold */
+
+			if (Libc::Kernel::kernel().main_context()) {
+				Main_blockade blockade {
+					Libc::Kernel::kernel(), timeout_ms };
+				return _applicant_for_semaphore(blockade);
+			} else {
+				Pthread_blockade blockade {
+					Libc::Kernel::kernel().timer_accessor(), timeout_ms };
+				return _applicant_for_semaphore(blockade);
+			}
+		}
 
 		struct Applicant
 		{
@@ -74,10 +154,12 @@ extern "C" {
 			}
 		};
 
+		struct Missing_call_of_init_semaphore_support : Exception { };
+
 		Monitor & _monitor()
 		{
 			if (!_monitor_ptr)
-				throw Missing_call_of_init_pthread_support();
+				throw Missing_call_of_init_semaphore_support();
 			return *_monitor_ptr;
 		}
 
@@ -97,6 +179,17 @@ extern "C" {
 
 		int down()
 		{
+#if NEW_SEMA
+			Lock::Guard lock_guard(_data_mutex);
+			
+			/* fast path without contention */
+			if (_count > 0) {
+				_count--;
+				return 0;
+			}
+
+			_apply_for_semaphore(0);
+#else
 			Lock::Guard monitor_guard(_monitor_mutex);
 
 			/* fast path without contention */
@@ -110,12 +203,34 @@ extern "C" {
 
 				(void)_monitor().monitor(_monitor_mutex, fn);
 			}
+#endif
 
 			return 0;
 		}
 
 		int down_timed(timespec const &abs_timeout)
 		{
+#if NEW_SEMA
+			Lock::Guard lock_guard(_data_mutex);
+			
+			/* fast path without contention */
+			if (_count > 0) {
+				_count--;
+				return 0;
+			}
+
+			timespec abs_now;
+			clock_gettime(CLOCK_REALTIME, &abs_now);
+
+			Libc::uint64_t const timeout_ms = calculate_relative_timeout_ms(abs_now, abs_timeout);
+			if (!timeout_ms)
+				return ETIMEDOUT;
+
+			if (_apply_for_semaphore(timeout_ms))
+				return 0;
+			else
+				return ETIMEDOUT;
+#else
 			Lock::Guard monitor_guard(_monitor_mutex);
 
 			/* fast path without wait - does not check abstimeout according to spec */
@@ -125,7 +240,7 @@ extern "C" {
 			timespec abs_now;
 			clock_gettime(CLOCK_REALTIME, &abs_now);
 
-			uint64_t const timeout_ms = calculate_relative_timeout_ms(abs_now, abs_timeout);
+			Libc::uint64_t const timeout_ms = calculate_relative_timeout_ms(abs_now, abs_timeout);
 			if (!timeout_ms)
 				return ETIMEDOUT;
 
@@ -139,25 +254,35 @@ extern "C" {
 				else
 					return ETIMEDOUT;
 			}
+#endif
 		}
 
 		int up()
 		{
+#if NEW_SEMA
+			Lock::Guard lock_guard(_data_mutex);
+
+			_count_up();
+#else
+bool charge = false;
+{
 			Lock::Guard monitor_guard(_monitor_mutex);
 			Lock::Guard lock_guard(_data_mutex);
 
 			_count++;
 
 			if (_applicants)
+charge = true;
+}
+if (charge) {
 				_monitor().charge_monitors();
+}
+#endif
 
 			return 0;
 		}
 
-		int count()
-		{
-			return _count;
-		}
+		int count() { return _count; }
 	};
 
 
