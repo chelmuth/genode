@@ -3,7 +3,6 @@
  * \author Christian Prochaska
  * \author Christian Helmuth
  * \date   2012-03-12
- *
  */
 
 /*
@@ -27,12 +26,16 @@
 #include <stdlib.h> /* malloc, free */
 
 /* libc-internal includes */
-#include <internal/pthread.h>
 #include <internal/init.h>
-#include <internal/suspend.h>
-#include <internal/resume.h>
+#include <internal/kernel.h>
 #include <internal/monitor.h>
+#include <internal/pthread.h>
+#include <internal/resume.h>
+#include <internal/suspend.h>
 #include <internal/time.h>
+#include <internal/timer.h>
+
+#define NEW_MUTEX 1
 
 using namespace Libc;
 
@@ -191,9 +194,93 @@ struct pthread_mutex
 	pthread_t _owner      { nullptr };
 	unsigned  _applicants { 0 };
 	Lock      _data_mutex;
-	Lock      _monitor_mutex;
+	Lock      _monitor_mutex; /* TODO remove this one with NEW_MUTEX */
 
-	struct Missing_call_of_init_pthread_support : Exception { };
+	struct Applicant_
+	{
+		pthread_t thread;
+
+		Applicant_ *next { nullptr };
+
+		Blockade &blockade;
+
+		Applicant_(pthread_t thread, Blockade &blockade)
+		: thread(thread), blockade(blockade)
+		{ }
+	};
+
+	Applicant_ *_applicants_ { nullptr };
+
+	void _append_applicant(Applicant_ *applicant)
+	{
+		Applicant_ **tail = &_applicants_;
+
+		for (; *tail; tail = &(*tail)->next) ;
+
+		*tail = applicant;
+	}
+
+	void _remove_applicant(Applicant_ *applicant)
+	{
+		Applicant_ **a = &_applicants_;
+
+		for (; *a && *a != applicant; a = &(*a)->next) ;
+
+		*a = applicant->next;
+	}
+
+	void _next_applicant_to_owner()
+	{
+		if (Applicant_ *next = _applicants_) {
+			_remove_applicant(next);
+			_owner = next->thread;
+			next->blockade.wakeup();
+		} else {
+			_owner = nullptr;
+		}
+	}
+
+	bool _applicant_for_mutex(pthread_t thread, Blockade &blockade)
+	{
+		Applicant_ applicant { thread, blockade };
+
+		_append_applicant(&applicant);
+
+		_data_mutex.unlock();
+		_monitor_mutex.unlock();
+
+		blockade.block();
+
+		_monitor_mutex.lock();
+		_data_mutex.lock();
+
+		if (blockade.woken_up()) {
+			return true;
+		} else {
+			_remove_applicant(&applicant);
+			return false;
+		}
+	}
+
+	/**
+	 * Enqueue current context as applicant for mutex
+	 *
+	 * Return true if mutex was aquired, false on timeout expiration.
+	 */
+	bool _apply_for_mutex(pthread_t thread, Libc::uint64_t timeout_ms)
+	{
+		/* XXX _data_mutex and _monitor_mutex must be hold */
+
+		if (Libc::Kernel::kernel().main_context()) {
+			Main_blockade blockade {
+				Libc::Kernel::kernel(), timeout_ms };
+			return _applicant_for_mutex(thread, blockade);
+		} else {
+			Pthread_blockade blockade {
+				Libc::Kernel::kernel().timer_accessor(), timeout_ms };
+			return _applicant_for_mutex(thread, blockade);
+		}
+	}
 
 	struct Applicant
 	{
@@ -211,6 +298,8 @@ struct pthread_mutex
 			--m._applicants;
 		}
 	};
+
+	struct Missing_call_of_init_pthread_support : Exception { };
 
 	Monitor & _monitor()
 	{
@@ -255,6 +344,17 @@ struct Libc::Pthread_mutex_normal : pthread_mutex
 
 		pthread_t const myself = pthread_self();
 
+#if NEW_MUTEX
+		Lock::Guard lock_guard(_data_mutex);
+
+		/* fast path without lock contention */
+		if (!_owner) {
+			_owner = myself;
+			return 0;
+		}
+
+		_apply_for_mutex(myself, 0);
+#else
 		/* fast path without lock contention */
 		if (_try_lock(myself) == 0)
 			return 0;
@@ -265,6 +365,7 @@ struct Libc::Pthread_mutex_normal : pthread_mutex
 			_monitor().monitor(_monitor_mutex,
 			                   [&] { return _try_lock(myself) == 0; });
 		}
+#endif
 
 		return 0;
 	}
@@ -275,6 +376,28 @@ struct Libc::Pthread_mutex_normal : pthread_mutex
 
 		pthread_t const myself = pthread_self();
 
+#if NEW_MUTEX
+		Lock::Guard lock_guard(_data_mutex);
+
+		/* fast path without lock contention - does not check abstimeout according to spec */
+		if (!_owner) {
+			_owner = myself;
+			return 0;
+		}
+
+		timespec abs_now;
+		clock_gettime(CLOCK_REALTIME, &abs_now);
+
+		uint64_t const timeout_ms = calculate_relative_timeout_ms(abs_now, abs_timeout);
+		if (!timeout_ms)
+			return ETIMEDOUT;
+
+		if (_apply_for_mutex(myself, timeout_ms))
+			return 0;
+		else
+			return ETIMEDOUT;
+
+#else
 		/* fast path without lock contention - does not check abstimeout according to spec */
 		if (_try_lock(myself) == 0)
 			return 0;
@@ -296,8 +419,7 @@ struct Libc::Pthread_mutex_normal : pthread_mutex
 			else
 				return ETIMEDOUT;
 		}
-
-		return 0;
+#endif
 	}
 
 	int trylock() override final
@@ -307,6 +429,17 @@ struct Libc::Pthread_mutex_normal : pthread_mutex
 
 	int unlock() override final
 	{
+#if NEW_MUTEX
+		Lock::Guard monitor_guard(_monitor_mutex);
+		Lock::Guard lock_guard(_data_mutex);
+
+		if (_owner != pthread_self())
+			return EPERM;
+
+		_next_applicant_to_owner();
+#else
+bool charge = false;
+{
 		Lock::Guard monitor_guard(_monitor_mutex);
 		Lock::Guard lock_guard(_data_mutex);
 
@@ -316,7 +449,12 @@ struct Libc::Pthread_mutex_normal : pthread_mutex
 		_owner = nullptr;
 
 		if (_applicants)
+charge = true;
+}
+if (charge) {
 			_monitor().charge_monitors();
+}
+#endif
 
 		return 0;
 	}
@@ -325,6 +463,8 @@ struct Libc::Pthread_mutex_normal : pthread_mutex
 
 struct Libc::Pthread_mutex_errorcheck : pthread_mutex
 {
+	Pthread_mutex_errorcheck() { error(__func__); }
+
 	enum Try_lock_result { SUCCESS, BUSY, DEADLOCK };
 
 	Try_lock_result _try_lock(pthread_t thread)
@@ -382,6 +522,8 @@ struct Libc::Pthread_mutex_errorcheck : pthread_mutex
 
 	int unlock() override final
 	{
+bool charge = false;
+{
 		Lock::Guard monitor_guard(_monitor_mutex);
 		Lock::Guard lock_guard(_data_mutex);
 
@@ -391,7 +533,11 @@ struct Libc::Pthread_mutex_errorcheck : pthread_mutex
 		_owner = nullptr;
 
 		if (_applicants)
+charge = true;
+}
+if (charge) {
 			_monitor().charge_monitors();
+}
 
 		return 0;
 	}
@@ -400,6 +546,8 @@ struct Libc::Pthread_mutex_errorcheck : pthread_mutex
 
 struct Libc::Pthread_mutex_recursive : pthread_mutex
 {
+	Pthread_mutex_recursive() { error(__func__); }
+
 	unsigned _nesting_level { 0 };
 
 	int _try_lock(pthread_t thread)
@@ -450,6 +598,8 @@ struct Libc::Pthread_mutex_recursive : pthread_mutex
 
 	int unlock() override final
 	{
+bool charge = false;
+{
 		Lock::Guard monitor_guard(_monitor_mutex);
 		Lock::Guard lock_guard(_data_mutex);
 
@@ -460,6 +610,10 @@ struct Libc::Pthread_mutex_recursive : pthread_mutex
 		if (_nesting_level == 0) {
 			_owner = nullptr;
 			if (_applicants)
+charge = true;
+}
+}
+if (charge) {
 				_monitor().charge_monitors();
 		}
 
@@ -908,6 +1062,7 @@ extern "C" {
 		}
 
 		pthread_mutex_lock(&c->counter_mutex);
+
 		if (c->num_signallers > 0) {
 			if (result == ETIMEDOUT) /* timeout occured */
 				sem_wait(&c->signal_sem);
