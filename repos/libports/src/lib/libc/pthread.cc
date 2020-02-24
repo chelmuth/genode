@@ -202,9 +202,9 @@ struct pthread_mutex
 
 		Applicant_ *next { nullptr };
 
-		Blockade &blockade;
+		Libc::Blockade &blockade;
 
-		Applicant_(pthread_t thread, Blockade &blockade)
+		Applicant_(pthread_t thread, Libc::Blockade &blockade)
 		: thread(thread), blockade(blockade)
 		{ }
 	};
@@ -240,7 +240,7 @@ struct pthread_mutex
 		}
 	}
 
-	bool _applicant_for_mutex(pthread_t thread, Blockade &blockade)
+	bool _applicant_for_mutex(pthread_t thread, Libc::Blockade &blockade)
 	{
 		Applicant_ applicant { thread, blockade };
 

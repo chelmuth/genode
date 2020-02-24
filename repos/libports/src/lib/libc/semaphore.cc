@@ -62,9 +62,9 @@ extern "C" {
 		{
 			Applicant_ *next { nullptr };
 
-			Blockade &blockade;
+			Libc::Blockade &blockade;
 
-			Applicant_(Blockade &blockade) : blockade(blockade) { }
+			Applicant_(Libc::Blockade &blockade) : blockade(blockade) { }
 		};
 
 		Applicant_ *_applicants_ { nullptr };
@@ -97,7 +97,7 @@ extern "C" {
 			}
 		}
 
-		bool _applicant_for_semaphore(Blockade &blockade)
+		bool _applicant_for_semaphore(Libc::Blockade &blockade)
 		{
 			Applicant_ applicant { blockade };
 
