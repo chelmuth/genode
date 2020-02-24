@@ -671,8 +671,6 @@ exec sh -c "tar cf [run_dir]/genode/depot_users.tar -C [genode_dir] \
 # Create boot image
 #
 
-build { lib/ld app/sculpt_manager virtualbox5/nova }
-
-append boot_modules { ld.lib.so sculpt_manager libc.lib.so virtualbox5-nova }
+append boot_modules { }
 
 build_boot_image $boot_modules
