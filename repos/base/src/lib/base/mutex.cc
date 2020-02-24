@@ -26,7 +26,9 @@ void Genode::Mutex::acquire()
 		try {
 			_lock.Cancelable_lock::lock(myself);
 			return;
-		} catch (Blocking_canceled) { }
+		} catch (Blocking_canceled) {
+			myself.applicant_to_wake_up(nullptr);
+		}
 }
 
 void Genode::Mutex::release()
