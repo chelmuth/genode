@@ -130,7 +130,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 		 *
 		 * Not mirrored to forked processes. Preserved across 'execve' calls.
 		 */
-		Allocator &_heap;
+		Genode::Allocator &_heap;
 
 		/**
 		 * Name of the current binary's ROM module
@@ -395,7 +395,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 
 	public:
 
-		Kernel(Genode::Env &env, Allocator &heap);
+		Kernel(Genode::Env &env, Genode::Allocator &heap);
 
 		~Kernel() { error(__PRETTY_FUNCTION__, " should not be executed!"); }
 
