@@ -15,6 +15,8 @@
 #include <util/construct_at.h>
 #include <util/misc_math.h>
 
+//#include <os/backtrace.h>
+
 using namespace Genode;
 
 
@@ -164,8 +166,15 @@ int Slab::Block::_slab_entry_idx(Slab::Entry *e)
 }
 
 
-void *Slab::Block::alloc()
+void __attribute__((optimize("O0"))) *Slab::Block::alloc()
 {
+#if 0
+	Slab::Block volatile *b = this;
+	if (!b) {
+		log("!b");
+		Genode::backtrace();
+	};
+#endif
 	for (unsigned i = 0; i < _slab._entries_per_block; i++) {
 		if (_state(i) != FREE)
 			continue;
