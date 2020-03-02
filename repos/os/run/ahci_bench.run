@@ -11,6 +11,7 @@ set build_components {
 	drivers/ahci
 	drivers/platform
 	test/block/bench
+	server/report_rom
 }
 
 source ${genode_dir}/repos/base/run/platform_drv.inc
@@ -60,8 +61,17 @@ append config {
 			<report ports="yes"/>
 			<policy label_prefix="test-ahci" device="0" writeable="yes" />
 		</config>
+		<route>
+			<service name="Report"><child name="report_rom"/></service>
+			<any-service> <parent/> <any-child /> </any-service>
+		</route>
 	</start>
 
+	<start name="report_rom">
+		<resource name="RAM" quantum="5M" />
+		<provides> <service name="Report"/><service name="ROM"/> </provides>
+		<config verbose="yes"/>
+	</start>
 	<start name="test-ahci">
 		<binary name="test-block-bench" />
 		<resource name="RAM" quantum="5M" />
@@ -77,7 +87,7 @@ install_config $config
 #
 # Boot modules
 #
-set boot_modules { core init timer ahci_drv test-block-bench ld.lib.so }
+set boot_modules { core init timer ahci_drv test-block-bench ld.lib.so report_rom }
 
 append_platform_drv_boot_modules
 
@@ -85,6 +95,7 @@ build_boot_image $boot_modules
 
 append qemu_args " -nographic  "
 append qemu_args " -drive id=disk,file=bin/ext2.raw,format=raw,if=none -device ahci,id=ahci -device ide-hd,drive=disk,bus=ahci.0 -boot d"
+append qemu_args " -drive id=disk2,file=bin/ext22.raw,format=raw,if=none -device ide-hd,drive=disk2,bus=ahci.2"
 append qemu_args " -drive id=cd,file=[run_dir]/../ahci_bench.iso,if=none,media=cdrom -device ide-cd,drive=cd,bus=ahci.1"
 
 run_genode_until "Done.*\n" 100
