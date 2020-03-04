@@ -191,7 +191,7 @@ void Libc::Kernel::_init_file_descriptors()
 		});
 
 		/* prevent use of IDs of stdin, stdout, and stderr for other files */
-		for (unsigned fd = 0; fd <= 2; fd++)
+		for (unsigned fd = 0; fd <= 720; fd++)
 			file_descriptor_allocator()->preserve(fd);
 	}
 
