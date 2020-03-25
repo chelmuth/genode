@@ -14,6 +14,7 @@
 
 #include <base/component.h>
 #include <base/log.h>
+#include <base/sleep.h>
 #include <log_session/connection.h>
 
 
@@ -58,4 +59,5 @@ void Component::construct(Genode::Env &env)
 	log(Cstring(buf));
 
 	log("Test done.");
+	sleep_forever();
 }

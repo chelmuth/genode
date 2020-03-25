@@ -1,9 +1,9 @@
-build "core init test/log"
+build "core init test/log timer server/report_rom"
 
 create_boot_directory
 
 install_config {
-	<config>
+	<config verbose="yes" prio_levels="2">
 		<parent-provides>
 			<service name="LOG"/>
 			<service name="PD"/>
@@ -14,17 +14,52 @@ install_config {
 			<any-service> <parent/> </any-service>
 		</default-route>
 		<default caps="50"/>
-		<start name="test-log">
-			<resource name="RAM" quantum="10M"/>
+		<start name="timer">
+			<resource name="RAM" quantum="1M"/>
+			<provides><service name="Timer"/></provides>
+		</start>
+		<start name="report_rom" priority="-1">
+			<resource name="RAM" quantum="2M"/>
+			<provides> <service name="ROM"/> <service name="Report"/> </provides>
+			<config verbose="yes">
+				<policy label="init -> state" report="init -> state"/>
+			</config>
+		</start>
+		<start name="init" caps="500" priority="-1">
+			<resource name="RAM" quantum="16M"/>
+			<config>
+				<report/>
+				<heartbeat rate_ms="100"/>
+				<parent-provides>
+					<service name="LOG"/>
+					<service name="PD"/>
+					<service name="CPU"/>
+					<service name="ROM"/>
+				</parent-provides>
+				<default-route>
+					<any-service> <parent/> </any-service>
+				</default-route>
+				<default caps="50"/>
+				<start name="test-log">
+					<heartbeat/>
+					<resource name="RAM" quantum="10M"/>
+				</start>
+			</config>
+			<route>
+				<service name="Report" label="state"> <child name="report_rom"/> </service>
+				<service name="Timer"> <child name="timer"/> </service>
+				<any-service> <parent/> </any-service>
+			</route>
 		</start>
 	</config>
 }
 
-build_boot_image "core ld.lib.so init test-log"
+build_boot_image "core ld.lib.so init test-log timer report_rom"
 
 append qemu_args "-nographic "
 append xen_args  { sdl="0" }
 
+run_genode_until forever
 run_genode_until "Test done.*\n" 20
 
 grep_output {\[init -\> test-log}
