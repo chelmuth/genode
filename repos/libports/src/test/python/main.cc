@@ -14,10 +14,8 @@
 /* Python includes */
 #include <python2.6/Python.h>
 
-/* Genode includes */
-#include <base/log.h>
-
 /* libc includes */
+#include <stdio.h>
 #include <fcntl.h>
 
 
@@ -26,10 +24,8 @@ extern "C"  int __sread(void *, char *, int);
 
 int main(int argc, char const ** args)
 {
-	using namespace Genode;
-
 	if (argc < 1) {
-		Genode::error("Need <scriptname>.py as argument!");
+		fprintf(stderr, "Error: need <scriptname>.py as argument!\n");
 		return -1;
 	}
 
@@ -43,7 +39,7 @@ int main(int argc, char const ** args)
 	Py_InteractiveFlag = 0;
 	Py_Initialize();
 
-	Genode::log("Starting python ...");
+	fprintf(stderr, "Starting python ...\n");
 	PyRun_SimpleFile(fp, name);
 
 	return 0;
