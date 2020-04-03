@@ -580,15 +580,22 @@ class Hw::Page_table
 
 						addr_t const pt_vo = vo - Section::Pa::masked(vo);
 						pt.remove_translation(pt_vo, Genode::min(size, end-vo));
+						_translation_added((addr_t)&pt, sizeof(Page_table_level_2));
 
 						if (pt.empty()) {
 							Descriptor::invalidate(_entries[i]);
+							_translation_added((addr_t)&_entries[i], sizeof(Section));
 							alloc.destruct<Pt>(pt);
 						}
 						break;
 					}
 
-				default: Descriptor::invalidate(_entries[i]); }
+				default:
+					{
+						Descriptor::invalidate(_entries[i]);
+						_translation_added((addr_t)&_entries[i], sizeof(Section));
+					}
+				}
 
 				/* check whether we wrap */
 				if (end < vo) return;
