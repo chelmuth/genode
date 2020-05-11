@@ -1,0 +1,126 @@
+# To execute this run script on a development PC, you need to setup a TAP device
+# first:
+
+# netdev=wlp2s0
+# tapdev=tap0
+# user=developer
+#
+# sudo ip tuntap add dev $tapdev mode tap user $user
+# sudo ip address flush dev $tapdev
+# sudo ip address add 10.0.2.1/24 brd 10.0.2.255 dev $tapdev
+# sudo ip link set dev $tapdev addr 02:00:00:ca:fe:01
+# sudo ip link set dev $tapdev up
+#
+
+
+
+create_boot_directory
+
+
+import_from_depot [depot_user]/src/init \
+                  [depot_user]/src/posix \
+                  [depot_user]/src/vfs \
+                  [depot_user]/src/zlib \
+                  [depot_user]/src/vfs_pipe
+
+
+set build_components {
+	lib/vfs/lwip
+	drivers/nic
+	test/tcp_echo_server
+}
+
+
+build $build_components
+
+
+set nic_router_reporting 0
+
+
+set config {
+<config verbose="no">
+	<parent-provides>
+		<service name="CPU"/>
+		<service name="LOG"/>
+		<service name="PD"/>
+		<service name="ROM"/>
+	</parent-provides>
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+	<default caps="100"/>
+
+	<start name="timer">
+		<resource name="RAM" quantum="1M"/>
+		<provides> <service name="Timer"/> </provides>
+	</start>
+}
+
+append config {
+
+	<start name="test-tcp_echo_server" caps="600">
+		<resource name="RAM" quantum="128M"/>
+		<config server_port="8899" ld_verbose="yes">
+			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"
+			socket="/socket" pipe="/pipe"/>
+			<vfs>
+				<dir name="dev">
+					<log/> <null/>
+					<inline name="rtc">2000-01-01 00:00</inline>
+				</dir>
+				<dir name="socket">
+					<lwip ip_addr="10.0.2.55" netmask="255.255.255.0" gateway="10.0.2.1"/>
+				</dir>
+				<dir name="pipe"> <pipe/> </dir>
+			</vfs>
+		</config>
+		<route>
+			<service name="Nic"> <child name="nic_drv"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
+
+	<start name="nic_drv" ld="no">
+		<binary name="linux_nic_drv"/>
+		<resource name="RAM" quantum="4M"/>
+		<provides>
+			<service name="Nic"/>
+		</provides>
+		<config>
+			<nic mac="02:00:00:00:00:01" tap="tap0"/>
+		</config>
+		<route>
+			<service name="Timer"> <child name="timer"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+</config>
+}
+
+
+install_config $config
+
+
+build { test/tcp_echo_server core timer }
+
+set boot_modules {
+	core
+	ld.lib.so
+	timer
+	test-tcp_echo_server
+	vfs_lwip.lib.so
+	stdcxx.lib.so
+	libc.lib.so
+	libm.lib.so
+	linux_nic_drv
+}
+
+
+append qemu_args " -nographic "
+
+
+build_boot_image $boot_modules
+
+
+run_genode_until forever
