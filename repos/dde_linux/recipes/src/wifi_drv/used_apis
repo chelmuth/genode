@@ -1,8 +1,7 @@
 base
 os
 libc
-libcrypto
-libssl
+openssl
 nic_session
 platform_session
 report_session

@@ -25,10 +25,9 @@ import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/pkg/[drivers_nic_pkg] \
                   [depot_user]/src/init \
                   [depot_user]/src/libc \
-                  [depot_user]/src/libcrypto \
                   [depot_user]/src/libssh \
-                  [depot_user]/src/libssl \
                   [depot_user]/src/lighttpd \
+                  [depot_user]/src/openssl \
                   [depot_user]/src/posix \
                   [depot_user]/src/vfs \
                   [depot_user]/src/vfs_[ip_stack] \
