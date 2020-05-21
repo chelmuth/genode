@@ -108,6 +108,7 @@ extern "C" {
 		static err_t tcp_delayed_recv_callback(void *arg, struct tcp_pcb *tpcb,
 		                                       struct pbuf *p, err_t err);
 		static err_t tcp_sent_callback(void *arg, struct tcp_pcb *tpcb, u16_t len);
+		static err_t tcp_poll_callback(void *arg, struct tcp_pcb *tpcb);
 		static void  tcp_err_callback(void *arg, err_t err);
 	}
 
@@ -1147,6 +1148,7 @@ class Lwip::Tcp_socket_dir final :
 
 			tcp_recv(_pcb, tcp_recv_callback);
 			tcp_sent(_pcb, tcp_sent_callback);
+			tcp_poll(_pcb, tcp_poll_callback, 10);
 			tcp_err(_pcb, tcp_err_callback);
 		}
 
@@ -1597,6 +1599,7 @@ err_t tcp_connect_callback(void *arg, struct tcp_pcb *pcb, err_t)
 	}
 
 	Lwip::Tcp_socket_dir *socket_dir = static_cast<Lwip::Tcp_socket_dir *>(arg);
+//	Genode::warning(__func__, " local_port=", pcb->local_port, " remote_port=", pcb->remote_port, " state=", (int)pcb->state);
 	socket_dir->state = Lwip::Tcp_socket_dir::READY;
 
 	socket_dir->process_io();
@@ -1614,6 +1617,7 @@ err_t tcp_accept_callback(void *arg, struct tcp_pcb *newpcb, err_t err)
 	}
 
 	Lwip::Tcp_socket_dir *socket_dir = static_cast<Lwip::Tcp_socket_dir *>(arg);
+//	Genode::warning(__func__, " local_port=", newpcb->local_port, " remote_port=", newpcb->remote_port, " state=", (int)newpcb->state);
 	err_t e = socket_dir->accept(newpcb, err);
 	return e;
 };
@@ -1623,11 +1627,13 @@ static
 err_t tcp_recv_callback(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t)
 {
 	if (!arg) {
+if (p) Genode::error(__func__, " ", __LINE__, " p=", p);
 		tcp_abort(pcb);
 		return ERR_ABRT;
 	}
 
 	Lwip::Tcp_socket_dir *socket_dir = static_cast<Lwip::Tcp_socket_dir *>(arg);
+//	Genode::warning(__func__, " local_port=", pcb->local_port, " remote_port=", pcb->remote_port, " state=", (int)pcb->state, " p=", p);
 	if (p == NULL) {
 		socket_dir->shutdown();
 	} else {
@@ -1644,12 +1650,14 @@ static
 err_t tcp_delayed_recv_callback(void *arg, struct tcp_pcb *pcb, struct pbuf *buf, err_t)
 {
 	if (!arg) {
+if (buf) Genode::error(__func__, " ", __LINE__, " buf=", buf);
 		tcp_abort(pcb);
 		return ERR_ABRT;
 	}
 
 	Lwip::Tcp_socket_dir::Pcb_pending *pending =
 		static_cast<Lwip::Tcp_socket_dir::Pcb_pending *>(arg);
+//	Genode::warning(__func__, " local_port=", pcb->local_port, " remote_port=", pcb->remote_port, " state=", (int)pcb->state);
 
 	/* XXX buf == nullptr means ENOTCONN */
 	if (buf) {
@@ -1677,10 +1685,39 @@ err_t tcp_sent_callback(void *arg, struct tcp_pcb *pcb, u16_t)
 	}
 
 	Lwip::Tcp_socket_dir *socket_dir = static_cast<Lwip::Tcp_socket_dir *>(arg);
+//	Genode::warning(__func__, " local_port=", pcb->local_port, " remote_port=", pcb->remote_port, " state=", (int)pcb->state);
 	socket_dir->process_io();
 	return ERR_OK;
 }
 
+static
+err_t tcp_poll_callback(void *arg, struct tcp_pcb *tpcb)
+{
+	Genode::error(__func__);
+	if (!arg) {
+		Genode::error(__func__, " arg=nullptr "
+		             , " tpcb=", tpcb
+		             , " local_port=", tpcb->local_port
+		             , " remote_port=" , tpcb->remote_port
+		             , " state=", (int)tpcb->state
+		             , " snd_queuelen=", (unsigned)tpcb->snd_queuelen
+	             );
+
+		tcp_abort(tpcb);
+		return ERR_ABRT;
+	}
+	Lwip::Tcp_socket_dir *socket_dir = static_cast<Lwip::Tcp_socket_dir *>(arg);
+	Genode::error(__func__, " socket=", socket_dir->_num, " state=", (int)socket_dir->state);
+	Genode::error(__func__
+	             , " tpcb=", tpcb
+	             , " local_port=", tpcb->local_port
+	             , " remote_port=" , tpcb->remote_port
+	             , " state=", Genode::Cstring(tcp_debug_state_str(tpcb->state))
+	             , " snd_queuelen=", (unsigned)tpcb->snd_queuelen
+	             );
+
+	return ERR_OK;
+}
 
 static
 void tcp_err_callback(void *arg, err_t err)
@@ -1690,6 +1727,7 @@ void tcp_err_callback(void *arg, err_t err)
 		return;
 	}
 	Lwip::Tcp_socket_dir *socket_dir = static_cast<Lwip::Tcp_socket_dir *>(arg);
+	Genode::error(__func__, " socket=", socket_dir->name(), " state=", (int)socket_dir->state, " err_t=", (int)err);
 	socket_dir->error();
 	/* the error is ERR_ABRT or ERR_RST, both end the session */
 }
