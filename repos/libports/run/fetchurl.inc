@@ -76,6 +76,7 @@ install_config {
 	<start name="timer">
 		<resource name="RAM" quantum="1M"/>
 		<provides> <service name="Timer"/> </provides>
+		<config ld_verbose="yes"/>
 	</start>
 
 	<start name="drivers" caps="1000" managing_system="yes">
@@ -97,7 +98,7 @@ install_config {
 
 	<start name="fetchurl" caps="500">
 		<resource name="RAM" quantum="32M"/>
-		<config>
+		<config ld_verbose="yes">
 			<report progress="yes"/>
 			<vfs>
 				<dir name="dev">
@@ -114,8 +115,8 @@ install_config {
 </config>
 }
 
-#build            { }
-build_boot_image { }
+build            { app/fetchurl lib/ld }
+build_boot_image { fetchurl ld.lib.so libcrypto.lib.so }
 
 proc qemu_nic_model {} {
 	if [have_spec x86]         { return e1000 }
