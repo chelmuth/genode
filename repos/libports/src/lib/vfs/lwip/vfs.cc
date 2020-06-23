@@ -673,16 +673,18 @@ class Lwip::Protocol_dir_impl final : public Protocol_dir
 
 		SOCKET_DIR &alloc_socket(Genode::Allocator &alloc, PCB *pcb = nullptr)
 		{
+			static unsigned id_count = 0;
+
 			/*
 			 * use the equidistribution RNG to hide the socket count,
 			 * see src/lib/lwip/platform/rand.cc
 			 */
-			unsigned id = LWIP_RAND();
+			unsigned id = ++id_count;
 
 			/* check for collisions */
 			for (SOCKET_DIR *dir = _socket_dirs.first(); dir;) {
 				if (*dir == id) {
-					id = LWIP_RAND();
+					id = ++id_count;
 					dir = _socket_dirs.first();
 				} else {
 					dir = dir->next();
