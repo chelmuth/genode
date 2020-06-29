@@ -6,7 +6,7 @@ assert_spec x86_64
 assert_spec nova
 
 set flavor   "ubuntu_16_04_64"
-set vm_ram   "9460M"
+set vm_ram   "2800M"
 
 set use_vbox5 1
 
@@ -20,7 +20,7 @@ set use_usb 1
 set use_ps2 [have_spec ps2]
 
 set use_vms 1
-set use_cpu_load 1
+set use_cpu_load 0
 
 # use non-generic vbox5 VMM version
 set use_vbox5_nova 1

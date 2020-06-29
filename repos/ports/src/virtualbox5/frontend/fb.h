@@ -59,6 +59,7 @@ class Genodefb :
 			size_t const max_h = Genode::min(_fb_mode.height(), _virtual_fb_mode.height());
 			size_t const num_pixels = _fb_mode.width() * max_h;
 			memset(_fb_base, 0, num_pixels * _fb_mode.bytes_per_pixel());
+Genode::error(__func__, " refresh ", 0, " ", 0, " ",  _virtual_fb_mode.width(), " ", _virtual_fb_mode.height());
 			_fb.refresh(0, 0, _virtual_fb_mode.width(), _virtual_fb_mode.height());
 		}
 
@@ -217,6 +218,7 @@ class Genodefb :
 		{
 			if (!_fb_base) return S_OK;
 
+Genode::log(__func__, " refresh ", o_x, " ", o_y, " ",  width, " ", height);
 			Lock();
 
 			if (_display_bitmap.isNull()) {
@@ -285,6 +287,7 @@ class Genodefb :
 
 			Dither_painter::paint(surface, texture, Surface_base::Point(o_x, o_y));
 
+Genode::log(__func__, " refresh ", o_x, " ", o_y, " ",  area_vm.w(), " ", area_vm.h());
 			_fb.refresh(o_x, o_y, area_vm.w(), area_vm.h());
 
 			Unlock();

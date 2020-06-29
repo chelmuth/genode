@@ -9,7 +9,7 @@
   <Machine uuid="{37ab43a5-38d8-4491-93f5-5b0b077f5c32}" name="ubuntu_16_04_64" OSType="Ubuntu_64" snapshotFolder="Snapshots" lastStateChange="2014-11-14T11:58:35Z">
     <MediaRegistry>
       <HardDisks>
-        <HardDisk uuid="{2a248ff9-7ac9-4862-98f9-14e31968f23d}" location="/ubuntu_16_04_64.vdi" format="VDI" type="Immutable">
+        <HardDisk uuid="{8bf3ef3e-ef70-4bcd-8dc8-cb1649d5adeb}" location="/Sculpt_Xubuntu.vdi"         format="VDI" type="Immutable">
           <HardDisk uuid="{78a3a6a1-ade6-41bf-8b29-ec7cf16de4bb}" location="/ram/overlay_ubuntu_16_04_64.vdi" format="VDI" autoReset="true"/>
         </HardDisk>
       </HardDisks>
@@ -28,7 +28,7 @@
         <HardwareVirtExLargePages enabled="false"/>
         <HardwareVirtForce enabled="false"/>
       </CPU>
-      <Memory RAMSize="9216" PageFusion="false"/>
+      <Memory RAMSize="2200" PageFusion="false"/>
       <HID Pointing="USBTablet" Keyboard="PS2Keyboard"/>
       <HPET enabled="false"/>
       <Chipset type="PIIX3"/>
