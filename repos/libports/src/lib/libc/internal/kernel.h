@@ -41,6 +41,7 @@
 #include <internal/signal.h>
 #include <internal/monitor.h>
 #include <internal/pthread.h>
+#include <internal/cwd.h>
 
 namespace Libc {
 	class Kernel;
@@ -107,7 +108,8 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
                             Select,
                             Kernel_routine_scheduler,
                             Current_time,
-                            Watch
+                            Watch,
+                            Cwd
 {
 	private:
 
@@ -286,6 +288,8 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 
 		Constructible<Clone_connection> _clone_connection { };
 
+		Absolute_path _cwd { "/" };
+
 		struct Resumer
 		{
 			GENODE_RPC(Rpc_resume, void, resume);
@@ -353,6 +357,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 			if (Thread::mystack().top == _kernel_stack) {
 				error("libc suspend() called from non-user context (",
 				      __builtin_return_address(0), ") - aborting");
+				for (;;) ;
 				exit(1);
 			}
 
@@ -658,6 +663,11 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 				? watch_handle : nullptr;
 		}
 
+		/**
+		 * Cwd interface
+		 */
+		Absolute_path &cwd() { return _cwd; }
+
 
 		/****************************************
 		 ** Vfs::Io_response_handler interface **
@@ -693,8 +703,10 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 
 		static Kernel &kernel()
 		{
-			if (!_kernel_ptr)
+			if (!_kernel_ptr) {
+				log("W4C"); for (;;);
 				throw Kernel_called_prior_initialization();
+			}
 
 			return *_kernel_ptr;
 		}
