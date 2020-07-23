@@ -316,9 +316,12 @@ append_if [expr $use_vbox5] config_of_app "
 append config_of_app {
 		<resource name="RAM" quantum="1280M"/>
 		<config vbox_file="} $vbox_file {" vm_name="AutoDisk">
-			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
+			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc" pipe="/dev/pipe"/>
 			<vfs>
-				<dir name="dev"> <log/> <rtc/> </dir>
+				<dir name="dev">
+					<log/> <rtc/>
+					<dir name="pipe"> <pipe/> </dir>
+				 </dir>
 				<rom name="} $vbox_file {"/>}
 
 append_if [expr $use_ram_fs] config_of_app {

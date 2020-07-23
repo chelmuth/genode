@@ -80,7 +80,7 @@ install_config $config
 
 append boot_modules {
 	core init timer linux_nic_drv
-	ld.lib.so libc.lib.so vfs.lib.so libc_pipe.lib.so posix.lib.so
+	ld.lib.so libc.lib.so vfs.lib.so posix.lib.so
 	libm.lib.so
 	vfs_lxip.lib.so lxip.lib.so
 	tcp_terminal

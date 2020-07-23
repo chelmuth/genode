@@ -70,7 +70,7 @@ install_config {
 </config>
 }
 
-build_boot_image { tcp_terminal test-terminal_echo libc_pipe.lib.so }
+build_boot_image { tcp_terminal test-terminal_echo }
 
 
 # qemu config

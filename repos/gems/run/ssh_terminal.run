@@ -172,7 +172,7 @@ set boot_modules {
 	test-terminal_echo
 
 	libc.lib.so libm.lib.so vfs.lib.so
-	vfs_lxip.lib.so lxip.lib.so libc_pipe.lib.so
+	vfs_lxip.lib.so lxip.lib.so
 	posix.lib.so libcrypto.lib.so libssh.lib.so zlib.lib.so ncurses.lib.so
 	vfs_jitterentropy.lib.so ssh_terminal
 

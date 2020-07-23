@@ -239,10 +239,11 @@ for { set i 1} { $i <= $use_vms } { incr i} {
 		<config ld_verbose=\"yes\" vbox_file=\"${vbox_file}\" vm_name=\"${flavor}\" xhci=\"no\" capslock=\"NOROM\">"
 	}
 	append config_of_app {
-			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
+			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc" pipe="/dev/pipe"/>
 			<vfs>
 				<dir name="dev">
-					<log/> <rtc/>}
+					<log/> <rtc/>
+					<dir name="pipe"> <pipe/> </dir>}
 
 	append_if [expr $use_serial] config_of_app { <terminal/> }
 
