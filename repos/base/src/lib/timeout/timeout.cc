@@ -250,15 +250,14 @@ Timeout::Alarm *Alarm_timeout_scheduler::_alarm_get_pending_alarm()
 		 */
 		pending_alarm->_dispatch_mutex.acquire();
 
-		if (pending_alarm->_delete) {
-			pending_alarm->_dispatch_mutex.release();
-			continue;
-		}
-
 		/* reset alarm object */
 		pending_alarm->_next = nullptr;
 		pending_alarm->_active--;
 
+		if (pending_alarm->_delete) {
+			pending_alarm->_dispatch_mutex.release();
+			continue;
+		}
 		return pending_alarm;
 	} while (true);
 }
