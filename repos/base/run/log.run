@@ -25,7 +25,6 @@ build_boot_image "core ld.lib.so init test-log"
 append qemu_args "-nographic "
 append xen_args  { sdl="0" }
 
-run_genode_until forever
 run_genode_until "Test done.*\n" 20
 
 grep_output {\[init -\> test-log}

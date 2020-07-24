@@ -65,7 +65,7 @@ append config {
 					<lxip ip_addr="10.0.2.55" netmask="255.255.255.0" gateway="10.0.2.1" nameserver="8.8.8.8"/>
 				</dir>
 			</vfs>
-			<libc stdout="/dev/log" stderr="/dev/log"/>
+			<libc stdout="/dev/log" stderr="/dev/log" socket="/socket"/>
 		</config>
 	</start>
 <!--
