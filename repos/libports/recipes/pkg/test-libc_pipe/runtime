@@ -50,8 +50,8 @@
 							<dir name="dev">
 								<log/>
 							</dir>
+							<dir name="pipe"> <pipe/> </dir>
 						</vfs>
-						<dir name="pipe"> <pipe/> </dir>
 						<libc stdout="/dev/log" stderr="/dev/log" pipe="/pipe"/>
 					</config>
 				</start>
