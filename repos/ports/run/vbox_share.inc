@@ -139,8 +139,9 @@ set config_of_app {
 			<vfs>
 				<dir name="dev"> <log/> </dir>
 				<dir name="socket"> <lwip dhcp="yes"/> </dir>
+				<dir name="pipe"> <pipe/> </dir>
 			</vfs>
-			<libc stdout="/dev/log" socket="/socket" />
+			<libc stdout="/dev/log" socket="/socket" pipe="/pipe"/>
 		</config>
 	</start>
 
