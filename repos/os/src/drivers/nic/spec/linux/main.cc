@@ -38,6 +38,7 @@
 #include <base/log.h>
 #include <base/blockade.h>
 #include <nic/root.h>
+#include <timer_session/connection.h>
 
 /* Linux */
 #include <errno.h>
@@ -67,6 +68,8 @@ class Linux_session_component : public Nic::Session_component
 			Rx_signal_thread(Genode::Env &env, int fd, Genode::Signal_context_capability sigh)
 			: Genode::Thread(env, "rx_signal", 0x1000), fd(fd), sigh(sigh) { }
 
+			unsigned count { 0 };
+
 			void entry() override
 			{
 				while (true) {
@@ -81,6 +84,9 @@ class Linux_session_component : public Nic::Session_component
 					/* signal incoming packet */
 					Genode::Signal_transmitter(sigh).submit();
 
+					if (++count % 1000 == 0)
+						Genode::warning("Rx_signal_thread sent ", count, " signals");
+
 					blockade.block();
 				}
 			}
@@ -91,6 +97,26 @@ class Linux_session_component : public Nic::Session_component
 		Nic::Mac_address _mac_addr { };
 		int              _tap_fd;
 		Rx_signal_thread _rx_thread;
+
+		Genode::Env &_env;
+
+		Timer::Connection _timer   { _env };
+		struct {
+			int tx_packets           { 0 };
+			int rx_packets           { 0 };
+			int rx_packets_in_flight { 0 };
+		} _stats { };
+
+		Genode::Signal_handler<Linux_session_component> _timer_handler {
+			_env.ep(), *this, &Linux_session_component::_handle_timer };
+
+		void _handle_timer()
+		{
+			Genode::warning("stats:"
+			               , " tx/rx=", _stats.tx_packets, "/", _stats.rx_packets
+			               , " rx_in_flight=", _stats.rx_packets_in_flight
+			               );
+		}
 
 		int _setup_tap_fd()
 		{
@@ -165,6 +191,8 @@ class Linux_session_component : public Nic::Session_component
 				if (ret < 0 && errno == EAGAIN)
 					continue;
 
+				++_stats.tx_packets;
+
 				if (ret < 0) Genode::error("write: errno=", errno);
 			} while (ret < 0);
 
@@ -199,6 +227,9 @@ class Linux_session_component : public Nic::Session_component
 			Nic::Packet_descriptor p_adjust(p.offset(), size);
 			_rx.source()->submit_packet(p_adjust);
 
+			++_stats.rx_packets;
+			++_stats.rx_packets_in_flight;
+
 			return Receive_result::SUBMITTED;
 		}
 
@@ -221,6 +252,7 @@ class Linux_session_component : public Nic::Session_component
 		{
 			while (_rx.source()->ack_avail()) {
 				_rx.source()->release_packet(_rx.source()->get_acked_packet());
+				--_stats.rx_packets_in_flight;
 			}
 
 			while (_send()) ;
@@ -238,7 +270,8 @@ class Linux_session_component : public Nic::Session_component
 		:
 			Session_component(tx_buf_size, rx_buf_size, Genode::CACHED, rx_block_md_alloc, env),
 			_config_rom(env, "config"),
-			_tap_fd(_setup_tap_fd()), _rx_thread(env, _tap_fd, _packet_stream_dispatcher)
+			_tap_fd(_setup_tap_fd()), _rx_thread(env, _tap_fd, _packet_stream_dispatcher),
+			_env(env)
 		{
 			/* fall back to fake MAC address (unicast, locally managed) */
 			_mac_addr.addr[0] = 0x02;
@@ -254,6 +287,9 @@ class Linux_session_component : public Nic::Session_component
 				_mac_addr = nic_config.attribute_value("mac", _mac_addr);
 				Genode::log("Using configured MAC address ", _mac_addr);
 			} catch (...) { }
+
+			_timer.sigh(_timer_handler);
+			_timer.trigger_periodic(10*1000*1000);
 
 			_rx_thread.start();
 		}
