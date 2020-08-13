@@ -438,12 +438,19 @@ extern void (*libc_select_notify_from_kernel)();
 
 void Libc::Kernel::handle_io_progress()
 {
+	static unsigned outer_counter, inner_counter;
+
 	/*
 	 * TODO: make VFS I/O completion checks during
 	 * kernel time to avoid flapping between stacks
 	 */
 
+	++outer_counter;
+
 	if (_io_ready) {
+		if (++inner_counter % 50 == 0)
+			log(__func__, ": ", inner_counter, "/", outer_counter);
+
 		_io_ready = false;
 
 		/* some contexts may have been deblocked from select() */

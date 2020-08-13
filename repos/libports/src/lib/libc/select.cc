@@ -210,6 +210,11 @@ static int selscan(int nfds,
 /* this function gets called by plugin backends when file descripors become ready */
 void Libc::select_notify_from_kernel()
 {
+	if (!Libc::Kernel::kernel().main_context() || !Libc::Kernel::kernel().main_suspended()) {
+		error("NOT IN KERNEL");
+		for (;;) ;
+	}
+
 	bool resume_all = false;
 	fd_set tmp_readfds, tmp_writefds, tmp_exceptfds;
 
