@@ -137,7 +137,7 @@ set build_components {
 	core init timer
 	drivers/usb_host
 	drivers/usb_hid
-	test/input
+	server/event_dump
 	server/dynamic_rom
 	server/report_rom
 }
