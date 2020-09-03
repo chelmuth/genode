@@ -32,11 +32,41 @@ extern "C" {
 #include <time.h>
 #include <time.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
 }
 
 int main(int argc, char **argv)
 {
 	printf("--- libC test ---\n");
+
+#if 0
+	for (int i = 0; i < 100; ++i) {
+		char name[32];
+		snprintf(name, sizeof(name), "/tmp/%05d", i);
+		close(creat(name, S_IRUSR|S_IWUSR));
+	}
+	while (true) {
+		printf("let's go\n");
+		DIR * dir = opendir("/tmp");
+		printf("iterate\n");
+		for (unsigned i = 0; ; ++i) {
+			struct dirent *dirent = readdir(dir);
+			if (dirent) {
+				if (dirent->d_type == DT_DIR) {
+					printf("found directory %s\n", dirent->d_name);
+				} else /*if (i % 10 == 0)*/ {
+					printf("%s\n", dirent->d_name);
+				}
+			} else {
+				printf("no (more) direntries found\n");
+				break;
+			}
+		}
+		closedir(dir);
+		printf("start over\n");
+	}
+#endif
 
 	printf("Does printf work?\n");
 	printf("We can find out by printing a floating-point number: %f. How does that work?\n", 1.2345);

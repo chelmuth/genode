@@ -1,4 +1,4 @@
-build "core init timer test/libc"
+build "core init timer test/libc server/log_terminal server/vfs"
 
 create_boot_directory
 
@@ -22,10 +22,28 @@ install_config {
 		<resource name="RAM" quantum="1M"/>
 		<provides> <service name="Timer"/> </provides>
 	</start>
+	<start name="log_terminal">
+		<resource name="RAM" quantum="2M"/>
+		<provides> <service name="Terminal"/> </provides>
+	</start>
+	<start name="vfs">
+		<resource name="RAM" quantum="12M"/>
+		<provides> <service name="File_system"/> </provides>
+		<config>
+			<vfs>
+				<dir name="dev"> <terminal name="log"/> </dir>
+				<dir name="tmp"> <ram/> </dir>
+			</vfs>
+			<default-policy root="/" writeable="yes"/>
+		</config>
+	</start>
 	<start name="test-libc">
 		<resource name="RAM" quantum="400M"/>
 		<config>
-			<vfs> <dir name="dev"> <log/> <inline name="rtc">2019-08-20 15:01</inline> </dir> </vfs>
+			<vfs>
+				<dir name="dev"> <!--terminal name="log"/--> <inline name="rtc">2019-08-20 15:01</inline> </dir>
+				<fs buffer_size="8K"/>
+			</vfs>
 			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
 		</config>
 	</start>
@@ -33,10 +51,11 @@ install_config {
 }
 
 build_boot_image {
-	core init timer test-libc
+	core init timer test-libc log_terminal vfs
 	ld.lib.so libc.lib.so vfs.lib.so libm.lib.so posix.lib.so
 }
 
 append qemu_args " -nographic  "
 
+run_genode_until forever
 run_genode_until "child .* exited with exit value 0.*\n" 30

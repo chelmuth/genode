@@ -24,6 +24,24 @@ namespace Libc {
 
 	typedef Genode::uint64_t uint64_t;
 	typedef String<64> Binary_name;
+
+	struct Trace_scope
+	{
+		char const *func;
+		char const *id;
+		Trace_scope(char const *func, char const *id)
+		: func(func), id(id)
+		{
+			log("ENTER ", func, "() ", id);
+		}
+
+		~Trace_scope()
+		{
+			log("LEAVE ", func, "() ", id);
+		}
+	};
 }
+
+#define TRACE_SCOPE(x) Libc::Trace_scope x { __func__, #x }
 
 #endif /* _LIBC__INTERNAL__TYPES_H_ */

@@ -88,8 +88,8 @@ set config {
 
 install_config $config
 
-set build_components { test/system_rtc test/libc_rtc }
-set boot_components  { test-system_rtc test-libc_rtc }
+set build_components { test/system_rtc test/libc_rtc server/vfs }
+set boot_components  { test-system_rtc test-libc_rtc libc.lib.so vfs.lib.so }
 
 build            $build_components
 build_boot_image $boot_components
