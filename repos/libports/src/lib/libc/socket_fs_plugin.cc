@@ -1288,10 +1288,12 @@ int Socket_fs::Plugin::ioctl(File_descriptor *, int request, char*)
 			      " (this message will not be shown again)");
 			print_fionread_error_message = false;
 		}
+		errno = EINVAL;
 		return -1;
 	}
 
 	error(__func__, " request ", request, " not supported on sockets");
+	errno = ENOTTY;
 	return -1;
 }
 

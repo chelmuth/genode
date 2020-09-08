@@ -392,6 +392,7 @@ extern void (*libc_select_notify_from_kernel)();
 
 void Libc::Kernel::handle_io_progress()
 {
+log(__func__);
 	if (_io_progressed) {
 		_io_progressed = false;
 

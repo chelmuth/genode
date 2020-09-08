@@ -53,7 +53,7 @@ static void use_file_system()
 {
 	int result = 0;
 
-	int const fd = open("/tmp/blub", O_RDWR | O_NONBLOCK | O_CREAT | O_APPEND);
+	int const fd = open("/tmp/blub", O_RDWR /*| O_NONBLOCK*/ | O_CREAT | O_APPEND);
 	if (fd == -1) die("open");
 
 	printf("open returned fd %d\n", fd);
@@ -170,7 +170,8 @@ struct Log::Session_component : Genode::Rpc_object<Log_session>
 		_timer.trigger_periodic(500*1000);
 
 		/* initially call read two times to ensure blocking */
-		_read(); _read();
+//		_read(); _read();
+		_select();
 	}
 
 	void write(String const &string_buf) override

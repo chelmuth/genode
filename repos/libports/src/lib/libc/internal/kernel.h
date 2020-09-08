@@ -413,6 +413,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 			_resume_main_once = false;
 			_app_returned     = false;
 			_app_code         = &app_code;
+error(__func__, " entered _app_returned=", _app_returned);
 
 			/* save continuation of libc kernel (incl. current stack) */
 			if (!_setjmp(_kernel_context)) {
@@ -431,6 +432,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 
 			/* _setjmp() returned after _longjmp() - user context suspended */
 
+error(__func__, " _app_returned=", _app_returned);
 			while ((!_app_returned)) {
 
 				/*
@@ -504,6 +506,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 					_switch_to_user();
 				}
 			}
+error(__func__, " return to ep loop");
 		}
 
 		/**
@@ -511,6 +514,8 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 		 */
 		void resume_all() override
 		{
+error(__func__, " _scheduled_select_handler=", _scheduled_select_handler,
+              " _app_returned=", _app_returned);
 			if (_app_returned) {
 				if (_scheduled_select_handler)
 					_scheduled_select_handler->dispatch_select();
@@ -594,6 +599,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 		 */
 		void schedule_select(Select_handler_base &h) override
 		{
+error(__func__);
 			_scheduled_select_handler = &h;
 		}
 
@@ -602,6 +608,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 		 */
 		void deschedule_select() override
 		{
+error(__func__);
 			_scheduled_select_handler = nullptr;
 		}
 

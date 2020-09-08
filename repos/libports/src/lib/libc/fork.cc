@@ -410,7 +410,7 @@ struct Libc::Forked_child : Child_policy, Child_ready
 
 	/*
 	 * Signal handler triggered at the main entrypoint, waking up the libc
-	 * suspend mechanism.
+	 * kernel monitor handling.
 	 */
 	Io_signal_handler<Libc::Forked_child> _exit_handler {
 		_env.ep(), *this, &Forked_child::_handle_exit };
