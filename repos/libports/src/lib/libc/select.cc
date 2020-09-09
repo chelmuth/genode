@@ -261,7 +261,7 @@ int select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds,
 	                           &in_readfds, &in_writefds, &in_exceptfds,
 	                           readfds, writefds, exceptfds);
 
-	/* return if any descriptor is ready */
+	/* return if any descripor is ready */
 	if (nready) {
 		select_cb_list().remove(&(*select_cb));
 		return nready;
@@ -378,8 +378,6 @@ int Libc::Select_handler_base::select(int nfds, fd_set &readfds,
 	in_writefds  = writefds;
 	in_exceptfds = exceptfds;
 
-error(__func__, " constructed=", _select_cb->constructed());
-
 	/* remove potentially enqueued callback from list */
 	if (_select_cb->constructed())
 		select_cb_list().remove(&(**_select_cb));
@@ -418,7 +416,6 @@ error(__func__, " constructed=", _select_cb->constructed());
 
 void Libc::Select_handler_base::dispatch_select()
 {
-error(__func__);
 	Select_handler_cb &select_cb = *_select_cb;
 
 	if (select_cb->nready == 0) return;
