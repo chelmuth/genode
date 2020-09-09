@@ -349,6 +349,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 			if (Thread::mystack().top == _kernel_stack) {
 				error("libc suspend() called from non-user context (",
 				      __builtin_return_address(0), ") - aborting");
+				for (;;) ;
 				exit(1);
 			}
 

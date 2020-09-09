@@ -815,7 +815,9 @@ ssize_t Libc::Vfs_plugin::write(File_descriptor *fd, const void *buf,
 		monitor().monitor([&] {
 			try {
 				out_result = handle->fs().write(handle, (char const *)buf, count, out_count);
-			} catch (Vfs::File_io_service::Insufficient_buffer) { }
+			} catch (Vfs::File_io_service::Insufficient_buffer) {
+				//out_result = Result::WRITE_ERR_AGAIN;
+			}
 			return Fn::COMPLETE;
 		});
 	} else {
@@ -1816,8 +1818,14 @@ int Libc::Vfs_plugin::select(int nfds,
 	};
 
 	if (Libc::Kernel::kernel().main_context() && Libc::Kernel::kernel().main_suspended()) {
+		/*
+		 * select_notify_from_kernel() and socket select() trigger this path.
+		 */
 		fn();
 	} else {
+		/*
+		 * We end up in this branch if selscan() is used from ::select().
+		 */
 		monitor().monitor(fn);
 	}
 

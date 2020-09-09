@@ -7,7 +7,7 @@
 #
 # sudo ip tuntap add dev $tapdev mode tap user $user
 # sudo ip address flush dev $tapdev
-# sudo ip address add 10.0.2.1/24 brd 10.0.2.255 dev $tapdev
+# sudo ip address add 10.0.11.1/24 brd 10.0.11.255 dev $tapdev
 # sudo ip link set dev $tapdev addr 02:00:00:ca:fe:01
 # sudo ip link set dev $tapdev up
 #
@@ -69,7 +69,7 @@ append config {
 					<inline name="rtc">2000-01-01 00:00</inline>
 				</dir>
 				<dir name="socket">
-					<lwip ip_addr="10.0.2.55" netmask="255.255.255.0" gateway="10.0.2.1"/>
+					<lwip ip_addr="10.0.11.55" netmask="255.255.255.0" gateway="10.0.11.1"/>
 				</dir>
 				<dir name="pipe"> <pipe/> </dir>
 			</vfs>
@@ -87,7 +87,7 @@ append config {
 			<service name="Nic"/>
 		</provides>
 		<config>
-			<nic mac="02:00:00:00:00:01" tap="tap0"/>
+			<nic mac="02:00:00:00:77:01" tap="tap_goa"/>
 		</config>
 		<route>
 			<service name="Timer"> <child name="timer"/> </service>
