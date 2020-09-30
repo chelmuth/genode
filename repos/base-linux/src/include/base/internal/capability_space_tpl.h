@@ -203,7 +203,11 @@ class Genode::Capability_space_tpl : Noncopyable
 			Mutex::Guard guard(_mutex);
 
 			if (data.inc_ref() == 255)
+{
+Genode::raw("Reference_count_overflow 1");
+for (;;) { }
 				throw Native_capability::Reference_count_overflow();
+}
 		}
 
 		Rpc_obj_key rpc_obj_key(Data const &data) const
