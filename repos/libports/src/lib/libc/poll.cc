@@ -17,6 +17,7 @@
 #include <libc-plugin/plugin_registry.h>
 #include <libc-plugin/plugin.h>
 #include <sys/poll.h>
+#include <string.h>
 
 /* internal includes */
 #include <internal/errno.h>
@@ -67,6 +68,13 @@ poll(struct pollfd fds[], nfds_t nfds, int timeout)
 	FD_ZERO(&writefds);
 	FD_ZERO(&exceptfds);
 
+	struct Debug_fds {
+		int fd;
+		char const *path;
+		bool write;
+	} debug_fds[128];
+	::memset((void *)debug_fds, 0, sizeof(debug_fds));
+
 	for (i = 0; i < nfds; i++) {
 		fd = fds[i].fd;
 		if (fd == -1)
@@ -74,10 +82,18 @@ poll(struct pollfd fds[], nfds_t nfds, int timeout)
 		if (fds[i].events & (POLLIN | POLLPRI | POLLRDNORM | POLLRDBAND)) {
 			FD_SET(fd, &readfds);
 			FD_SET(fd, &exceptfds);
+
+			File_descriptor *fdo = file_descriptor_allocator()->find_by_libc_fd(fd);
+			if (fdo && fd < 128)
+				debug_fds[fd] = { fd, fdo->fd_path, false };
 		}
 		if (fds[i].events & (POLLOUT | POLLWRNORM | POLLWRBAND)) {
 			FD_SET(fd, &writefds);
 			FD_SET(fd, &exceptfds);
+
+			File_descriptor *fdo = file_descriptor_allocator()->find_by_libc_fd(fd);
+			if (fdo && fd < 128)
+				debug_fds[fd] = { fd, fdo->fd_path, true };
 		}
 	}
 

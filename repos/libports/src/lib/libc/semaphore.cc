@@ -190,7 +190,7 @@ struct sem : Genode::Noncopyable
 			clock_gettime(_clock_id, &abs_now);
 
 			Libc::uint64_t const timeout_ms =
-				calculate_relative_timeout_ms(abs_now, abs_timeout);
+				calculate_relative_timeout_ms(abs_now, abs_timeout) / 100;
 			if (!timeout_ms)
 				return ETIMEDOUT;
 
