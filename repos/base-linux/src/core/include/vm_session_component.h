@@ -16,6 +16,7 @@
 
 /* Genode includes */
 #include <base/session_object.h>
+#include <base/attached_ram_dataspace.h>
 #include <vm_session/vm_session.h>
 
 /* core-internal includes */
@@ -33,24 +34,39 @@ class Genode::Vm_session_component
 		using Ram_quota_guard::upgrade;
 		using Cap_quota_guard::upgrade;
 
+		Attached_ram_dataspace _dummy_vcpu_state;
+
+
+		Signal_context_capability _sigh { };
+
 		Vm_session_component(Rpc_entrypoint &ep, Resources resources,
 		                     Label const &label, Diag diag,
-		                     Ram_allocator &, Region_map &, unsigned,
+		                     Ram_allocator &ram, Region_map &local_rm, unsigned,
 		                     Trace::Source_registry &)
 		:
-			Session_object(ep, resources, label, diag)
+			Session_object(ep, resources, label, diag),
+			_dummy_vcpu_state(ram, local_rm, 4096)
 		{ }
 
 		~Vm_session_component() { }
 
 		Dataspace_capability _cpu_state(Vcpu_id)
 		{
-			return Dataspace_capability();
+			diag("return VCPU-state dataspace");
+			return _dummy_vcpu_state.cap();
 		}
 
-		void _exception_handler(Signal_context_capability, Vcpu_id) { }
+		void _exception_handler(Signal_context_capability sigh, Vcpu_id)
+		{
+			_sigh = sigh;
+		}
 
-		void _run(Vcpu_id) { }
+		void _run(Vcpu_id)
+		{
+			diag("run VCPU");
+			if (_sigh.valid())
+				Signal_transmitter(_sigh).submit();
+		}
 
 		void _pause(Vcpu_id) { }
 
@@ -58,6 +74,12 @@ class Genode::Vm_session_component
 		{
 			diag("create VCPU");
 			return Vcpu_id { };
+		}
+
+		Capability<Native_vcpu> _native_vcpu(Vcpu_id)
+		{
+			diag("native VCPU cap");
+			return Capability<Native_vcpu>();
 		}
 
 		void attach(Dataspace_capability, addr_t at, Attach_attr attr) override
