@@ -222,7 +222,7 @@ append config {
 	<start name="vbox1" priority="-2" caps="2000">
 		<binary name="} $virtualbox_binary {"/>
 		<resource name="RAM" quantum="6200M"/>
-		<config vbox_file="test.vbox" vm_name="TestVM">
+		<config vbox_file="test.vbox" vm_name="TestVM" ld_verbose="true">
 			<libc stdout="/dev/log" stderr="/dev/log" pipe="/pipe" rtc="/dev/rtc">
 				 <pthread placement="single-cpu"/>
 			</libc>
@@ -250,9 +250,11 @@ append config {
 			<arg value="virtualbox"/>
 			<env key="VBOX_USER_HOME" value="/"/>
 			<env key="VBOX_LOG_DEST" value="file=/dev/log"/>
-			<env key="VBOX_LOG" value="-*.e.l.f"/>
+			<env key="VBOX_LOG_FLAGS" value="thread"/>
+			<env key="VBOX_LOG" value="+default+cpum+main_console"/>
 			<env key="VBOX_RELEASE_LOG_DEST" value="file=/dev/log"/>
-			<env key="VBOX_RELEASE_LOG" value="-*.e.l.f"/>
+			<env key="VBOX_RELEASE_LOG_FLAGS" value="thread"/>
+			<env key="VBOX_RELEASE_LOG" value=""/>
 		</config>
 		<route>}
 
