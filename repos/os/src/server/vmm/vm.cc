@@ -57,7 +57,11 @@ Vm::Vm(Genode::Env & env)
   _virtio_net("Net", VIRTIO_NET_MMIO_START, VIRTIO_NET_MMIO_SIZE,
               VIRTIO_NET_IRQ, boot_cpu(), _bus, _ram, env)
 {
-	_vm.attach(_vm_ram.cap(), RAM_START);
+	_vm.attach(_vm_ram.cap(), RAM_START,
+	           Genode::Vm_session::Attach_attr { .offset     = 0,
+	                                             .size       = 0,
+	                                             .executable = true,
+	                                             .writeable  = true });
 
 	_load_kernel();
 	_load_dtb();

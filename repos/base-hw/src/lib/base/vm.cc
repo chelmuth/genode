@@ -24,7 +24,8 @@ struct Vcpu;
 
 static Genode::Registry<Genode::Registered<Vcpu>> vcpus;
 
-struct Vcpu {
+struct Vcpu
+{
 	Vm_session_client::Vcpu_id          const id;
 	Capability<Vm_session::Native_vcpu> const cap;
 
@@ -36,7 +37,7 @@ struct Vcpu {
 
 
 Vm_session::Vcpu_id
-Vm_session_client::create_vcpu(Allocator & alloc, Env &, Vm_handler_base & handler)
+Vm_session_client::create_vcpu(Allocator & alloc, Env &, Vcpu_handler_base & handler)
 {
 	Vcpu_id const id =
 		call<Rpc_create_vcpu>(reinterpret_cast<Thread *>(&handler._rpc_ep)->cap());

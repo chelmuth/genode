@@ -1,11 +1,12 @@
 /*
  * \brief  Linux stub for the VM session interface
  * \author Norman Feske
+ * \author Christian Helmuth
  * \date   2020-11-17
  */
 
 /*
- * Copyright (C) 2020 Genode Labs GmbH
+ * Copyright (C) 2020-2021 Genode Labs GmbH
  *
  * This file is part of the Genode OS framework, which is distributed
  * under the terms of the GNU Affero General Public License version 3.
@@ -50,36 +51,14 @@ class Genode::Vm_session_component
 
 		~Vm_session_component() { }
 
-		Dataspace_capability _cpu_state(Vcpu_id)
-		{
-			diag("return VCPU-state dataspace");
-			return _dummy_vcpu_state.cap();
-		}
+		/**************************
+		 ** Vm session interface **
+		 **************************/
 
-		void _exception_handler(Signal_context_capability sigh, Vcpu_id)
+		Capability<Native_vcpu> create_vcpu(Thread_capability thread_cap)
 		{
-			_sigh = sigh;
-		}
-
-		void _run(Vcpu_id)
-		{
-			diag("run VCPU");
-			if (_sigh.valid())
-				Signal_transmitter(_sigh).submit();
-		}
-
-		void _pause(Vcpu_id) { }
-
-		Vcpu_id _create_vcpu(Thread_capability)
-		{
-			diag("create VCPU");
-			return Vcpu_id { };
-		}
-
-		Capability<Native_vcpu> _native_vcpu(Vcpu_id)
-		{
-			diag("native VCPU cap");
-			return Capability<Native_vcpu>();
+			diag("create vCPU bound to ", thread_cap);
+			return { };
 		}
 
 		void attach(Dataspace_capability, addr_t at, Attach_attr attr) override

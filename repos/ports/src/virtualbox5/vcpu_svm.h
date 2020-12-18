@@ -1,11 +1,13 @@
 /*
  * \brief  Genode specific VirtualBox SUPLib supplements
  * \author Alexander Boettcher
+ * \author Norman Feske
+ * \author Christian Helmuth
  * \date   2013-11-18
  */
 
 /*
- * Copyright (C) 2013-2019 Genode Labs GmbH
+ * Copyright (C) 2013-2021 Genode Labs GmbH
  *
  * This file is distributed under the terms of the GNU General Public License
  * version 2.
@@ -14,11 +16,8 @@
 #ifndef _VIRTUALBOX__VCPU_SVM_H_
 #define _VIRTUALBOX__VCPU_SVM_H_
 
-/* base includes */
-#include <vm_session/connection.h>
-#include <vm_session/vm_session.h>
-
-#include <cpu/vm_state.h>
+/* Genode includes */
+#include <vm_session/handler.h>
 
 /* Genode's VirtualBox includes */
 #include "vcpu.h"
@@ -28,12 +27,10 @@ class Vcpu_handler_svm : public Vcpu_handler
 {
 	private:
 
-		Genode::Vm_handler<Vcpu_handler_svm>  _handler;
+		Genode::Vcpu_handler<Vcpu_handler_svm> _handler;
 
-		Genode::Vm_connection                &_vm_session;
-		Genode::Vm_session_client::Vcpu_id    _vcpu;
-
-		Genode::Attached_dataspace            _state_ds;
+		Genode::Vm_connection       &_vm_connection;
+		Genode::Vm_connection::Vcpu  _vcpu;
 
 		void _svm_default() { _default_handler(); }
 		void _svm_vintr()   { _irq_window(); }
@@ -45,12 +42,12 @@ class Vcpu_handler_svm : public Vcpu_handler
 
 				Genode::warning("invalid gueststate");
 
-				*_state = Genode::Vm_state {}; /* reset */
+				_state->discharge();
 
-				_state->ctrl_primary.value(ctrl0);
-				_state->ctrl_secondary.value(0);
+				_state->ctrl_primary.charge(ctrl0);
+				_state->ctrl_secondary.charge(0);
 
-				_vm_session.run(_vcpu);
+				_vcpu.run();
 			} else
 				_default_handler();
 		}
@@ -76,7 +73,7 @@ class Vcpu_handler_svm : public Vcpu_handler
 			next_utcb.ctrl[1] = 0;
 		}
 
-		void _handle_vm_exception()
+		void _handle_exit()
 		{
 			unsigned const exit = _state->exit_reason;
 			bool recall_wait = true;
@@ -121,33 +118,13 @@ class Vcpu_handler_svm : public Vcpu_handler
 				pause_vm(); /* cause pause exit */
 		}
 
-		void run_vm()   { _vm_session.run(_vcpu); }
-		void pause_vm() { _vm_session.pause(_vcpu); }
+		void run_vm()   { _vcpu.run(); }
+		void pause_vm() { _vcpu.pause(); }
 
 		int attach_memory_to_vm(RTGCPHYS const gp_attach_addr,
 		                        RTGCUINT vbox_errorcode)
 		{
-			return map_memory(_vm_session, gp_attach_addr, vbox_errorcode);
-		}
-
-		void _exit_config(Genode::Vm_state &state, unsigned exit)
-		{
-			switch (exit) {
-			case RECALL:
-			case SVM_EXIT_IOIO:
-			case SVM_EXIT_VINTR:
-			case SVM_EXIT_RDTSC:
-			case SVM_EXIT_MSR:
-			case SVM_NPT:
-			case SVM_EXIT_HLT:
-			case SVM_EXIT_CPUID:
-			case VCPU_STARTUP:
-				/* todo - touch all members */
-				Genode::memset(&state, ~0U, sizeof(state));
-				break;
-			default:
-				break;
-			}
+			return map_memory(_vm_connection, gp_attach_addr, vbox_errorcode);
 		}
 
 	public:
@@ -155,32 +132,28 @@ class Vcpu_handler_svm : public Vcpu_handler
 		Vcpu_handler_svm(Genode::Env &env, size_t stack_size,
 		                 Genode::Affinity::Location location,
 		                 unsigned int cpu_id,
-		                 Genode::Vm_connection &vm_session,
+		                 Genode::Vm_connection &vm_connection,
 		                 Genode::Allocator &alloc)
 		:
 			 Vcpu_handler(env, stack_size, location, cpu_id),
-			_handler(_ep, *this, &Vcpu_handler_svm::_handle_vm_exception,
-			         &Vcpu_handler_svm::_exit_config),
-			_vm_session(vm_session),
-			/* construct vcpu */
-			_vcpu(_vm_session.with_upgrade([&]() {
-				return _vm_session.create_vcpu(alloc, env, _handler); })),
-			/* get state of vcpu */
-			_state_ds(env.rm(), _vm_session.cpu_state(_vcpu))
+			_handler(_ep, *this, &Vcpu_handler_svm::_handle_exit),
+			_vm_connection(vm_connection),
+			_vcpu(_vm_connection, alloc, _handler, _exit_config)
 		{
-			_state = _state_ds.local_addr<Genode::Vm_state>();
+			/* get state of vcpu */
+			_state = &_vcpu.state();
 
-			_vm_session.run(_vcpu);
+			_vcpu.run();
 
 			/* sync with initial startup exception */
 			_blockade_emt.block();
 		}
 
-		bool hw_save_state(Genode::Vm_state *state, VM * pVM, PVMCPU pVCpu) {
+		bool hw_save_state(Genode::Vcpu_state *state, VM * pVM, PVMCPU pVCpu) {
 			return svm_save_state(state, pVM, pVCpu);
 		}
 
-		bool hw_load_state(Genode::Vm_state *state, VM * pVM, PVMCPU pVCpu) {
+		bool hw_load_state(Genode::Vcpu_state *state, VM * pVM, PVMCPU pVCpu) {
 			return svm_load_state(state, pVM, pVCpu);
 		}
 
