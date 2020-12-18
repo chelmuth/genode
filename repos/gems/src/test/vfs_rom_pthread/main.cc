@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 namespace Test_vfs_rom_pthread {
 	using namespace Genode;
@@ -55,21 +56,21 @@ class Test_vfs_rom_pthread::Test
 			char test_data_1[BUF_SIZE] { };
 			char test_data_2[BUF_SIZE] { };
 
-			FILE *test_data_file_1 { fopen(TEST_DATA_FILENAME, "r") };
-			if (test_data_file_1 == nullptr) {
+			int test_data_file_1 { open(TEST_DATA_FILENAME, O_RDONLY) };
+			if (test_data_file_1 == -1) {
 				error("Cannot open test data file 1: ", TEST_DATA_FILENAME);
 				exit(1);
 			}
-			FILE *test_data_file_2 { fopen(TEST_DATA_FILENAME, "r") };
-			if (test_data_file_2 == nullptr) {
+			int test_data_file_2 { open(TEST_DATA_FILENAME, O_RDONLY) };
+			if (test_data_file_2 == -1) {
 				error("Cannot open test data file 2: ", TEST_DATA_FILENAME);
 				exit(1);
 			}
 
 			size_t total_received_bytes { 0 };
 			while (true) {
-				auto const test_data_num_1 { fread(test_data_1, 1, BUF_SIZE, test_data_file_1) };
-				auto const test_data_num_2 { fread(test_data_2, 1, BUF_SIZE, test_data_file_2) };
+				auto const test_data_num_1 { read(test_data_file_1, test_data_1, BUF_SIZE) };
+				auto const test_data_num_2 { read(test_data_file_2, test_data_2, BUF_SIZE) };
 				if (test_data_num_1 != test_data_num_2) {
 					error("Error test_data_num_1 != test_data_num_2");
 					error("total_received_bytes=", total_received_bytes, " test_data_num_1=", test_data_num_1, " test_data_num_2=", test_data_num_2);
@@ -77,7 +78,7 @@ class Test_vfs_rom_pthread::Test
 				}
 				if (test_data_num_1) {
 					/* compare the two test data sets */
-					auto const diff_to_test_data { Genode::memcmp(test_data_1, test_data_2, test_data_num_1) };
+					auto const diff_to_test_data { ::memcmp(test_data_1, test_data_2, test_data_num_1) };
 					if ((0 != diff_to_test_data)) {
 						error("the two test data sets are not equal. diff_to_test_data=", diff_to_test_data);
 						error("total_received_bytes=", total_received_bytes, " test_data_num_1=", test_data_num_1);
@@ -85,13 +86,13 @@ class Test_vfs_rom_pthread::Test
 					}
 				}
 				total_received_bytes += test_data_num_1;
-				if (test_data_num_1 == 0 && feof(test_data_file_1)) {
+				if (test_data_num_1 == 0) {
 					break;
 				}
 			}
 
-			fclose(test_data_file_1);
-			fclose(test_data_file_2);
+			close(test_data_file_1);
+			close(test_data_file_2);
 		}
 
 		static void *handle_output_data(void*)
