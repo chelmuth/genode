@@ -96,7 +96,8 @@ class Test_vfs_rom_pthread::Test
 
 		static void *handle_output_data(void*)
 		{
-			compare_test_files();
+			while (true)
+				compare_test_files();
 			pthread_exit(NULL);
 			return NULL;
 		}
@@ -191,7 +192,7 @@ class Test_vfs_rom_pthread::Main
 		{
 			auto const max_iterations { _config.xml().attribute_value("iterations", 1u) };
 			log("test started with ", max_iterations, " iterations");
-			unsigned num_threads { 1 };
+			unsigned num_threads { MAX_THREADS };
 			for (unsigned i = 0; i < max_iterations; ++i) {
 				log("--- test iteration ", i, " started ---");
 				Test test(_env);
