@@ -1,4 +1,4 @@
-build "core init test/log"
+build "core init test/log app/top timer"
 
 create_boot_directory
 
@@ -9,22 +9,52 @@ install_config {
 			<service name="PD"/>
 			<service name="CPU"/>
 			<service name="ROM"/>
+			<service name="TRACE"/>
+			<service name="IO_PORT"/>
+			<service name="IRQ"/>
 		</parent-provides>
 		<default-route>
-			<any-service> <parent/> </any-service>
+			<any-service> <parent/> <any-child/> </any-service>
 		</default-route>
-		<default caps="50"/>
-		<start name="test-log">
+		<default caps="120"/>
+
+		<affinity-space width="4" height="1"/>
+
+		<start name="log.1">
+			<binary name="test-log"/>
+			<affinity xpos="1" ypos="0" width="1" height="1"/>
 			<resource name="RAM" quantum="10M"/>
+		</start>
+
+		<start name="log.2">
+			<binary name="test-log"/>
+			<affinity xpos="2" ypos="0" width="1" height="1"/>
+			<resource name="RAM" quantum="10M"/>
+		</start>
+
+		<start name="log.3">
+			<binary name="test-log"/>
+			<affinity xpos="3" ypos="0" width="1" height="1"/>
+			<resource name="RAM" quantum="10M"/>
+		</start>
+
+		<start name="timer">
+			<resource name="RAM" quantum="1M"/>
+			<provides><service name="Timer"/></provides>
+		</start>
+		<start name="top">
+			<resource name="RAM" quantum="2M"/>
+			<config period_ms="5000"/>
 		</start>
 	</config>
 }
 
-build_boot_image "core ld.lib.so init test-log"
+build_boot_image "core ld.lib.so init test-log top timer"
 
-append qemu_args "-nographic "
+append qemu_args "-nographic -cpu Haswell -smp cores=4,threads=1,sockets=1 "
 append xen_args  { sdl="0" }
 
+run_genode_until forever
 run_genode_until "Test done.*\n" 20
 
 grep_output {\[init -\> test-log}
