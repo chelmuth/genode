@@ -33,6 +33,11 @@ struct Hello::Session_component : Genode::Rpc_object<Session>
 
 	int add(int a, int b) override {
 		return a + b; }
+
+	void msg(String const &msg) override
+	{
+		Genode::log(__func__, "(", msg, ")");
+	}
 };
 
 
