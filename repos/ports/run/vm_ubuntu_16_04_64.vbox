@@ -21,17 +21,14 @@
       <CPU count="2" hotplug="false">
         <HardwareVirtEx enabled="true"/>
         <HardwareVirtExNestedPaging enabled="true"/>
-        <HardwareVirtExVPID enabled="true"/>
         <HardwareVirtExUX enabled="true"/>
         <PAE enabled="true"/>
         <LongMode enabled="true"/>
-        <HardwareVirtExLargePages enabled="false"/>
-        <HardwareVirtForce enabled="false"/>
       </CPU>
-      <Memory RAMSize="9216" PageFusion="false"/>
-      <HID Pointing="USBTablet" Keyboard="PS2Keyboard"/>
+      <Memory RAMSize="5120" PageFusion="false"/>
+      <HID Pointing="PS2Mouse" Keyboard="PS2Keyboard"/>
       <HPET enabled="false"/>
-      <Chipset type="PIIX3"/>
+      <Chipset type="ICH9"/>
       <Boot>
         <Order position="1" device="Floppy"/>
         <Order position="2" device="DVD"/>
@@ -62,7 +59,7 @@
         </Adapter>
       </Network>
       <UART>
-        <Port slot="0" enabled="true"  IOBase="0x3f8" IRQ="4" path="/dev/terminal" hostMode="HostDevice"/>
+        <Port slot="0" enabled="true"  IOBase="0x3f8" IRQ="4" path="/dev/terminal" hostMode="RawFile"/>
         <Port slot="1" enabled="false" IOBase="0x2f8" IRQ="3" hostMode="Disconnected"/>
       </UART>
       <LPT>

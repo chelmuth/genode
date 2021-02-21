@@ -33,6 +33,7 @@ set build_components {
 }
 
 set boot_modules {
+	core ld.lib.so
 	event_filter
 	ipxe_nic_drv
 	pci_audio_drv
@@ -40,7 +41,7 @@ set boot_modules {
 	dynamic_rom
 }
 
-set virtualbox5_binary "virtualbox5"
+set virtualbox5_binary "virtualbox6"
 if {$use_vbox5_nova} { set virtualbox5_binary "virtualbox5-nova" }
 
 set config_of_app {
@@ -179,7 +180,7 @@ append config_of_app {
 
 						<domain name="pointer"  layer="1" content="client" label="no" origin="pointer" />
 						<domain name="cpu_load" layer="2" content="client" label="no" />
-						<domain name=""         layer="3" content="client" label="no" focus="click" hover="always"/>
+						<domain name=""         layer="3" content="client" label="yes" focus="click" hover="always"/>
 
 						<policy label_prefix="pointer"          domain="pointer"/>
 						<policy label_prefix="cpu_load_display" domain="cpu_load"/>
@@ -234,7 +235,7 @@ for { set i 1} { $i <= $use_vms } { incr i} {
 			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc" pipe="/pipe"/>
 			<vfs>
 				<dir name="dev">
-					<log/> <rtc/>}
+					<log/> <rtc/> <null/> <zero/>}
 
 	append_if [expr $use_serial] config_of_app { <terminal/> }
 
@@ -257,6 +258,14 @@ for { set i 1} { $i <= $use_vms } { incr i} {
 
 	append config_of_app {
 			</vfs>
+			<arg value="virtualbox"/>
+			<env key="VBOX_USER_HOME" value="/"/>
+			<env key="VBOX_LOG_DEST" value="file=/dev/log"/>
+			<env key="VBOX_LOG_FLAGS" value="thread"/>
+			<env key="VBOX_LOG" value="+default+cpum+main_console"/>
+			<env key="VBOX_RELEASE_LOG_DEST" value="file=/dev/log"/>
+			<env key="VBOX_RELEASE_LOG_FLAGS" value="thread"/>
+			<env key="VBOX_RELEASE_LOG" value=""/>
 		</config>
 		<route>}
 
@@ -304,6 +313,8 @@ if {[have_spec foc]} { set wait_timeout 120 }
 if {![info exists use_check_result]} {
 	set use_check_result 0
 }
+
+run_genode_until forever
 
 if {$use_check_result} {
 	run_genode_until {\[init -\> vbox.*].*Guest Additions capability report:.*seamless: no, hostWindowMapping: no, graphics: no} $wait_timeout

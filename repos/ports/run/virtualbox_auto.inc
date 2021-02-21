@@ -40,7 +40,7 @@ append build_components {
 lappend_if [expr $use_serial] build_components server/log_terminal
 lappend_if [expr $use_rumpfs] build_components lib/vfs/rump
 lappend_if [expr $use_rumpfs] build_components server/vfs
-lappend_if [expr $use_vbox5]  build_components virtualbox5
+lappend_if [expr $use_vbox5]  build_components virtualbox6
 lappend_if [expr $use_ps2]    build_components drivers/ps2
 lappend_if [expr $use_usb]    build_components drivers/usb
 lappend_if [expr $use_usb]    build_components app/usb_report_filter
@@ -94,6 +94,8 @@ append config {
 		<any-service> <parent/> <any-child/> </any-service>
 	</default-route>
 	<default caps="100"/>
+
+	<resource name="RAM" preserve="8M"/>
 
 	<start name="timer">
 		<resource name="RAM" quantum="1M"/>
@@ -161,7 +163,7 @@ append_if [expr $use_ram_fs] config {
 	<start name="ram_fs" priority="-1" caps="1800">
 		<binary name="vfs"/>}
 append_if [expr $use_ram_fs] config "
-		<resource name=\"RAM\" quantum=\"[expr $use_vms * 8 * 128]M\"/>"
+		<resource name=\"RAM\" quantum=\"2G\"/>"
 append_if [expr $use_ram_fs] config {
 		<provides><service name="File_system"/></provides>
 		<config>
