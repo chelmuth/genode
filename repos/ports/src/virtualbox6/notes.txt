@@ -1,0 +1,128 @@
+* Document the these changes
+  * VFS must provide /dev/null
+  * argv0 must be present
+
+* cd build/x86_64; rm -rf ~/src/genode/contrib/virtualbox6-*/*; ~/src/genode/tool/ports/prepare_port virtualbox6 CHECK_HASH=no; rm -rf var/libcache/virtualbox* ; make virtualbox6
+* Remove busy loops from dummy implementations
+* virtualbox6.port: split additional_steps into multiple rules
+* Assertion ticket: https://www.virtualbox.org/ticket/19939
+* Re-insert RAM-quota sanity checks in main.cc, see occurrences of
+  genode_check_memory_config in virtualbox5/main.cc
+* Do we need locking of in guest_memory.h/cc?
+* we no longer call rttimer_func in GIP
+* RTLdr fails with missing library object file (Drag and drop service is not available)
+* pgmR3InitSavedState needs Saved State Manager (SSM) 
+* currently we do not include SRC_CC +=
+  HostDrivers/Support/SUPLibSem.cpp in virtualbox6-sup.mk but
+  implement sup_sem.cc API
+* PGM_WITHOUT_MAPPINGS is unconditionally defined in pgm.h
+  Hence, we can ignore all code wrapped by '#ifndef PGM_WITHOUT_MAPPINGS'
+* VMHALTMETHOD is currently VMHALTMETHOD_GLOBAL_1 after VMMR0_DO_VMMR0_INIT_EMT
+  maybe worthwhile to check
+* qemu: When using Qemu/SVM we get an early unexpected VM exit with reason 0
+  accord. to Alex this should not happen with vbox5-generic
+* May we drop FPU-state transfers with VirtualBox 6 ?
+  IEM_CTX_IMPORT_NORET() and CPUMImportGuestStateOnDemand() look promising
+* Super-page mappings in pgmPhysAllocPage() are not used without
+  PGM_WITH_LARGE_PAGES (which is defined) and !VM_IS_NEM_ENABLE (argh)
+  and PGM_PAGE_GET_PDE_TYPE(pBasePage) == PGM_PAGE_PDE_TYPE_DONTCARE
+  also: PGMIsUsingLargePages(pVM) which is (pVM)->fUseLargePages
+* RAM pages are not preallocated unless pgm.s.fRamPreAlloc
+  also: VBOX_WITH_PREALLOC_RAM_BY_DEFAULT may change the default
+* to change a CFGM value see src/VBox/Main/src-client/ConsoleImpl2.cpp:600 ff.
+  pRoot = CFGMR3GetRoot(pVM);
+  CFGMR3RemoveValue(pRoot, "RamPreAlloc");
+  InsertConfigInteger(pRoot, "RamPreAlloc", 1); // CFGMR3InsertInteger()
+* VMX_EXIT_IO_INSTR exit optimization
+  nemR3WinHandleExitIoPort or hmR0VmxExitIoInstr
+    EMHistoryAddExitEMHistoryAddExit
+    !stringop
+      - IOMIOPortWrite / IOMIOPortRead
+        nemR3WinCopyStateFromX64Header
+        nemR3WinAdvanceGuestRipAndClearRF
+      - IEMExecOne / IEMExecStringIoWrite / IEMExecStringIoRead
+* clipboard implementation see
+  SessionMachine::clipboardAreaRegister
+                  clipboardAreaGetMostRecent
+* Anylze interrupts
+  NEMCPU::fCurrentInterruptWindows NEM_WIN_INTW_F_XXX
+  NEMCPU::fDesiredInterruptWindows
+  NEMCPU::fLastInterruptShadow
+  Hyper-V InterruptShadow means "an instruction inhibits interrupts"
+* Check whether #UD needs to be intercepted and presented to GIM (NEMCPU::fGIMTrapXcptUD)
+
+* Call trace for NEMR0MapPages
+    nemR0WinMapPages (HV_INPUT_MAP_GPA_PAGES)
+    - GCPhysSrc/GCPhysDst together with PageList[iPage]=HCPhys
+    - HCPhys returned by PGMPhysGCPhys2HCPhys(GCPhysSrc)
+
+  NEM_WIN_USE_HYPERCALLS_FOR_PAGES only defined on RT_OS_WINDOWS
+
+  nemHCNativeSetPhysPage
+
+  RAMRANGE is initialized PGM_PAGE_INIT_ZERO()
+   leads in pgmPhysPageMakeWritable to
+     pgmPhysAllocPage
+       GMMPAGEDESC : HCPhysGCPhys (in GC, out HC)
+
+* Call trace for instruction emulation on "memory intercept"
+  nemHCWinHandleMessageMemory
+    IEMExecOne
+      iemInitDecoderAndPrefetchOpcodes prefetches bytes until end of page
+        iemInitDecoder
+        PGMGstGetPage(pVCpu, GCPtrPC, &fFlags, &GCPhys)
+        ? !fBypassHandlers
+        - PGMPhysRead
+            pgmPhysReadHandler
+              pgmPhysGCPhys2CCPtrInternalReadOnly
+                pgmPhysPageQueryTlbeWithPage
+                  pgmPhysPageLoadIntoTlbWithPage
+                    pgmPhysPageMapCommon
+                      ? PGM_PAGE_GET_CHUNKID(pPage) == NIL_GMM_CHUNKID
+                      - zero-page handling
+                      - make chunk TLB entry
+                        pMap = pgmR3PhysChunkMap()
+                          VMMR0_DO_GMM_MAP_UNMAP_CHUNK
+                          RTAvlU32Insert(ChunkR3Map.pTree, chunk)
+                        pv = pMap->pv + off
+                (void *)((uintptr_t)pTlbe->pv | (uintptr_t)(GCPhys & PAGE_OFFSET_MASK))
+        - PGMPhysSimpleReadGCPhys
+      iemExecOneInner
+        starts emulation and also does fetching of additional instruction bytes
+        (maybe beyond page)
+
+* VMNOTIFYFF_FLAGS_POKE: Whether we should poke the CPU if it's executing guest code
+* VMNOTIFYFF_FLAGS_DONE_REM: Whether we've done REM or not
+
+* nemHCWinHandleInterruptFF
+  VMCPU_FF_IS_ANY_SET(pVCpu, VMCPU_FF_INTERRUPT_APIC | VMCPU_FF_INTERRUPT_PIC | VMCPU_FF_INTERRUPT_NMI  | VMCPU_FF_INTERRUPT_SMI)
+
+  hmR0VmxSetIntWindowExitVmcs / hmR0VmxClearIntWindowExitVmcs
+
+* Work items
+
+  * Update:           6.1.18
+  * Guest Systems:    Ubuntu (stress testing)
+  * Guest Systems:    Win10 (SMP)
+
+  * Guest Additions:  Display
+  * Guest Additions:  Mouse Integration
+  * Guest Additions:  Shared Folder
+  * Basics:           ACPI Reset/Shutdown/PowerOff
+  * Guest Additions:  Clipboard (investigate truncated data, interplay with file manager)
+  * Guest Additions:  Caps Lock
+
+  * Cleanups:         use TAP device in VFS for networking
+  * Cleanups:         use libusb for USB raw access
+  * Basics:           enable error reporting, e.g., file not found or UUID mismatch
+  * Basics:           halt in TinyCore (mwait?)
+  * Basics:           sched_yield and why is it used ?
+  * Basics:           do we need to re-add prios ?
+  * Optimizations:    Use IOMIOPortWrite if possible on VMX_EXIT_IO_INSTR
+  * Optimizations:    Comparison to Linux-native VirtualBox 6
+  * Optimizations:    NEM Unmap Merging (ignore host range)
+  * Optimizations:    Norman's VGA ideas
+
+  * Devices:          Sound / OSS ?
+  * Basics:           VBOX_WITH_EFI
+  * Devices:          Touchscreen
