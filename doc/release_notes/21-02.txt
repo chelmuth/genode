@@ -544,37 +544,20 @@ Device drivers
 Power-gating of PCI devices on x86
 ==================================
 
-;@alex-ab
+PCI devices have several PCI capabilities, which describe the feature set
+they support, as defined by the PCI specification. The platform driver, which
+is the gatekeeper on Genode, got extended to power on and off devices, if the
+PCI power capability is supported. On powering on, a device reset
+is issued if supported by the PCI device. During release of a driver from a
+device, the DMA memory assigned and thereby accessible to a device are
+flushed from the IO-MMU TLB to avoid further access afterwards.
 
-commit b185f3fac196fea00ffda68e99591fa702c0c569
-Author: Alexander Boettcher <alexander.boettcher@genode-labs.com>
-Date:   Thu Dec 3 15:26:41 2020 +0100
+Additionally, the platform driver now supports to react on configuration
+changes. Special care must be taken, if the configuration of a running device
+driver changes. If the configuration re-evaluation yields that a driver is not
+permitted to use an already assigned PCI device anymore, the Platform session
+will be closed forcefully and make the device inaccessible to the driver.
 
-    platform_drv: add support to power PCI devices
-    
-    - depending on available PCI power cap power off and on
-    - save and restore PCI bars if required
-    - reset PCI devices after power on if supported
-    
-    Fixes #3963
-
-commit f358fcbda6fc4df8c879e0461dd303e2d1084115
-Author: Alexander Boettcher <alexander.boettcher@genode-labs.com>
-Date:   Thu Dec 3 16:12:07 2020 +0100
-
-    nova: flush Intel IOMMU caches
-    
-    - when memory is detached
-    
-    Issue #3963
-
-commit 55cef01548bfa91628eed355d80f07b391f02f86
-Author: Alexander Boettcher <alexander.boettcher@genode-labs.com>
-Date:   Tue Dec 15 13:31:07 2020 +0100
-
-    platform_drv(x86): support dynamic reconfiguration
-    
-    Fixes #3989
 
 commit a6a923c31bebc2940418a6ea58b35a4ca27c45c0
 Author: Norman Feske <norman.feske@genode-labs.com>
