@@ -18,7 +18,7 @@ if {[expr !$use_rumpfs && $use_vms > 1] } {
 set vdi_image "${flavor}.vdi"
 set raw_image "${flavor}.vmdk"
 set vbox_file "vm_${flavor}.vbox"
-set overlay_image "overlay_${flavor}.vdi"
+set overlay_image "overlay_vbox6.vdi"
 
 if {[info exists flavor_extension]} {
 	set vbox_file "vm_${flavor}${flavor_extension}.vbox"
@@ -42,8 +42,13 @@ set boot_modules {
 	dynamic_rom
 }
 
-set virtualbox5_binary "virtualbox5"
-if {$use_vbox5_nova} { set virtualbox5_binary "virtualbox5-nova" }
+if {[info exists use_vbox6] && $use_vbox6} {
+	set virtualbox_binary "virtualbox6"
+}
+if {[info exists use_vbox5] && $use_vbox5} {
+	set virtualbox_binary "virtualbox5"
+	if {$use_vbox5_nova} { set virtualbox_binary "virtualbox5-nova" }
+}
 
 set config_of_app {
 
@@ -254,10 +259,8 @@ append config_of_app {
 for { set i 1} { $i <= $use_vms } { incr i} {
 	append config_of_app "
 	<start name=\"vbox${i}\" priority=\"-2\" caps=\"1200\">"
-	append_if [expr $use_vbox5] config_of_app "
-		<binary name=\"$virtualbox5_binary\" />"
-
 	append config_of_app {
+		<binary name="} $virtualbox_binary {"/>
 		<resource name="RAM" quantum="} $vm_ram {"/>}
 	if { $use_vms eq 1 } {
 		append config_of_app "
@@ -268,10 +271,12 @@ for { set i 1} { $i <= $use_vms } { incr i} {
 		<config ld_verbose=\"yes\" vbox_file=\"${vbox_file}\" vm_name=\"${flavor}\" xhci=\"no\" capslock=\"NOROM\">"
 	}
 	append config_of_app {
-			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc" pipe="/pipe"/>
+			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc" pipe="/pipe">
+				 <pthread placement="single-cpu"/>
+			</libc>
 			<vfs>
 				<dir name="dev">
-					<log/> <rtc/>}
+					<log/> <rtc/> <null/>}
 
 	append_if [expr $use_serial] config_of_app { <terminal/> }
 
@@ -294,6 +299,14 @@ for { set i 1} { $i <= $use_vms } { incr i} {
 
 	append config_of_app {
 			</vfs>
+			<arg value="virtualbox"/>
+			<env key="VBOX_USER_HOME" value="/"/>
+			<env key="VBOX_LOG_DEST" value="file=/dev/log"/>
+			<env key="VBOX_LOG_FLAGS" value="thread"/>
+			<env key="VBOX_LOG" value="+dev_vmm"/>
+			<env key="VBOX_RELEASE_LOG_DEST" value="file=/dev/log"/>
+			<env key="VBOX_RELEASE_LOG_FLAGS" value="thread"/>
+			<env key="VBOX_RELEASE_LOG" value=""/>
 		</config>
 		<route>}
 
