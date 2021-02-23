@@ -136,131 +136,48 @@ Date:   Fri Jan 8 17:27:24 2021 +0100
 LTE modem stack
 ###############
 
-;@ssumpf
+With the current release Genode adds LTE broadband modem support for packet data
+connections. This way it becomes possible to browse the internet using the SIM
+card of your broadband service provider. For a description of the protocols and
+the general terminology when talking about LTE modems our
+[http://genodians.org/ssumpf/2020-12-04-mbim - LTE modem support for Genode]
+Genodians article is a good starting point.
 
-commit 0beda6bca4040bfef47bf802e3fd2b453ce8d009
-Author: Sebastian Sumpf <sebastian.sumpf@genode-labs.com>
-Date:   Thu Jul 9 15:10:21 2020 +0200
+From the device side, LTE modems register themselves as USB devices at the USB
+host controller. The speciality is that a modem offers two devices. First, an USB
+network interface (like NCM or ECM) and second, a
+[https://www.usb.org/document-library/class-definitions-communication-devices-12 - Wireless Mobile Communication Device]
+which is a challenge/response control channel to the modem and used to configure
+the device. For the actual communication through the control channel there exist two
+binary protocols: Namely, Mobile Broadband Interface Model (MBIM) and Qualcomm
+Mobile Station Interface (QMI). While the former is an USB standard, QMI is a
+proprietary Qualcomm protocol. Therefore, we choose a modem that supports the
+MBIM standard for Genode.
 
-    dde_linux: USB MBIM modem driver support
-    
-    Thise driver supports USB LTE modems for Huawais' ME906s through MBIM
-    and provides a traditional Nic session. The "control" interface is a
-    Terminal session, which can be used via libmbim/mbimcli.
-    
-    issue #3822
+USB modem support
+=================
 
+In order to enable modem communication we added the Linux USB modem driver for
+MBIM to our _dde_linux_ device driver environment. This driver implements the
+NCM and WDM interfaces for the modem and provides a network Uplink session for
+the NCM network interface and a Terminal session for the WDM interface (image
+[lte_mbim]).
 
-commit 91f24672e072a25fedb36864d25b88cc2b1a6f5c
-Author: Martin Stein <martin.stein@genode-labs.com>
-Date:   Thu Jul 9 21:36:38 2020 +0200
+MBIM protocol
+=============
 
-    glib: adaptions for libmbim
-    
-    1. glib: don't assume GNU libiconv
-    
-       This removes the glib config switch that made the build assume a GNU libiconv
-       which led to the following compile error:
-    
-       ! .../lib/glib/glib/gconvert.c:55:2: error: #error GNU libiconv in use but
-       !   included iconv.h not from libiconv
-    
-    2. glib: fix "no such instruction" in symbol file
-    
-       This changes several 'R' entries to 'T' entries in the glib symbols file that
-       caused assemble errors as follows:
-    
-       ! glib.symbols.s:1621: Error: no such instruction: `glib_binary_age R'
-       ! glib.symbols.s:1625: Error: no such instruction: `glib_interface_age R'
-       ! glib.symbols.s:1626: Error: no such instruction: `glib_major_version R'
-       ! glib.symbols.s:1628: Error: no such instruction: `glib_micro_version R'
-       ! glib.symbols.s:1629: Error: no such instruction: `glib_minor_version R'
-    
-    3, glib: adapt run script
-    
-       - Remove obsolete pthread.lib.so boot module as it is now part of
-        libc.lib.so.
-    
-       - Provide '/tmp' directory as a g_file_open_tmp test wants to create
-         a file in there.
-    
-       - Use [depot_user] for selecting depot archives instead of hardcoding
-         it to 'genodelabs'.
-    
-    4. glib: enable gobject and gio subsystem
-    
-       - Provide proper definitions for 32 and 64-bit machines
-       - Add gobject and gio subsystems
-       - Depends on libffi, which is currently only availabe for arm_v7a and
-        x86_64.
-    
-       The 'glib' symbols file contains pretty much all symbols, even if the
-       belong to supported or rather not supported backends, e.g. dbus.
-    
-    by mstein and cnuke
-    
-    Ref #168 and #223
-
-commit d120a1c2b145354fb0175fb5087b3e7dd10557d2
-Author: Martin Stein <martin.stein@genode-labs.com>
-Date:   Fri Jul 10 01:12:26 2020 +0200
-
-    Port of libmbim-1.24.2
-    
-    libmbim is a glib-based library for talking to WWAN modems and devices
-    which speak the Mobile Broadband Interface Model (MBIM) protocol.
-    
-    On Genode we use a pre-configured VFS to access the device, please look
-    at the 'run/mbimcli.run' run script.
-    
-    Fixes #217.
-
-
-commit d8e522b4beff734fc434e4490c6f126fcc67f2fd
-Author: Sebastian Sumpf <sebastian.sumpf@genode-labs.com>
-Date:   Thu Oct 22 14:54:30 2020 +0200
-
-    mbimcli: Basic modem connect support
-    
-    This program opens a terminal session to Genode's 'usb_modem' driver and
-    issues a GSM connection sequence for a supported MBIM modem. Upon
-    success it generated a NIC router configuration report. See
-    "src/app/mbimcli/README".
-    
-    issue #217
-
-
-commit a5957002d968a48297981abe5221dbb352c71fd6
-Author: Sebastian Sumpf <sebastian.sumpf@genode-labs.com>
-Date:   Fri Dec 4 09:45:02 2020 +0100
-
-    mbim: run script using Genode's fetchurl tool
-    
-    This script configures the LTE modem and uses Genode's 'fetchurl' to
-    download 'https://genode.org/about/LICENSE'
-    
-    fixes #217
-
-commit 775ae936b701b26d0ee99be1b1b57c6c1ac9770b
-Author: Sebastian Sumpf <sebastian.sumpf@genode-labs.com>
-Date:   Thu Dec 3 10:20:22 2020 +0100
-
-    mbimcli: Fix 'heap could not free memory block' warnings
-    
-    Don't use 'g_autofree' pointers for Genode strings.
-    
-    issue #217
-
-
-commit b75ccf8102d2c24bfadd3fd57df059aa4ed57f7b
-Author: Sebastian Sumpf <sebastian.sumpf@genode-labs.com>
-Date:   Thu Jan 28 13:01:42 2021 +0100
-
-    mbim: Use Uplink session in mbimcli
-    
-    also change run scripts accordingly.
-    
-    fixes #247
+MIBM is a binary protocol that is, for example, implemented by
+[https://www.freedesktop.org/wiki/Software/libmbim/ - libmbim]. Therefore, we
+ported _libmbim_ to Genode. Since it requires _glib_ we had to enable features
+and improve our _glib_ support on Genode. _libmbim_ offers MBIM commands only,
+to actually trigger modem-communication the _mbimcli_ tool is required. We
+ported _mbimcli_ and changed it's front-end to trigger a modem packet-connection
+sequence via _libmbim_ through the Terminal session of the USB modem driver.
+During this sequence the SIM card is unlocked through the PIN, the packet
+service is attached, and connection information (e.g., IP, gateway, DNS server)
+is retrieved. The connection data is then used by _mbimcli_ to configure the
+uplink of Genode's NIC router, which in turn Genode network applications can
+connect to. The holistic view is shown in image [lte_mbim].
 
 
 Base framework and OS-level infrastructure
@@ -633,36 +550,31 @@ great detail in the following article series.
 RISC-V
 ======
 
-;@ssumpf
+RISC-V development has been on the hold at Genode Labs for a while, but with the
+current release this has changed. One of the main goals we had for a long time
+is to use Qemu instead of the Spike emulator for our test infrastructure, since
+every other platform runs on Qemu, Spike causes additional overhead at Genode
+Labs.
 
-commit b1e9c0e7dd5c9d58c17670af7e5351d1ab7dd265
-Author: Sebastian Sumpf <sebastian.sumpf@genode-labs.com>
-Date:   Wed Feb 10 14:17:25 2021 +0100
+In another project we had already bumped Genode's RISC-V support from privileged
+ISA specification 1.9.1 to 1.10. This came in handy because our current Qemu
+testing version (4.2.1) does not support ISA 1.9.1 any more, but only 1.10 and
+1.11. This way we were able to update Genode's generic RISC-V implementation
+quickly, remove the _spike_ board and add a new _riscv_qemu_ board to our
+_base_hw_ kernel implementation.
 
-    riscv: Fix link errors for Genode nightly
-    
-    - add .got filter rule for trace policies, otherwise ld raises a
-      segmentation fault
-    - force soft-float for binary sources (SRC_BIN)
-    
-    issue #4012
+As another nice side effect, Qemu ships it's own OpenSBI machine binary which
+implements the machine mode and SBI calls. It can be enabled through the "-bios"
+command line option. With a machine mode for ISA 1.10 in place, we were able
+remove the old [https://github.com/ssumpf/bbl-lite - BBL] machine mode
+implementation from Genode.
+; TODO: For more information on this topic please refer to our
+; [http://genodians.org/ssumpf/2020-02-22-riscv - Genodians] article.
 
-commit 2667b6d7395243956b7ae77e8e260d6a16857c7b
-Author: Sebastian Sumpf <sebastian.sumpf@genode-labs.com>
-Date:   Wed Feb 10 08:31:39 2021 +0100
-
-    riscv: Use Qemu and update to ISA v1.10
-    
-    - remove Spike/BBL support in favour of Qemu (>=4.2.1)
-    - add 'riscv_qemu' board, remove 'spike' board'
-    - update to privileged ISA v1.10 (from v1.9.1)
-    - use direct system calls for privileged core threads (they call into
-      the kernel and don't use mode changing system calls, i.e. 'ecall',
-      semantics)
-    - use 'OpenSBI' semtantics for SBI calls (to machine mode) instead of
-      BBL
-    
-    issue #4012
+In order to improve development speed, we were able to reduce the link time for
+_core_ and it's debugging variant from about 50 to 5 seconds.  Additionally we
+fixed long standing link errors that were caused by mixing up soft float and
+hard float objects as well as misconfigured linker scripts.
 
 
 Removal of Muen separation kernel support
