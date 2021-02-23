@@ -393,37 +393,18 @@ leaves dealing with the mappings entirely up to the VMM behind the scenes.
 VirtIO block devices for virtual machines on ARM
 ================================================
 
-;@skalk
+With release 20.02 the first VirtIO device models entered Genode's virtual
+machine monitor for ARM. They enabled a virtual machine to access network and
+terminal services. This time the VMM got extended with a block device model,
+which again is compliant to the VirtIO 1.1 specification. Moreover, the generic
+model implementation, which is common to all VirtIO devices, got polished fairly.
 
-commit 4f03cbaaa609f46b50d70521c474fb4faf73f947
-Author: Stefan Kalkowski <stefan.kalkowski@genode-labs.com>
-Date:   Thu Feb 18 17:56:56 2021 +0100
+The new block device model is not configureable yet. By now, the VMM is
+hard-coded to provide exactly one block device. Consequently, one route to a
+Block service needs to be provided to the VMM component.
 
-    vmm: cleanup virtio model, make it extensible
-    
-    * Introduce different index types for ring counters and descriptor arrays
-      within the Virtio split queue implementation
-    * Be more accurate in reporting the queue number supported, and raise it
-      to 512
-    * Introduce abstractions for mmio register access, where several values
-      are stored at the same place, and selector registers exist.
-    * Turn Virtio_device into a template to define the Virio queue type,
-      and its numbers per device model (needed for e.g., future block model)
-    
-    Issue #4025
-
-commit 8866336ac86a9238946afdbbddda3103c82544e0
-Author: Stefan Kalkowski <stefan.kalkowski@genode-labs.com>
-Date:   Fri Feb 19 11:02:58 2021 +0100
-
-    vmm: add virtio block device model
-    
-    * Add new virtio device model
-    * Extend test run-script with vfat block test image
-    * Add vmm depot src recipe
-    * Use packages in test run-script
-    
-    Fix #4025
+Execution of the test run-script in `repos/os/run/vmm_arm.run` shows
+the new VirtIO block device in action.
 
 
 Device drivers
