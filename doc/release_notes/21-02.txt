@@ -428,78 +428,49 @@ Date:   Fri Dec 18 14:08:06 2020 +0100
 VirtualBox 5
 ============
 
-;@cnuke, @alex-ab
+In this release we extended our VirtualBox port and made using USB
+pass-through more robust.
 
-commit ae0090ad3e28d764b6cb1b8a2b0c23e3f4d05f96
-Author: Alexander Boettcher <alexander.boettcher@genode-labs.com>
-Date:   Sat Jan 16 17:20:19 2021 +0100
+So far, we most prominently use VirtualBox on Intel systems that feature
+VT-x. This release enables support for also running 64bit guests on AMD
+systems with SVM.
 
-    vbox5: enable 64bit SVM support
-    
-    Fixes #3965
+When it comes to USB pass-through support we rely on the xHCI device-model
+ported from Qemu. With this release we updated the contrib sources to
+version 5.2.0 and the used exposed device is changed to QEMU xHCI. Due to
+this change older guests OSes, namely Windows 7, that relied on the NEC
+xHCI device will no longer work.
+The 'Qemu::Controller' interface was extended by an 'info' method, which
+returns the vendor and product ID. This allows for removing the hard-coded
+values in the VirtualBox glue code.
 
-commit 8ca71ffd4bbfd1a0d80fe605c8c5924f1faf92ed
-Author: Josef Söntgen <josef.soentgen@genode-labs.com>
-Date:   Fri Feb 12 12:55:44 2021 +0100
+Due to the update it becomes possible to use USB devices using isochronous
+transfers, in particular audio devices, with Windows 10 guests. For now
+we focused on USB-Audio-Class v1 devices using adaptive synchronisation.
 
-    qemu-usb: use bounce buffer to access DMA memory
-    
-    The former implemention assumed that the guest physical memory is
-    mapped continously. This, however, is not true. Writing larger
-    files to an USB stick with a Windows 10 guest would therefore lead
-    to data corruption.
-    
-    The current implementation uses a bounce buffer to copy the data
-    to and from the guest physical memory and leaves dealing with the
-    memory mappings entirely up to the VMM.
-    
-    Fixes #4017.
+On one hand, the handling of isochronous OUT transfers in our host connection
+is now more in line with the original host implementation in Qemu and batches
+multiple packets and queues transfers. Having transfers in-flight helps to
+smoothen out playback in case other components utilize the CPU.
+On the other hand, the number of IN requests queued is increased to 32 while
+the number of packets per request is decreased to 1. Linux as well as Windows
+guests want queue to a varying number of transfers, where each transfer only
+covers one packet (iso frame). We obtained the best results by following
+that behaviour rather than queuing multiple iso frames per request.
 
-commit 29bb4f88636519cfdf48f799a25b785c17a8a3b8
-Author: Josef Söntgen <josef.soentgen@genode-labs.com>
-Date:   Mon Jan 18 16:12:53 2021 +0100
-
-    qemu-usb: update port to 5.2.0
-    
-    The contrib code is updated from 2.4.1 to version 5.2.0 and the used
-    device-model is changed to QEMU xHCI. Due to this change older guests
-    OSes, namely Windows 7, that relied on the NEC xHCI device-model will
-    not work anymore.
-    
-    The 'Qemu::Controller' interface was extended by an 'info' method, which
-    returns the vendor and product ID. This allows for removing the
-    hard-coded values in the VirtualBox glue code.
-    
-    Issue #4018.
-
-commit 1b2d5da6514581d5af8316130862d89ce649564a
-Author: Josef Söntgen <josef.soentgen@genode-labs.com>
-Date:   Mon Jan 25 14:58:20 2021 +0100
-
-    qemu-usb: adapt ISOCH IN handling for audio
-    
-    Linux as well as Windows guests want queue to a varying number of
-    transfers, where each transfer only covers one transaction (iso frame).
-    The best results were obtained by following that behaviour rather
-    than queuing multiple iso frames per requests (like is done with OUT
-    transfers).
-    
-    The number of requests queued is increased to 32 while the number of
-    packets per reques is decreased to 1.
-    
-    Issue #4018.
-
-commit 8547387067d79b61567584ebfa23bb916a37a39c
-Author: Josef Söntgen <josef.soentgen@genode-labs.com>
-Date:   Tue Jan 12 13:28:47 2021 +0100
-
-    qemu-usb: add ring-buffer for ISOCH OUT transfers
-    
-    Be more in line with the original host implementation in Qemu and
-    buffer transfers. Having transfers in-flight helps to smoothen playback
-    in case other components utilize the CPU.
-    
-    Issue #4018.
+Furthermore we changed the way the DMA buffers are accessed. The device-model
+wants to access the DMA buffers residing in the guest-physical memory by
+mapping them locally to VMM address-space.
+When we originally implemented the glue-code we implicitly relied on the mapped
+memory ranges being continous. However, as it turned out, that is not always
+the case. Although it appears that those mappings are continous, after all we
+got away using the mechanism for years with Linux guests without any problems,
+writing larger files to an USB stick with a Windows 10 guest led to data
+corruption because the wrong data was copied. For the time being, rather than
+dealing with the mappings directly we opted for introducing a bounce buffer
+that is used to copy to and copy from the guest physical memory. It uses a
+simple helper API provided by VirtualBox for reading and write the memory and
+leaves dealing with the mappings entirely up to the VMM behind the scenes.
 
 
 VirtIO block devices for virtual machines on ARM
@@ -616,22 +587,26 @@ Date:   Tue Feb 2 01:19:34 2021 +0100
 Isochronous transfers
 ~~~~~~~~~~~~~~~~~~~~~
 
-;@cnuke
+While looking more closely into supporting isochronous transfers,
+driven by the USB pass-through use-case, we encountered shortcomings
+in the current implementation in the USB host-controller driver
+when dealing with IN transfers containing multiple iso frames.
 
-commit 9bdba67643f3c9cc34d78491711c0ceb3ba9176e
-Author: Josef Söntgen <josef.soentgen@genode-labs.com>
-Date:   Thu Jan 28 14:37:59 2021 +0100
+Since the host driver uses the original offsets into the DMA buffer
+when filling in the data of the transfer, even if any of the iso
+frames contains less data than requested, we have to scan the whole
+transfer buffer. Additionally, we have to reflect the actual length
+of the captured data so that the client can distinguish short-reads.
 
-    usb_host: properly handle ISOC read requests
-    
-    * Update the 'packet_size' information with the actual length for
-      each isoc frame to be able to handle short reads at the client side.
-    
-    * Copy the whole transfer buffer because the host controller stores
-      the data at the original offsets, i.e., the buffer is not densely
-      packed.
-    
-    Fixes #4018.
+For the time being, we always copy the whole buffer into the packet
+stream and update the newly added 'actual_packet_size' member in the
+packet descriptor. With those information at hand the client can iterate
+through the buffer.
+
+Exposing the buffer in such a way is error-prone and we therefore plan
+on adding an abstraction to make dealing with isochronous safer and more
+convient. This, however, is post-poned until we get a better grasp at
+the requirements.
 
 
 Platforms
