@@ -310,36 +310,7 @@ Date:   Wed Nov 4 16:34:22 2020 +0100
 VFS support for named pipes
 ===========================
 
-;@nfeske
-
-commit 7f7382e48a1a7df7c069cadf42569fbb70f42d60
-Author: Sid Hussmann <sid.hussmann@gapfruit.com>
-Date:   Fri Oct 16 19:29:21 2020 +0200
-
-    vfs/pipe: add fifo feature to pipe plugin
-    
-    The vfs pipe plugin can now be used as named pipe which anables data
-    transfer via file handles from one component to another. E.g. if one
-    would like to send data from component A to stdin of a libc component B,
-    one can do so by simply writing to that fifo file.
-    
-    Issue #3583
-
-commit f24198b2788cf569ced396b2d8914e319c9ba4ea
-Author: Sid Hussmann <sid.hussmann@gapfruit.com>
-Date:   Wed Feb 3 17:37:32 2021 +0100
-
-    vfs/pipe: refactor read/write synchronization
-    
-    All pipe-ends were notified at the same time which leads to dead-locks.
-    This commit mitigates this by having a signal handler for each pipe and
-    each pipe-end respectively.
-    
-    Issue #3583
-
-; contribution by Sid:
-
-The vfs/pipe plugin now has a named pipe feature. The main motivation was to
+The VFS-pipe plugin received new support for named pipes. The main motivation was to
 easily stream data from pure Genode components to libc components via
 file-system sessions that can be attached to stdin, stdout, and stderr. This
 feature further makes it possible to pipe several components together,
@@ -347,28 +318,56 @@ similarly to how it is done on Unix. Additionally, the thread synchronization
 has been improved so that large data chunks can be transferred without
 blocking.
 
+A named pipe can be created by adding a '<fifo>' sub node to the '<pipe>' node
+of the VFS:
+
+! <vfs>
+!   <pipe>
+!     <fifo name="upstream"/>
+!   </pipe>
+!   ...
+! </vfs>
+
+Each pipe is exposed as a set of pseudo files.
+
+! /upstream
+! /.upstream/in/in
+! /.upstream/out/out
+
+The _/upstream_ pseudo file can be opened either as read-only or write-only
+file. It allows for the access of both ends of the pipe. In contrast, each of
+the pseudo files _/.upstream/in/in_ and _/.upstream/out/out_ represents only
+one end of the pipe, which can be subjected to an individual directory-based
+access-control policy.
+
 
 Terminal
 ========
 
-;@nfeske
+While
+[https://genode.org/documentation/release-notes/20.08#The_GUI_stack__restacked - revising the GUI stack]
+in Genode 20.08, we largely abolished the use of the framebuffer and input
+session interfaces. The graphical terminal, however, still relied on those
+interfaces instead of the GUI session. In practice, there was always a gui_fb
+component needed as an intermediate between the terminal and the GUI server.
+To complete the GUI-stack transition, we changed the terminal to use the GUI
+session directly and adjusted all current scenarios that use the terminal.
 
-commit d47f87a768eebb105b39fc45ea69fc9da6f4f1f0
-Author: Norman Feske <norman.feske@genode-labs.com>
-Date:   Tue Dec 22 15:49:28 2020 +0100
+One useful feature of the gui_fb component was the definition of an initial
+window size. This enabled packages such as Sculpt's system shell to present
+terminal windows with a reasonable default size smaller than the entire
+screen.
+To accommodate this special case, the initial terminal size can now be
+explicitly configured in the terminal configuration.
 
-    terminal: use GUI session directly
-    
-    Issue #3196
-    Fixes #3970
+! <config>
+!   <initial width="800" height="600"/>
+!   ...
+! </config>
 
-commit 2c82636a98dcd61479698afc5268a646c793473f
-Author: Norman Feske <norman.feske@genode-labs.com>
-Date:   Tue Dec 22 16:50:21 2020 +0100
-
-    terminal: respond to font-size changes
-    
-    Issue #3970
+While we were at it, we also enhanced the terminal with the ability to
+dynamically respond to font changes. So the adjustment of the global font
+settings in Sculpt OS takes immediate effect on all terminal windows.
 
 
 OpenSSL 1.1.1i, curl 7.70.0
@@ -660,17 +659,19 @@ Platforms
 Pine-A64-LTS single board computer
 ==================================
 
-;@nfeske
+Our this year's [https://genode.org/about/road-map - road map] envisions
+the use of Genode on the Pinephone by the end of the year. As a first stepping
+stone, the current release adds basic board support for the
+[https://pine64.com/product-category/pine-a64-ltslong-term-supply/ - Pine-A64-LTS]
+single-board computer. We take this line of work as a welcome opportunity to
+thoroughly document the porting process. You can find the work explained in
+great detail in the following article series.
 
-commit a4d56875108de1b2809f0e302fffbfdb6d29f4d5
-Author: Pirmin Duss <pirmin.duss@gapfruit.com>
-Date:   Tue Sep 8 12:50:49 2020 +0200
-
-    base-hw: allow out of tree imx8 platforms
-    
-    Issue #3911
-
-; -> genodians.org article series
+# [https://genodians.org/nfeske/2020-12-10-pine-fun-warmup - Warming up for some Pine fun]
+# [https://genodians.org/nfeske/2020-12-17-pine-fun-serial - Bare-metal serial output]
+# [https://genodians.org/nfeske/2021-01-28-pine-fun-kernel-skeleton - Kernel skeleton]
+# [https://genodians.org/nfeske/2021-02-11-pine-fun-debugging - How did we come here?]
+# [https://genodians.org/nfeske/2021-02-18-pine-fun-user-land - Excursion to the user land]
 
 
 RISC-V
@@ -711,16 +712,25 @@ Date:   Wed Feb 10 08:31:39 2021 +0100
 Removal of Muen separation kernel support
 =========================================
 
-;@nfeske
+Since
+[https://genode.org/documentation/release-notes/15.08#Genode_on_top_of_the_Muen_Separation_Kernel - version 15.08],
+Genode supported the use of the [https://muen.sk - Muen] separation kernel as
+underlying platform. The driving force behind the original development was the
+joyful collaboration with the Muen developers and the prospect for products
+that combine the rigidity of a separation kernel with the dynamic workloads
+enabled by Genode.
 
-commit bf23c3d6e5547b0e8d7c26c1a1ce3b2289ad1f5b
-Author: Norman Feske <norman.feske@genode-labs.com>
-Date:   Fri Jan 29 13:48:00 2021 +0100
+However, over the past 5 years, this potential synergy remained untapped.
+In hindsight, the stacking of one microkernel-based system onto another
+microkernel-based system is a tough sell. Hosting dynamic workloads in a Linux
+VM atop Muen is certainly more relatable to Muen users. Vice versa, for Genode
+users, Genode on bare hardware is less complex and more flexible than using
+the framework atop a separation kernel.
 
-    Remove support for the Muen separation kernel
-    
-    Fixes #3995
-    Fixes #3994
+Without adoption of the joint platform, neither of both teams can justify the
+ongoing effort needed for the continued maintenance of Genode on Muen. Hence,
+we [https://github.com/genodelabs/genode/issues/3995 - concluded] to remove
+Muen as an officially supported platform.
 
 
 Build system and tools
@@ -729,119 +739,68 @@ Build system and tools
 Streamlined distinction of boards by build and run tools
 ========================================================
 
-;@nfeske
+In
+[https://genode.org/documentation/release-notes/20.05#Board_support_outside_the_Genode_main_repository - Genode 20.05], 
+we introduced the principle ability to decouple board-support packages from
+the project's main repository. We thereby want to enable developers outside
+the Genode core team to porting Genode to diverse hardware platforms.
+With the current release, we further refined the structure of the code base and
+the tooling to largely eliminate remaining points of friction when hosting
+board support in external repositories.
 
-commit 5a123e37c9dde0edb66575ffa55e7b0f95dcb6b8
-Author: Stefan Kalkowski <stefan.kalkowski@genode-labs.com>
-Date:   Thu Jan 7 19:15:55 2021 +0100
+We ultimately removed the use of board-specific SPEC values throughout the
+build system and run scripts. SPEC values are now solely used to refer to
+aspects of an instruction-set architecture, e.g., x86, 64bit, arm_v8a.
+In run scripts, the new convenience function 'have_board' can be used to
+distinguish the behavior of run scripts depending on the targeted board now.
+It replaces all former uses of 'have_spec <board>'. The long deprecated
+option of the _create_builddir_ tool to create board-specific build directories
+has been removed.
 
-    run: introduce have_board helper function
-    
-    The new helper function returns a boolean value analoque to 'have_spec' if the
-    BOARD variable corresponds to the given value. It shall replace [have_spec <board>]
-    declarations in run-scripts.
-    
-    Ref #3971
+To simplify the hosting of board support in separate source-code repositories,
+board-specific properties have moved from run-tool scripts to the new notion
+of *board property directories*. Such directories named
+_<repo>/board/<board>/_ contain files with board-specific properties.
+In particular, the 'image_link_address' file contains the physical
+link address of the system image, and the 'arch' file contains the CPU
+architecture of the SoC. The run tool picks up this information from the
+board-property files.
 
-commit bdd923406f11f1f4b97adb152e6cdb54c1019070
-Author: Stefan Kalkowski <stefan.kalkowski@genode-labs.com>
-ttDate:   Wed Jan 13 10:15:10 2021 +0100
+Furthermore, the *packaging* of the board-specific base-hw kernel has
+become more formalized by leveraging the board-property directories.
+This makes the packaging vastly simpler.
+Regardless of where the board-support
+is hosted, the content.mk file becomes as simple as:
 
-    base: remove SPEC variables of boards (fix #3971)
-    
-    * Remove SPEC declarations from mk/spec
-    * Remove all board-specific REQUIRE declaratiions left
-    * Replace [have_spec <board>] run-script declarations with have_board where necessary
-    * Remove addition of BOARD variable to SPECS in toplevel Makefile
-    * Move board-specific directories in base-hw out of specs
+! include $(GENODE_DIR)/repos/base-hw/recipes/src/base-hw_content.inc
 
-commit 1ccf8a280c41b9eefcdf2a265bba53571241d48e
-Author: Norman Feske <norman.feske@genode-labs.com>
-Date:   Mon Jan 18 17:55:51 2021 +0100
+The board name is automatically inferred from the path of the src recipe. The
+architecture is determined from _board/<name>/arch_ files. The attempt to
+build a base-hw-<board> binary archive for the wrong architecture is now
+gracefully handled by skipping all targets (using the REQUIRES mechanism).
 
-    base-hw: simplify board support in external repo
-    
-    Avoid use of REP_DIR in *.mk files to simplify the use of these files as
-    templates for a board hosted in a separate repository.
-    
-    Use REP_INC_DIR for searching headers, thereby considering headers
-    hosted in an external repository.
-    
-    Issue #3168
-
-commit 9bfd812a887e2acac07bff573e91d5bda6143617
-Author: Norman Feske <norman.feske@genode-labs.com>
-Date:   Tue Jan 19 14:17:26 2021 +0100
-
-    tool/run: search repos for run-tool plugins
-    
-    This patch allows for supplementing the existing run-tool plugins with
-    additional plugins hosted inside a repository. E.g., it enables the run
-    tool to find world/tool/run/boot_dir/hw automatically.
-    
-    Fixes #3993
-
-commit c4cf9b6e6d6ef8a0a270859f4d6d4207d450a454
-Author: Norman Feske <norman.feske@genode-labs.com>
-Date:   Thu Jan 21 14:32:47 2021 +0100
-
-    base-hw: introduce board-property directories
-    
-    This patch moves the bootstrap-link-address information from the
-    tool/run/boot_dir/hw file to board-specific property files that can be
-    accessed by using the board as key. This eliminates the need to
-    customize boot_dir/hw when hosting board-support in an external
-    repository.
-    
-    Fixes #3998
-
-commit db7c042e440b3affa65f0a7dd12d72282bbb4edb
-Author: Norman Feske <norman.feske@genode-labs.com>
-Date:   Mon Feb 15 18:17:26 2021 +0100
-
-    base-hw: streamline extraction of depot archives
-    
-    This patch simplifies the packaging of the base-hw kernel for a given
-    board, in particular when the board support is hosted as an external
-    repository such as genode-world. Regardless of where the board-support
-    is hosted, the content.mk file becomes as simple as:
-    
-      include $(GENODE_DIR)/repos/base-hw/recipes/src/base-hw_content.inc
-    
-    The board name is automatically inferred from the path of the src
-    recipe. The architecture is determined from board/<name>/arch files,
-    following the pattern of the image_link_address. The attempt to build a
-    base-hw-<board> binary archive for the wrong architecture is now
-    gracefully handled by skipping all targets (using the REQUIRES
-    mechanism).
-    
-    Besides the improved convenience, the patch results in depot archives
-    that are much closer tailored to the actual board by omitting files for
-    architectures that are not used by the board. E.g., the src/base-hw-pc
-    archive does not contain any ARM-related content.
-    
-    The patch also restores the package builds for core/bootstrap object
-    files as a follow-up fix of "base: remove SPEC variables of boards",
-    which happened to left 'BOARD' undefined in the src archives.
-    
-    Fixes #4019
+Besides the improved convenience, the resulting depot archives
+have become much closer tailored to the actual board by omitting files for
+architectures that are not used by the board. E.g., the src/base-hw-pc
+archive does not contain any ARM-related content.
 
 
 Compiler cache
 ==============
 
-;@nfeske
+The [https://ccache.dev - ccache] tool is a fantastic way to accelerate the
+developer workflow when repeatedly building software. Since ccache is -
+strictly speaking - orthogonal to the build system, configuring the Genode
+build system for the use of ccache was left to each developer.
 
-commit 05350b898346794e664c424a335154907d8d466d
-Author: Norman Feske <norman.feske@genode-labs.com>
-Date:   Fri Jan 29 16:11:12 2021 +0100
+Setting up ccache is not straight-forward though. One must manually create
+hooks (symlinks shadowing the compiler executables), tweaking the PATH
+environment variable, and customizing the CROSS_DEV_PREFIX in
+_etc/tools.conf_. In short, only seasoned developers jump through those hoops.
+Many others may miss out on the joys of ccache.
 
-    Add ccache support to build system
-    
-    This patch simplifies the use of ccache with the build system. Up until
-    now, each developer had to set up the ccache hooks manually, adjust the
-    PATH variable, and customize the etc/tools.conf in each build directory.
-    With the patch, ccache can be enabled by un-commenting a single line in
-    the etc/build.conf file.
-    
-    Fixes #4004
+With the current release, the build-system front end makes ccache easily
+available by enabling a simple option in the _etc/build.conf_ file:
+
+! CCACHE := yes
+
