@@ -468,22 +468,12 @@ Date:   Fri Sep 14 16:58:35 2018 +0200
     Issue #3953
 
 
-USB robustness on Raspberry Pi
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+USB robustness
+~~~~~~~~~~~~~~
 
-;@cproc
-
-commit ef44c3e99b1b611cfd2604e494630753bf2404e3
-Author: Christian Prochaska <christian.prochaska@genode-labs.com>
-Date:   Tue Feb 2 01:19:34 2021 +0100
-
-    usb_host_drv: dwc_otg stability improvements
-    
-    - improve NYET error handling
-    - use split interrupt transaction hack
-    - clear TT buffers in error situations
-    
-    Issue #3247
+We improved the robustness of the USB HID driver with regard to device
+reconnection, as well as the robustness of the DWC OTG host driver for
+the Raspberry Pi when used with HID devices.
 
 
 Isochronous transfers
