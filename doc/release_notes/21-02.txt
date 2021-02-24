@@ -47,7 +47,7 @@ routing policy. However, even though the data channel of the NIC interface is
 bi-directional, we realized that the reversal of the role of the driver does
 not only entail the communication of network payload but also propagation of
 the link state and the MAC address. This prompted us to introduce a new Genode
-session type called "uplink" that precisely models the NIC-driver-as-client
+session type called "Uplink" that precisely models the NIC-driver-as-client
 scenario.
 
 [image nic_router_services]
@@ -118,7 +118,7 @@ the general terminology when talking about LTE modems, our
 Genodians article is a good starting point.
 
 From the device side, LTE modems register themselves as USB devices at the USB
-host controller. The speciality is that a modem offers two devices. First, a USB
+host controller. The speciality is that a modem offers two interfaces. First, a USB
 network interface (like NCM or ECM) and second, a
 [https://www.usb.org/document-library/class-definitions-communication-devices-12 - Wireless Mobile Communication Device],
 which is a challenge/response control channel to the modem and used to configure
@@ -312,11 +312,11 @@ settings in Sculpt OS takes immediate effect on all terminal windows.
 OpenSSL 1.1.1i, curl 7.70.0
 ===========================
 
-OpenSSL experienced some quite important security updates during the last
+OpenSSL experienced some quite important security updates in the last
 months. This prompted us to update our port to version 1.1.1i. During
-the porting work, we kept an eye on performance and enabled CPU-specific
+the port, we had an eye on performance and enabled CPU-specific
 optimizations where feasible. Optimizations are enabled by default on
-x86 and ARMv8. For ARMv7, we enable NEON-based functions only when the
+x86 and ARMv8. On ARMv7, we enable NEON-based functions only when the
 build SPECS include "neon" to support common SoCs that lack these
 capabilities in the default configuration. Please note, the updated
 port does only provide one combined depot archive "openssl" that
@@ -337,39 +337,39 @@ VirtualBox 6.1.14
 Genode supports virtualization with VirtualBox
 [https://genode.org/documentation/release-notes/14.02#VirtualBox_on_top_of_the_NOVA_microhypervisor - since 2014].
 Back then, we enabled VirtualBox version 4 to support use cases with unmodified
-Linux and Windows guests like Sculpt's predecessor
+Linux and Windows guests like the Sculpt's predecessor
 [https://genode.org/documentation/release-notes/15.11#Genode_as_desktop_OS - "Turmvilla"].
 In 2016, we updated VirtualBox to version 5 to enable recent guest OS
 versions notably Ubuntu 16.04 and Windows 10. VirtualBox 5 is an
 integral part of Sculpt OS since its first release.
 
-As VirtualBox 5 is no longer maintained upstream and also shows its age
+As VirtualBox 5 is no longer supported upstream and also shows its age
 when running recent versions of Windows 10, we accepted the challenge
 to once again enable a new version of this VMM. This time we did not
-go for a NOVA-specific port but exclusively use the kernel-agnostic
+went for NOVA-specific port but exclusively use the kernel-agnostic
 virtualization interfaces introduced in
 [https://genode.org/documentation/release-notes/19.05#Kernel-agnostic_virtual-machine_monitors - Genode 19.05].
-This way, VirtualBox 6 is prepared to run on NOVA, seL4, and Fiasco.OC alike with
+So, VirtualBox 6 is prepared to run on NOVA, seL4, and Fiasco.OC alike with
 minimal extra efforts.
 
-The first development snapshot we publish with this release is ready to
+The first development snapshot we publish with the release is ready to
 run Linux and Windows guests with limited support for multiple cores,
 integrates network and USB-passthrough as well as preliminary support
 for Guest Additions like mouse integration and display. We are
 committed to finalize the feature set and optimize the performance of
 VirtualBox 6 until the upcoming Sculpt release but do not plan to replace
 version 5 completely yet. In fact, the update paves the way to explore
-more experimental grounds like enablement of GPU-based
+more experimental grounds like enablement of the GPU-based
 acceleration of guest OSes.
 
-As a starting point for exploring VirtualBox 6 on Genode, we recommend the run script
-_ports/run/virtualbox6.run_.
+For exploring the use of VirtualBox 6 on Genode, we recommend the run script
+_ports/run/virtualbox6.run_ as starting point.
 
 
 VirtualBox 5
 ============
 
-With this release, we extended our VirtualBox port and made USB
+In this release, we extended our VirtualBox port and made using USB
 pass-through more robust.
 
 So far, we most prominently use VirtualBox on Intel systems that feature
@@ -378,40 +378,24 @@ systems with SVM.
 
 When it comes to USB pass-through support, we rely on the xHCI device-model
 ported from Qemu. With this release, we updated the 3rd-party sources to
-version 5.2.0 and the exposed device has changed to QEMU xHCI. Due to
+version 5.2.0 and the type of the exposed device has changed to QEMU xHCI. Due to
 this change, older guests OSes - namely Windows 7 - that relied on the NEC
 xHCI device will no longer work.
-The 'Qemu::Controller' interface was extended by an 'info' method, which
-returns the vendor and product ID. This allows for removing the hard-coded
-values in the VirtualBox glue code.
 
-Thanks to the update, it becomes possible to use USB devices using isochronous
+Thanks to the update, it becomes possible to use USB devices requiring isochronous
 transfers, in particular audio devices, with Windows 10 guests. For now
-we focused on USB-Audio-Class v1 devices using adaptive synchronisation.
+we focused on USB-Audio-Class v1 devices using adaptive
+synchronisation, which enables a variety of popular USB headsets for
+the passthrough use case.
 
-On one hand, the handling of isochronous OUT transfers in our host connection
-is now more in line with the original host implementation in Qemu and batches
-multiple packets and queues transfers. Having transfers in-flight helps to
-smoothen out playback in case other components utilize the CPU.
-On the other hand, the number of IN requests queued is increased to 32 while
-the number of packets per request is decreased to 1. Linux as well as Windows
-guests tend to queue a varying number of transfers where each transfer only
-covers one packet (iso frame). We obtained the best results by following
-that behaviour rather than queuing multiple iso frames per request.
-
-Furthermore, we changed the way the DMA buffers are accessed. The device-model
-accesses DMA buffers residing in the guest-physical memory by
-mapping them locally to VMM address-space.
-When we originally implemented the glue-code, we implicitly relied on the mapped
-memory ranges being continuous. However, as it turned out, that is not always
-the case. Although it appears that those mappings are continuous, after all we
-got away using the mechanism for years with Linux guests without any problems,
-writing larger files to an USB stick with a Windows 10 guest led to data
-corruption because the wrong data was copied. For the time being, rather than
-dealing with the mappings directly we opted for introducing a bounce buffer
-that is used to copy to and copy from the guest physical memory. It uses a
-simple helper API provided by VirtualBox for reading and write the memory and
-leaves dealing with the mappings entirely up to the VMM behind the scenes.
+A glimpse into our USB machinery unveils that fine-tuned buffering and USB
+transfer configuration is the key to robust USB passthrough. On one hand, the
+handling of isochronous OUT transfers in our host connection batches multiple
+packets and queues transfers, which helps to smoothen out playback in case other
+Genode components utilize the CPU concurrently. On the other hand, the number of
+IN requests queued is increased but the number of packets per request set to 1.
+We obtained the best results by following this configuration observed in Linux
+and Windows guests alike.
 
 
 VirtIO block devices for virtual machines on ARM
@@ -456,7 +440,7 @@ will be closed forcefully, making the device inaccessible to the driver.
 The extended features of the platform driver supplement our previous work of
 restarting respectively replacing a running graphics driver in Sculpt OS. The driver
 manager, as used by Sculpt, uses Genode's heartbeat monitoring to check for the
-liveness of the Intel frambuffer driver and restarts it automatically if the
+liveliness of the Intel framebuffer driver and restarts it automatically if the
 driver becomes unresponsive. Restarting
 involves closing the Platform session, thereby powering off the Intel device,
 and reopening the Platform session, thereby powering and resetting the
@@ -493,25 +477,11 @@ Isochronous transfers
 ~~~~~~~~~~~~~~~~~~~~~
 
 While looking more closely into supporting isochronous transfers
-driven by the USB pass-through use-case, we encountered shortcomings
+driven by the USB pass-through use-case, we encountered and addressed shortcomings
 in the current implementation in the USB host-controller driver
-when dealing with IN transfers containing multiple iso frames.
-
-Since the host driver uses the original offsets into the DMA buffer
-when filling in the data of the transfer, even if any of the iso
-frames contains less data than requested, we have to scan the whole
-transfer buffer. Additionally, we have to reflect the actual length
-of the captured data so that the client can distinguish short-reads.
-
-For the time being, we always copy the whole buffer into the packet
-stream and update the newly added 'actual_packet_size' member in the
-packet descriptor. With those information at hand the client can iterate
-through the buffer.
-
-Exposing the buffer in such a way is error-prone and we therefore plan
-on adding an abstraction to make dealing with isochronous transfers safer and more
-convenient. This, however, is postponed until we get a better grasp at
-the requirements.
+when dealing with IN transfers containing multiple isochronous frames.
+However, this is only a first step as we identified significant potential for
+optimization and robustness improvements.
 
 
 Platforms
@@ -520,7 +490,7 @@ Platforms
 Pine-A64-LTS single board computer
 ==================================
 
-Our this year's [https://genode.org/about/road-map - road map] envisions
+Our [https://genode.org/about/road-map - road map] envisions
 the use of Genode on the Pinephone by the end of the year. As a first stepping
 stone, the current release adds basic board support for the
 [https://pine64.com/product-category/pine-a64-ltslong-term-supply/ - Pine-A64-LTS]
@@ -546,7 +516,7 @@ RISC-V
 
 RISC-V development has been on the hold at Genode Labs for a while. But with the
 current release this has changed. One of the main goals we had for a long time
-is to use Qemu instead of the Spike emulator for our test infrastructure, since
+is the use of Qemu instead of the Spike emulator for our test infrastructure, since
 every other platform runs on Qemu, Spike causes additional overhead at Genode
 Labs.
 By updating the privileged ISA specification support from 1.9.1 to 1.10,
