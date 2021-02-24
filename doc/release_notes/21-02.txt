@@ -294,39 +294,20 @@ settings in Sculpt OS takes immediate effect on all terminal windows.
 OpenSSL 1.1.1i, curl 7.70.0
 ===========================
 
-;@chelmuth
+OpenSSL experienced some quite important security updates in the last
+months. This prompted us to update our port to version 1.1.1i. During
+the port we had an eye on performance and enabled CPU-specific
+optimizations where feasible. Optimizations are enabled by default on
+x86 and ARMv8. On ARMv7, we enable NEON-based functions only when the
+build SPECS include "neon" to support common SOCs that lack these
+capabilities in the default configuration. Please note, the updated
+port does only provide one combined depot archive "openssl" that
+replaces the former "libcrypto" and "libssl" archives. The libraries
+are still distinct for compatibility with existing applications and
+build systems. As a side effect, we also updated the curl library to
+version 7.70, which is compatible with recent OpenSSL versions.
 
-commit 7d1f158d6836ed8e52e0feecc46aa455b1ae1841
-Author: Christian Helmuth <christian.helmuth@genode-labs.com>
-Date:   Wed Mar 18 16:27:28 2020 +0100
-
-    Update OpenSSL to version 1.1.1i
-    
-    Note, OpenSSL now comes as one combined depot archive *openssl* that
-    replaces the former *libssl* and *libcrypto* archives. The libraries are
-    still separate binaries for compatibility with legacy software.
-    
-    Issue #3773
-
-commit 61a530a485241b88a049efadd0de42f82647c918
-Author: Christian Helmuth <christian.helmuth@genode-labs.com>
-Date:   Thu Feb 18 14:55:31 2021 +0100
-
-    squash "openssl: do not depend on ARM CPU probing" (COMMIT MESSAGE)
-    
-    openssl: do not depend on ARM CPU probing
-    
-    With this commit libcrypto does not use ARM NEON extension as long as
-    SPECS includes "neon". arm_v7a does declare "neon" per default while
-    arm_v8a does.
-
-commit b462b1e658f78a6d93d8896d9dcdf2839812cdbd
-Author: Christian Helmuth <christian.helmuth@genode-labs.com>
-Date:   Wed Jun 3 13:57:52 2020 +0200
-
-    Update curl to version 7.70.0
-    
-    Issue #3773
+Thanks to Pirmin Duss for his valuable contribution to this update.
 
 
 Virtualization
@@ -335,15 +316,30 @@ Virtualization
 VirtualBox 6.1.14
 =================
 
-;@chelmuth
+Genode supports virtualization with VirtualBox since 2014. Back then,
+we enabled VirtualBox version 4 to support use cases with unmodified
+Linux and Windows guests like the Sculpt's predecessor "Turmvilla". In
+2016, we updated VirtualBox to version 5 to enable recent guest OS
+versions notably Ubuntu 16.04 and Windows 10. VirtualBox 5 is an
+integral part of Sculpt OS since its first release.
 
-commit b25fc1e58a58c1c7d4a130acec73211a656766a5
-Author: Christian Helmuth <christian.helmuth@genode-labs.com>
-Date:   Fri Dec 18 14:08:06 2020 +0100
+As VirtualBox 5 is no longer supported upstream and also shows its age
+when running recent versions of Windows 10, we accepted the challenge
+to once again enable a new version of this VMM. This time we did not
+went for NOVA-specific port but exclusively use the kernel-agnostic
+virtualization interfaces introduced in Genode 19.05. So, VirtualBox 6
+is prepared to run on NOVA, seL4, and Fiasco.OC alike with minimal
+extra efforts.
 
-    base: refactor VM/vCPU API
-    
-    Issue #3554
+The first development snapshot we publish with the release is ready to
+run Linux and Windows guests with limited support for multiple cores,
+integrates network and USB-passthrough as well as preliminary support
+for Guest Additions like mouse integration and display. We are
+committed to finalize the feature set and optimize the performance of
+VirtualBox 6 until the next Sculpt release but do not plan to replace
+version 5 completely yet. In fact, the update paves the way to explore
+more experimental grounds like enablement of the GPU-based
+acceleration of guest OSes.
 
 
 VirtualBox 5
@@ -446,26 +442,13 @@ USB drivers
 Additional HID devices
 ~~~~~~~~~~~~~~~~~~~~~~
 
-;@chelmuth
-
-commit 2a659cb75029f3a3d7cc6a1b2d49281d84c3dc47
-Author: Christian Helmuth <christian.helmuth@genode-labs.com>
-Date:   Fri Sep 14 16:55:20 2018 +0200
-
-    usb_hid: support for Holtek-based mice fixups
-    
-    This enables USB mice based on the Holtek chipsets, which need USB
-    descriptor fixups. An example mouse is the Sharkoon Drakonia.
-    
-    Issue #3953
-
-commit 496dc5508f798324ca24a7e8ea4ffdb4bd31fa22
-Author: Christian Helmuth <christian.helmuth@genode-labs.com>
-Date:   Fri Sep 14 16:58:35 2018 +0200
-
-    usb_hid: support for Apple HID devices
-    
-    Issue #3953
+It's a sad truth that some popular USB keyboards and mice do not fully
+comply with the USB HID standard. The Linux kernel comes with dozens
+of special functions to fix up quirks and enable these devices also
+for Linux systems. With the current release, we adopt quirk functions
+for Apple HID devices and mices based on the Holtek chipset (e.g., the
+Sharkoon Drakonia) that are applied automatically if one of these
+devices is plugged.
 
 
 USB robustness
