@@ -312,11 +312,11 @@ settings in Sculpt OS takes immediate effect on all terminal windows.
 OpenSSL 1.1.1i, curl 7.70.0
 ===========================
 
-OpenSSL experienced some quite important security updates in the last
+OpenSSL experienced some quite important security updates during the last
 months. This prompted us to update our port to version 1.1.1i. During
-the port, we had an eye on performance and enabled CPU-specific
+the porting work, we kept an eye on performance and enabled CPU-specific
 optimizations where feasible. Optimizations are enabled by default on
-x86 and ARMv8. On ARMv7, we enable NEON-based functions only when the
+x86 and ARMv8. For ARMv7, we enable NEON-based functions only when the
 build SPECS include "neon" to support common SoCs that lack these
 capabilities in the default configuration. Please note, the updated
 port does only provide one combined depot archive "openssl" that
@@ -337,39 +337,39 @@ VirtualBox 6.1.14
 Genode supports virtualization with VirtualBox
 [https://genode.org/documentation/release-notes/14.02#VirtualBox_on_top_of_the_NOVA_microhypervisor - since 2014].
 Back then, we enabled VirtualBox version 4 to support use cases with unmodified
-Linux and Windows guests like the Sculpt's predecessor
+Linux and Windows guests like Sculpt's predecessor
 [https://genode.org/documentation/release-notes/15.11#Genode_as_desktop_OS - "Turmvilla"].
 In 2016, we updated VirtualBox to version 5 to enable recent guest OS
 versions notably Ubuntu 16.04 and Windows 10. VirtualBox 5 is an
 integral part of Sculpt OS since its first release.
 
-As VirtualBox 5 is no longer supported upstream and also shows its age
+As VirtualBox 5 is no longer maintained upstream and also shows its age
 when running recent versions of Windows 10, we accepted the challenge
 to once again enable a new version of this VMM. This time we did not
-went for NOVA-specific port but exclusively use the kernel-agnostic
+go for a NOVA-specific port but exclusively use the kernel-agnostic
 virtualization interfaces introduced in
 [https://genode.org/documentation/release-notes/19.05#Kernel-agnostic_virtual-machine_monitors - Genode 19.05].
-So, VirtualBox 6 is prepared to run on NOVA, seL4, and Fiasco.OC alike with
+This way, VirtualBox 6 is prepared to run on NOVA, seL4, and Fiasco.OC alike with
 minimal extra efforts.
 
-The first development snapshot we publish with the release is ready to
+The first development snapshot we publish with this release is ready to
 run Linux and Windows guests with limited support for multiple cores,
 integrates network and USB-passthrough as well as preliminary support
 for Guest Additions like mouse integration and display. We are
 committed to finalize the feature set and optimize the performance of
 VirtualBox 6 until the upcoming Sculpt release but do not plan to replace
 version 5 completely yet. In fact, the update paves the way to explore
-more experimental grounds like enablement of the GPU-based
+more experimental grounds like enablement of GPU-based
 acceleration of guest OSes.
 
-For exploring the use of VirtualBox 6 on Genode, we recommend the run script
-_ports/run/virtualbox6.run_ as starting point.
+As a starting point for exploring VirtualBox 6 on Genode, we recommend the run script
+_ports/run/virtualbox6.run_.
 
 
 VirtualBox 5
 ============
 
-In this release, we extended our VirtualBox port and made using USB
+With this release, we extended our VirtualBox port and made USB
 pass-through more robust.
 
 So far, we most prominently use VirtualBox on Intel systems that feature
@@ -378,7 +378,7 @@ systems with SVM.
 
 When it comes to USB pass-through support, we rely on the xHCI device-model
 ported from Qemu. With this release, we updated the 3rd-party sources to
-version 5.2.0 and the used exposed device is changed to QEMU xHCI. Due to
+version 5.2.0 and the exposed device has changed to QEMU xHCI. Due to
 this change, older guests OSes - namely Windows 7 - that relied on the NEC
 xHCI device will no longer work.
 The 'Qemu::Controller' interface was extended by an 'info' method, which
@@ -439,13 +439,13 @@ Device drivers
 Power-gating of PCI devices on x86
 ==================================
 
-PCI devices have several PCI capabilities, which describe the feature set
-they support, as defined by the PCI specification. The platform driver - which
-is the gatekeeper to devices on Genode - got extended to power on and off
-devices whenever the PCI power capability is supported. On powering on, a device reset
-is issued if supported by the PCI device. During release of a driver from a
+PCI devices have several PCI capabilities that describe the feature set
+the device supports, as defined by the PCI specification. The platform driver - which
+is the gatekeeper of devices on Genode - got extended to power on and power off
+devices whenever the PCI power capability is supported. When powering on, a device reset
+is issued if it is supported by the PCI device. During release of a driver from a
 device, all DMA memory associated to the device is
-flushed from the IO-MMU TLB to avoid further access afterwards.
+flushed from the IO-MMU TLB to avoid any further access.
 
 Additionally, the platform driver has become able to respond to configuration
 changes. Special care must be taken if the configuration of a running device
@@ -453,7 +453,7 @@ driver changes. If the configuration re-evaluation concludes that a driver is no
 permitted to use an already assigned PCI device, the Platform session
 will be closed forcefully, making the device inaccessible to the driver.
 
-The extended features of the platform driver supplement the previous work of
+The extended features of the platform driver supplement our previous work of
 restarting respectively replacing a running graphics driver in Sculpt OS. The driver
 manager, as used by Sculpt, uses Genode's heartbeat monitoring to check for the
 liveness of the Intel frambuffer driver and restarts it automatically if the
@@ -474,8 +474,8 @@ Additional HID devices
 
 It's a sad truth that some popular USB keyboards and mice do not fully
 comply with the USB HID standard. The Linux kernel comes with dozens
-of special functions to fix up quirks and enable these devices also
-for Linux systems. With the current release, we adopt quirk functions
+of special functions to fix up quirks and enable these devices
+for Linux systems also. With the current release, we adopt quirk functions
 for Apple HID devices and mice based on the Holtek chipset (e.g., the
 Sharkoon Drakonia) that are applied automatically if one of these
 devices is plugged.
@@ -509,7 +509,7 @@ packet descriptor. With those information at hand the client can iterate
 through the buffer.
 
 Exposing the buffer in such a way is error-prone and we therefore plan
-on adding an abstraction to make dealing with isochronous safer and more
+on adding an abstraction to make dealing with isochronous transfers safer and more
 convenient. This, however, is postponed until we get a better grasp at
 the requirements.
 
@@ -560,7 +560,7 @@ command line option. With a machine mode for ISA 1.10 in place, we were able
 remove the old [https://github.com/ssumpf/bbl-lite - BBL] machine mode
 implementation from Genode.
 For more information on this topic please refer to the corresponding
-[http://genodians.org/ssumpf/2020-02-22-riscv - Genodians article].
+[https://genodians.org/ssumpf/2021-02-24-riscv - Genodians article].
 
 In order to improve development speed, we were able to reduce the link time for
 _core_ and it's debugging variant from about 50 to 5 seconds. Additionally, we
