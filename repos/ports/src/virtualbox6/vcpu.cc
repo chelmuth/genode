@@ -190,13 +190,13 @@ int Sup::Vcpu_handler_svm::_vm_exit_requires_instruction_emulation(PCPUMCTX)
 }
 
 
-Sup::Vcpu_handler_svm::Vcpu_handler_svm(Genode::Env &env, size_t stack_size,
-                                        Genode::Affinity::Location location,
+Sup::Vcpu_handler_svm::Vcpu_handler_svm(Genode::Env &env,
                                         unsigned int cpu_id,
+                                        Genode::Entrypoint &ep,
                                         Genode::Vm_connection &vm_connection,
                                         Genode::Allocator &alloc)
 :
-	Vcpu_handler(env, stack_size, location, cpu_id),
+	Vcpu_handler(env, cpu_id, ep),
 	_handler(_ep, *this, &Vcpu_handler_svm::_handle_exit),
 	_vm_connection(vm_connection),
 	_vcpu(_vm_connection, alloc, _handler, _exit_config)
@@ -296,6 +296,8 @@ __attribute__((noreturn)) void Sup::Vcpu_handler_vmx::_vmx_invalid()
 		                " actv_state=", Genode::Hex(_state->actv_state.value()));
 
 	Genode::error("invalid guest state - dead");
+
+	/* FIXME exit() cannot be called in VCPU mode */
 	exit(-1);
 }
 
@@ -408,13 +410,13 @@ int Sup::Vcpu_handler_vmx::_vm_exit_requires_instruction_emulation(PCPUMCTX pCtx
 }
 
 
-Sup::Vcpu_handler_vmx::Vcpu_handler_vmx(Genode::Env &env, size_t stack_size,
-                                        Genode::Affinity::Location location,
+Sup::Vcpu_handler_vmx::Vcpu_handler_vmx(Genode::Env &env,
                                         unsigned int cpu_id,
+                                        Genode::Entrypoint &ep,
                                         Genode::Vm_connection &vm_connection,
                                         Genode::Allocator &alloc)
 :
-	Vcpu_handler(env, stack_size, location, cpu_id),
+	Vcpu_handler(env, cpu_id, ep),
 	_handler(_ep, *this, &Vcpu_handler_vmx::_handle_exit),
 	_vm_connection(vm_connection),
 	_vcpu(_vm_connection, alloc, _handler, _exit_config)
@@ -1093,13 +1095,10 @@ int Sup::Vcpu_handler::run_hw(VM &vm)
 }
 
 
-Sup::Vcpu_handler::Vcpu_handler(Env &env, size_t stack_size,
-                                Affinity::Location location,
-                                unsigned int cpu_id)
+Sup::Vcpu_handler::Vcpu_handler(Env &env, unsigned int cpu_id,
+                                Genode::Entrypoint &ep)
 :
-	_ep(env, stack_size,
-	    Genode::String<12>("EP-EMT-", cpu_id).string(), location),
-	_cpu_id(cpu_id)
+	_ep(ep), _cpu_id(cpu_id)
 {
 	pthread_mutexattr_t _attr;
 	pthread_mutexattr_init(&_attr);

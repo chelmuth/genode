@@ -55,30 +55,24 @@ Sup::Drv::Cpu_virt Sup::Drv::_cpu_virt_from_rom()
 }
 
 
-Sup::Vcpu_handler &Sup::Drv::create_vcpu_handler(Cpu_index cpu_index)
+Sup::Vcpu_handler &Sup::Drv::create_vcpu_handler(Cpu_index cpu_index,
+                                                 Genode::Entrypoint &ep)
 {
 	Libc::Allocator alloc { };
-
-	Affinity::Location const location =
-		_affinity_space.location_of_index(cpu_index.value);
-
-	size_t const stack_size = 64*1024;
 
 	switch (_cpu_virt) {
 
 	case Cpu_virt::VMX:
 		return *new Vcpu_handler_vmx(_env,
-		                             stack_size,
-		                             location,
 		                             cpu_index.value,
+		                             ep,
 		                             _vm_connection,
 		                             alloc);
 
 	case Cpu_virt::SVM:
 		return *new Vcpu_handler_svm(_env,
-		                             stack_size,
-		                             location,
 		                             cpu_index.value,
+		                             ep,
 		                             _vm_connection,
 		                             alloc);
 

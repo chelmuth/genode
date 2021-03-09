@@ -71,7 +71,7 @@ class Sup::Drv
 		/*
 		 * \throw Virtualization_support_missing
 		 */
-		Vcpu_handler &create_vcpu_handler(Cpu_index);
+		Vcpu_handler &create_vcpu_handler(Cpu_index, Genode::Entrypoint &);
 };
 
 #endif /* _SUP_DRV_H_ */

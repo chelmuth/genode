@@ -37,7 +37,7 @@ class Sup::Vcpu_handler : Genode::Noncopyable
 
 		static Genode::Vm_connection::Exit_config const _exit_config;
 
-		Genode::Entrypoint  _ep;
+		Genode::Entrypoint &_ep;
 		Genode::Blockade    _blockade_emt { };
 		Genode::Semaphore   _sem_handler;
 		Genode::Vcpu_state *_state { nullptr };
@@ -99,8 +99,8 @@ class Sup::Vcpu_handler : Genode::Noncopyable
 		Genode::addr_t _irq_drop    = 0;
 
 		struct {
-			unsigned intr_state;
-			unsigned ctrl[2];
+			unsigned intr_state = 0;
+			unsigned ctrl[2]    = { 0, 0 };
 		} _next_utcb;
 
 		unsigned _ept_fault_addr_type;
@@ -141,9 +141,7 @@ class Sup::Vcpu_handler : Genode::Noncopyable
 			RECALL        = 0xff,
 		};
 
-		Vcpu_handler(Genode::Env &env, size_t stack_size,
-		             Genode::Affinity::Location location,
-		             unsigned int cpu_id);
+		Vcpu_handler(Genode::Env &env, unsigned int cpu_id, Genode::Entrypoint &ep);
 
 		unsigned int cpu_id() const { return _cpu_id; }
 
@@ -187,9 +185,9 @@ class Sup::Vcpu_handler_vmx : public Vcpu_handler
 
 	public:
 
-		Vcpu_handler_vmx(Genode::Env &env, size_t stack_size,
-		                 Genode::Affinity::Location location,
+		Vcpu_handler_vmx(Genode::Env &env,
 		                 unsigned int cpu_id,
+		                 Genode::Entrypoint &ep,
 		                 Genode::Vm_connection &vm_connection,
 		                 Genode::Allocator &alloc);
 };
@@ -224,9 +222,9 @@ class Sup::Vcpu_handler_svm : public Vcpu_handler
 
 	public:
 
-		Vcpu_handler_svm(Genode::Env &env, size_t stack_size,
-		                 Genode::Affinity::Location location,
+		Vcpu_handler_svm(Genode::Env &env,
 		                 unsigned int cpu_id,
+		                 Genode::Entrypoint &ep,
 		                 Genode::Vm_connection &vm_connection,
 		                 Genode::Allocator &alloc);
 };
