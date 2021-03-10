@@ -1,3 +1,5 @@
+REQUIRES = x86_64
+
 TARGET = virtualbox6
 
 include $(REP_DIR)/lib/mk/virtualbox6-common.inc
@@ -22,6 +24,7 @@ LIB_MK_FILES := $(notdir $(wildcard $(REP_DIR)/lib/mk/virtualbox6-*.mk) \
 LIBS += $(LIB_MK_FILES:.mk=)
 
 INC_DIR += $(call select_from_repositories,src/lib/libc)
+INC_DIR += $(call select_from_repositories,src/lib/libc)/spec/x86_64
 
 INC_DIR += $(VBOX_DIR)/Runtime/include
 

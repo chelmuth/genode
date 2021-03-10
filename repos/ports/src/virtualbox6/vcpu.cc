@@ -33,6 +33,7 @@
 
 /* local includes */
 #include <vcpu.h>
+#include <pthread_emt.h>
 
 
 /*
@@ -141,7 +142,6 @@ void Sup::Vcpu_handler_svm::_handle_exit()
 		break;
 	case VCPU_STARTUP:
 		_svm_startup();
-		_blockade_emt.wakeup();
 		/* pause - no resume */
 		break;
 	default:
@@ -158,7 +158,7 @@ void Sup::Vcpu_handler_svm::_handle_exit()
 	}
 
 	/* wait until EMT thread wake's us up */
-	_sem_handler.down();
+	/* TODO XXX _sem_handler.down(); */
 
 	/* resume vCPU */
 	_vm_state = RUNNING;
@@ -192,21 +192,20 @@ int Sup::Vcpu_handler_svm::_vm_exit_requires_instruction_emulation(PCPUMCTX)
 
 Sup::Vcpu_handler_svm::Vcpu_handler_svm(Genode::Env &env,
                                         unsigned int cpu_id,
-                                        Genode::Entrypoint &ep,
+                                        Pthread::Emt &emt,
                                         Genode::Vm_connection &vm_connection,
                                         Genode::Allocator &alloc)
 :
-	Vcpu_handler(env, cpu_id, ep),
-	_handler(_ep, *this, &Vcpu_handler_svm::_handle_exit),
+	Vcpu_handler(env, cpu_id, emt),
+	_handler(_emt.genode_ep(), *this, &Vcpu_handler_svm::_handle_exit),
 	_vm_connection(vm_connection),
 	_vcpu(_vm_connection, alloc, _handler, _exit_config)
 {
 	_state = &_vcpu.state();
 
+	/* run vCPU until initial startup exception */
 	_vcpu.run();
-
-	/* sync with initial startup exception */
-	_blockade_emt.block();
+	_emt.switch_to_vcpu();
 }
 
 
@@ -335,29 +334,37 @@ void Sup::Vcpu_handler_vmx::_handle_exit()
 	case VMX_EXIT_XSETBV: _vmx_default(); break;
 	case VMX_EXIT_TPR_BELOW_THRESHOLD: _vmx_default(); break;
 	case VMX_EXIT_EPT_VIOLATION: _vmx_ept<VMX_EXIT_EPT_VIOLATION>(); break;
+
 	case RECALL:
 		recall_wait = Vcpu_handler::_recall_handler();
+		if (!recall_wait) {
+			_vm_state = RUNNING;
+			/* XXX early return for resume */
+			_run_vm();
+			return;
+		}
+
+		/* paused - no resume of vCPU */
 		break;
+
 	case VCPU_STARTUP:
 		_vmx_startup();
-		_blockade_emt.wakeup();
-		/* pause - no resume */
+
+		/* paused - no resume of vCPU */
 		break;
+
 	default:
 		Genode::error(__func__, " unknown exit - stop - ",
 		              Genode::Hex(exit));
 		_vm_state = PAUSED;
+
+		/* XXX early return without resume */
 		return;
 	}
 
-	if (exit == RECALL && !recall_wait) {
-		_vm_state = RUNNING;
-		_run_vm();
-		return;
-	}
-
-	/* wait until EMT thread wake's us up */
-	_sem_handler.down();
+	/* switch to EMT until next vCPU resume */
+	Assert(_vm_state != RUNNING);
+	_emt.switch_to_emt();
 
 	/* resume vCPU */
 	_vm_state = RUNNING;
@@ -412,21 +419,20 @@ int Sup::Vcpu_handler_vmx::_vm_exit_requires_instruction_emulation(PCPUMCTX pCtx
 
 Sup::Vcpu_handler_vmx::Vcpu_handler_vmx(Genode::Env &env,
                                         unsigned int cpu_id,
-                                        Genode::Entrypoint &ep,
+                                        Pthread::Emt &emt,
                                         Genode::Vm_connection &vm_connection,
                                         Genode::Allocator &alloc)
 :
-	Vcpu_handler(env, cpu_id, ep),
-	_handler(_ep, *this, &Vcpu_handler_vmx::_handle_exit),
+	Vcpu_handler(env, cpu_id, emt),
+	_handler(_emt.genode_ep(), *this, &Vcpu_handler_vmx::_handle_exit),
 	_vm_connection(vm_connection),
 	_vcpu(_vm_connection, alloc, _handler, _exit_config)
 {
 	_state = &_vcpu.state();
 
+	/* run vCPU until initial startup exception */
 	_vcpu.run();
-
-	/* sync with initial startup exception */
-	_blockade_emt.block();
+	_emt.switch_to_vcpu();
 }
 
 
@@ -437,6 +443,7 @@ Sup::Vcpu_handler_vmx::Vcpu_handler_vmx(Genode::Env &env,
 Genode::Vm_connection::Exit_config const Sup::Vcpu_handler::_exit_config { /* ... */ };
 
 
+/* TODO move into Emt */
 timespec Sup::Vcpu_handler::_add_timespec_ns(timespec a, ::uint64_t ns) const
 {
 	enum { NSEC_PER_SEC = 1'000'000'000ull };
@@ -474,11 +481,8 @@ again:
 	Assert(_vm_state == IRQ_WIN || _vm_state == PAUSED || _vm_state == NPT_EPT);
 	Assert(_next_state == PAUSE_EXIT || _next_state == RUN);
 
-	/* wake up vcpu ep handler */
-	_sem_handler.up();
-
-	/* wait for next exit */
-	_blockade_emt.block();
+	/* run vCPU until next exit */
+	_emt.switch_to_vcpu();
 
 	/* next time run - recall() may change this */
 	_next_state = RUN;
@@ -492,14 +496,6 @@ again:
 		_state->discharge();
 		_irq_window_pthread();
 		goto again;
-	} else
-	if (_vm_state == NPT_EPT) {
-//		if (_npt_ept_unmap) {
-//			Genode::error("NPT/EPT unmap not supported - stop");
-//			while (true) {
-//				_blockade_emt.block();
-//			}
-//		}
 	}
 
 	if (!(_vm_state == PAUSED || _vm_state == NPT_EPT))
@@ -521,8 +517,6 @@ void Sup::Vcpu_handler::_default_handler()
 	_vm_exits++;
 
 	_vm_state = PAUSED;
-
-	_blockade_emt.wakeup();
 }
 
 
@@ -761,7 +755,7 @@ bool Sup::Vcpu_handler::_state_to_vbox(VM *pVM, PVMCPU pVCpu)
 	pVCpu->cpum.s.fUseFlags |=  (CPUM_USED_FPU_GUEST);
 //	CPUMSetChangedFlags(pVCpu, CPUM_CHANGED_FPU_REM);
 //	pVCpu->cpum.s.fUseFlags |=  (CPUM_USED_FPU_GUEST | CPUM_USED_FPU_SINCE_REM);
-	
+
 	if (_state->intr_state.value() != 0) {
 		Assert(_state->intr_state.value() == INTERRUPT_STATE_BLOCKING_BY_STI ||
 		       _state->intr_state.value() == INTERRUPT_STATE_BLOCKING_BY_MOV_SS);
@@ -803,7 +797,6 @@ void Sup::Vcpu_handler::_irq_window()
 	_vm_exits++;
 
 	_vm_state = IRQ_WIN;
-	_blockade_emt.wakeup();
 }
 
 
@@ -816,7 +809,6 @@ void Sup::Vcpu_handler::_npt_ept()
 	_vm_exits++;
 
 	_vm_state = NPT_EPT;
-	_blockade_emt.wakeup();
 }
 
 
@@ -985,6 +977,7 @@ void Sup::Vcpu_handler::recall(VM &vm)
 }
 
 
+/* TODO move into Emt */
 void Sup::Vcpu_handler::halt(Genode::uint64_t const wait_ns)
 {
 	/* calculate timeout */
@@ -999,6 +992,7 @@ void Sup::Vcpu_handler::halt(Genode::uint64_t const wait_ns)
 }
 
 
+/* TODO move into Emt */
 void Sup::Vcpu_handler::wake_up()
 {
 	pthread_mutex_lock(&_mutex);
@@ -1095,10 +1089,9 @@ int Sup::Vcpu_handler::run_hw(VM &vm)
 }
 
 
-Sup::Vcpu_handler::Vcpu_handler(Env &env, unsigned int cpu_id,
-                                Genode::Entrypoint &ep)
+Sup::Vcpu_handler::Vcpu_handler(Env &env, unsigned int cpu_id, Pthread::Emt &emt)
 :
-	_ep(ep), _cpu_id(cpu_id)
+	_emt(emt), _cpu_id(cpu_id)
 {
 	pthread_mutexattr_t _attr;
 	pthread_mutexattr_init(&_attr);

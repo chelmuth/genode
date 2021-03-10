@@ -18,6 +18,7 @@
 
 /* libc internal */
 #include <internal/thread_create.h> /* Libc::pthread_create() */
+#include <internal/call_func.h>     /* call_func() */
 
 /* VirtualBox includes */
 #include <VBox/vmm/uvm.h>
@@ -89,23 +90,98 @@ namespace Pthread {
 } /* namespace Pthread */
 
 
-struct Pthread::Entrypoint
+class Pthread::Entrypoint : public Pthread::Emt
 {
-	Sup::Cpu_index const cpu;
-	size_t         const stack_size; /* stack size for EMT mode */
+	private:
 
-	Genode::Entrypoint genode_ep;
+		/* members initialized by constructing thread */
 
-	Entrypoint(Env &env, Sup::Cpu_index cpu, size_t stack_size,
-	           char const *name, Affinity::Location location)
-	:
-		cpu(cpu), stack_size(stack_size),
-		genode_ep(env, 64*1024, name, location)
-	{ }
+		Sup::Cpu_index const _cpu;
+		size_t         const _stack_size; /* stack size for EMT mode */
 
-	/* registered object must have virtual destructor */
-	virtual ~Entrypoint() { }
+		Genode::Entrypoint _ep;
+		Blockade           _construction_finalized { };
 
+		void *(*_emt_start_routine) (void *);
+		void   *_emt_arg;
+
+		enum class Mode { VCPU, EMT } _mode { Mode::VCPU };
+
+		jmp_buf _vcpu_jmp_buf;
+		jmp_buf _emt_jmp_buf;
+
+		/* members finally initialized by the entrypoint itself */
+
+		void      *_emt_stack   { nullptr };
+		pthread_t  _emt_pthread { };
+
+		void _finalize_construction()
+		{
+			Genode::Thread &myself = *Genode::Thread::myself();
+
+			_emt_stack = myself.alloc_secondary_stack(myself.name().string(),
+			                                          _stack_size);
+
+			Libc::pthread_create_from_thread(&_emt_pthread, myself, _emt_stack);
+
+			_construction_finalized.wakeup();
+
+			/* switch to EMT mode and call pthread start_routine */
+			if (setjmp(_vcpu_jmp_buf) == 0) {
+				_mode = Mode::EMT;
+				call_func(_emt_stack, (void *)_emt_start_routine, _emt_arg);
+			}
+		}
+
+		Genode::Signal_handler<Entrypoint> _finalize_construction_sigh {
+			_ep, *this, &Entrypoint::_finalize_construction };
+
+	public:
+
+		Entrypoint(Env &env, Sup::Cpu_index cpu, size_t stack_size,
+		           char const *name, Affinity::Location location,
+		           void *(*start_routine) (void *), void *arg)
+		:
+			_cpu(cpu), _stack_size(stack_size),
+			_ep(env, 64*1024, name, location),
+			_emt_start_routine(start_routine), _emt_arg(arg)
+		{
+			Signal_transmitter(_finalize_construction_sigh).submit();
+
+			_construction_finalized.block();
+		}
+
+		/* registered object must have virtual destructor */
+		virtual ~Entrypoint() { }
+
+		Sup::Cpu_index cpu() const { return _cpu; }
+
+		pthread_t pthread() const { return _emt_pthread; }
+
+		/* Pthread::Emt interface */
+
+		void switch_to_emt() override
+		{
+			Assert(_mode == Mode::VCPU);
+
+			if (setjmp(_vcpu_jmp_buf) == 0) {
+				_mode = Mode::EMT;
+				longjmp(_emt_jmp_buf, 1);
+			}
+		}
+
+		void switch_to_vcpu() override
+		{
+			Assert(pthread_self() == _emt_pthread);
+			Assert(_mode == Mode::EMT);
+
+			if (setjmp(_emt_jmp_buf) == 0) {
+				_mode = Mode::VCPU;
+				longjmp(_vcpu_jmp_buf, 1);
+			}
+		}
+
+		Genode::Entrypoint & genode_ep() override { return _ep; }
 };
 
 
@@ -123,33 +199,33 @@ class Pthread::Factory
 
 		Factory(Env &env) : _env(env) { }
 
-		Entrypoint & create(Sup::Cpu_index cpu, size_t stack_size)
+		Entrypoint & create(Sup::Cpu_index cpu, size_t stack_size, char const *name,
+		                    void *(*start_routine) (void *), void *arg)
 		{
 
 			Affinity::Location const location =
 				_affinity_space.location_of_index(cpu.value);
 
-			Genode::String<12> const name("EP-EMT-", cpu.value);
-
-			return *new Registered<Entrypoint>(_entrypoints, _env, cpu, stack_size,
-			                                   name.string(), location);
+			return *new Registered<Entrypoint>(_entrypoints, _env, cpu,
+			                                   stack_size, name,
+			                                   location, start_routine, arg);
 		}
 
-		struct Entrypoint_for_cpu_not_found : Exception { };
+		struct Emt_for_cpu_not_found : Exception { };
 
-		Genode::Entrypoint & genode_ep_for_cpu(Sup::Cpu_index cpu)
+		Emt & emt_for_cpu(Sup::Cpu_index cpu)
 		{
 			Entrypoint *found = nullptr;
 
 			_entrypoints.for_each([&] (Entrypoint &ep) {
-				if (ep.cpu.value == cpu.value)
+				if (ep.cpu().value == cpu.value)
 					found = &ep;
 			});
 
-			if (found)
-				return found->genode_ep;
+			if (!found)
+				throw Emt_for_cpu_not_found();
 
-			throw Entrypoint_for_cpu_not_found();
+			return *found;
 		}
 };
 
@@ -157,9 +233,9 @@ class Pthread::Factory
 static Pthread::Factory *factory;
 
 
-Genode::Entrypoint & Pthread::genode_ep_for_cpu(Sup::Cpu_index cpu)
+Pthread::Emt & Pthread::emt_for_cpu(Sup::Cpu_index cpu)
 {
-	return factory->genode_ep_for_cpu(cpu);
+	return factory->emt_for_cpu(cpu);
 }
 
 
@@ -188,14 +264,13 @@ static int create_emt_thread(pthread_t *thread, const pthread_attr_t *attr,
 
 	Assert(stack_size);
 
-	Pthread::Entrypoint &ep = factory->create(cpu, stack_size);
+	Pthread::Entrypoint &ep =
+		factory->create(cpu, stack_size, rtthread->szName,
+		                start_routine, rtthread);
 
-	/* TODO */ (void)ep;
-	/* TODO sync with thread startup */
-	/* TODO *thread = ep.pthread() */
+	*thread = ep.pthread();
 
-	/* remove replace thread creation by registration */
-	return Libc::pthread_create(thread, attr, start_routine, rtthread);
+	return 0;
 }
 
 
@@ -219,5 +294,5 @@ error("************ ", __func__, ":"
 	if (rtthread->enmType == RTTHREADTYPE_EMULATION)
 		return create_emt_thread(thread, attr, start_routine, rtthread);
 	else
-		return Libc::pthread_create(thread, attr, start_routine, arg);
+		return Libc::pthread_create(thread, attr, start_routine, arg, rtthread->szName);
 }

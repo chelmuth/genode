@@ -17,7 +17,7 @@
 
 /* local includes */
 #include <sup_drv.h>
-#include <vcpu.h>
+#include <pthread_emt.h>
 
 
 Sup::Cpu_freq_khz Sup::Drv::_cpu_freq_khz_from_rom()
@@ -56,7 +56,7 @@ Sup::Drv::Cpu_virt Sup::Drv::_cpu_virt_from_rom()
 
 
 Sup::Vcpu_handler &Sup::Drv::create_vcpu_handler(Cpu_index cpu_index,
-                                                 Genode::Entrypoint &ep)
+                                                 Pthread::Emt &emt)
 {
 	Libc::Allocator alloc { };
 
@@ -65,14 +65,14 @@ Sup::Vcpu_handler &Sup::Drv::create_vcpu_handler(Cpu_index cpu_index,
 	case Cpu_virt::VMX:
 		return *new Vcpu_handler_vmx(_env,
 		                             cpu_index.value,
-		                             ep,
+		                             emt,
 		                             _vm_connection,
 		                             alloc);
 
 	case Cpu_virt::SVM:
 		return *new Vcpu_handler_svm(_env,
 		                             cpu_index.value,
-		                             ep,
+		                             emt,
 		                             _vm_connection,
 		                             alloc);
 

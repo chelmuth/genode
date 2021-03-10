@@ -14,15 +14,25 @@
 #ifndef _PTHREAD_EMT_H_
 #define _PTHREAD_EMT_H_
 
+/* Genode includes */
+#include <util/interface.h>
+
 /* local includes */
 #include <sup.h>
 
 namespace Genode { struct Entrypoint; }
 
 namespace Pthread {
-	using namespace Genode;
 
-	Entrypoint & genode_ep_for_cpu(Sup::Cpu_index cpu);
+	struct Emt : Genode::Interface
+	{
+		virtual void switch_to_emt() = 0;
+		virtual void switch_to_vcpu() = 0;
+
+		virtual Genode::Entrypoint & genode_ep() = 0;
+	};
+
+	Emt & emt_for_cpu(Sup::Cpu_index cpu);
 }
 
 #endif /* _PTHREAD_EMT_H_ */

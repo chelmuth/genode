@@ -174,9 +174,9 @@ static void ioctl(SUPVTCAPS &request)
 
 static void setup_vcpu_handler(Sup::Vm &vm, Sup::Cpu_index cpu)
 {
-	Genode::Entrypoint &ep = Pthread::genode_ep_for_cpu(cpu);
+	Pthread::Emt &emt = Pthread::emt_for_cpu(cpu);
 
-	Sup::Vcpu_handler &handler = sup_drv->create_vcpu_handler(cpu, ep);
+	Sup::Vcpu_handler &handler = sup_drv->create_vcpu_handler(cpu, emt);
 
 	vm.register_vcpu_handler(cpu, handler);
 }
