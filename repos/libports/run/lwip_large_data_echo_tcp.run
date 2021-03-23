@@ -1,0 +1,101 @@
+# netdev=wlp2s0
+# tapdev=tap0
+# user=developer
+#
+# sudo ip tuntap add dev $tapdev mode tap user $user
+# sudo ip address flush dev $tapdev
+# sudo ip address add 10.0.2.1/24 brd 10.0.2.255 dev $tapdev
+# sudo ip link set dev $tapdev addr 02:00:00:ca:fe:01
+# sudo ip link set dev $tapdev up
+#
+# sudo sysctl -w net.ipv4.ip_forward=1
+#
+# sudo iptables -t nat -A POSTROUTING -s 10.0.2.0/24 -o $netdev -j MASQUERADE
+
+set build_components {
+	test/large_data_echo_tcp
+}
+
+build $build_components
+
+create_boot_directory
+
+import_from_depot [depot_user]/pkg/[drivers_nic_pkg]
+import_from_depot [depot_user]/src/[base_src]
+import_from_depot [depot_user]/src/dynamic_rom
+import_from_depot [depot_user]/src/init
+import_from_depot [depot_user]/src/libc
+import_from_depot [depot_user]/src/stdcxx
+import_from_depot [depot_user]/src/vfs
+import_from_depot [depot_user]/src/vfs_lwip
+import_from_depot [depot_user]/src/posix
+
+set config {
+<config verbose="yes">
+	<parent-provides>
+		<service name="ROM"/>
+		<service name="IRQ"/>
+		<service name="IO_MEM"/>
+		<service name="IO_PORT"/>
+		<service name="PD"/>
+		<service name="RM"/>
+		<service name="CPU"/>
+		<service name="LOG"/>
+	</parent-provides>
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+	<default caps="100"/>
+	<start name="timer">
+		<resource name="RAM" quantum="2M"/>
+		<provides>
+			<service name="Timer"/>
+		</provides>
+	</start>
+	<start name="linux_nic_drv" ld="no">
+		<resource name="RAM" quantum="4M"/>
+		<provides>
+			<service name="Nic"/>
+		</provides>
+	</start>
+	<start name="test-large_data_echo_tcp" caps="200">
+		<resource name="RAM" quantum="256M"/>
+		<config server_ip="80.74.156.132" server_port="5000">
+			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc" rng="/dev/random" socket="/dev/socket"/>
+			<vfs>
+				<dir name="dev">
+					<log/>
+					<null/>
+					<inline name="rtc">2018-01-01 00:01</inline>
+					<dir name="socket">
+						<lwip ip_addr="169.254.70.100" netmask="255.255.255.0" gateway="169.254.70.1" nameserver="1.1.1.1"/>
+					</dir>
+				</dir>
+			</vfs>
+		</config>
+		<route>
+			<service name="Nic"> <child name="linux_nic_drv"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
+</config>
+}
+
+install_config $config
+
+#
+# Boot modules
+#
+
+# generic modules
+set boot_modules {
+	test-large_data_echo_tcp
+}
+
+build_boot_image $boot_modules
+
+# qemu config
+append qemu_args "  -nographic "
+
+run_genode_until {Test succeded} 600
+
