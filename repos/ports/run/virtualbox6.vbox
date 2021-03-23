@@ -20,14 +20,14 @@
     </MediaRegistry>
     <ExtraData/>
     <Hardware>
-      <CPU count="2" hotplug="false">
+      <CPU count="1" hotplug="false">
         <HardwareVirtEx enabled="true"/>
         <HardwareVirtExNestedPaging enabled="true"/>
         <HardwareVirtExUX enabled="true"/>
         <PAE enabled="true"/>
         <LongMode enabled="true"/>
       </CPU>
-      <Memory RAMSize="2048" PageFusion="false"/>
+      <Memory RAMSize="256" PageFusion="false"/>
       <HID Pointing="PS2Mouse" Keyboard="PS2Keyboard"/>
       <HPET enabled="false"/>
       <Chipset type="ICH9"/>
