@@ -27,4 +27,11 @@
     <pkg path="vbox5-nova-capture" info="VBox5 + Webcam (NOVA version)" />
   </index>
 
+  <index name="DEVEL">
+    <pkg path="bsd_audio_drv" info="[DEVEL] bsd_audio_drv"/>
+    <pkg path="mixer"         info="[DEVEL] mixer"/>
+    <pkg path="cmus"          info="[DEVEL] cmus"/>
+    <pkg path="vbox6"         info="[DEVEL] vbox6"/>
+  </index>
+
 </index>
