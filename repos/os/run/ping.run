@@ -69,7 +69,7 @@ import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/src/init \
                   [depot_user]/src/nic_router
 
-build { app/ping }
+build { app/ping drivers/nic/spec/linux }
 
 proc dst_ip { } {
 
@@ -134,7 +134,7 @@ append config {
 			<policy label_prefix="drivers" domain="uplink"/>
 			<policy label_prefix="ping"    domain="downlink"/>
 
-			<domain name="uplink">
+			<domain name="uplink" interface="10.0.2.55/24">
 
 				<nat domain="downlink" icmp-ids="100" udp-ports="100"/>
 
@@ -188,7 +188,7 @@ append config {
 </config> }
 
 install_config $config
-build_boot_image { ping }
+build_boot_image { ping linux_nic_drv }
 
 append qemu_args " -nographic "
 append_qemu_nic_args

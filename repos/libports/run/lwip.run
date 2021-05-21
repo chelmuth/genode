@@ -39,6 +39,7 @@ import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/src/init \
                   [depot_user]/src/nic_router \
                   [depot_user]/src/libc \
+                  [depot_user]/src/report_rom \
                   [depot_user]/src/vfs_lwip \
                   [depot_user]/src/vfs
 
@@ -64,6 +65,13 @@ install_config {
 		<provides> <service name="Timer"/> </provides>
 	</start>
 
+	<start name="devices_report_rom">
+		<binary name="report_rom"/>
+		<resource name="RAM" quantum="1200K"/>
+		<provides> <service name="Report"/> <service name="ROM"/> </provides>
+		<config verbose="yes"/>
+	</start>
+
 	<start name="drivers" caps="1000" managing_system="yes" priority="-1">
 		<resource name="RAM" quantum="32M"/>
 		<binary name="init"/>
@@ -71,6 +79,7 @@ install_config {
 			<service name="ROM" label="config"> <parent label="drivers.config"/> </service>
 			<service name="Timer"> <child name="timer"/> </service>
 			<service name="Uplink"> <child name="nic_router"/> </service>
+			<service name="Report"> <child name="devices_report_rom"/> </service>
 			<any-service> <parent/> </any-service>
 		</route>
 	</start>
@@ -131,9 +140,9 @@ install_config {
 </config>
 }
 
-build { test/lwip/http_srv }
+build { test/lwip/http_srv drivers/nic }
 
-build_boot_image { test-lwip_httpsrv }
+build_boot_image { test-lwip_httpsrv ipxe_nic_drv }
 
 #
 # Qemu config
