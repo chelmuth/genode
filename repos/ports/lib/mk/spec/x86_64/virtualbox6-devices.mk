@@ -1,5 +1,7 @@
 include $(REP_DIR)/lib/mk/virtualbox6-common.inc
 
+LIBS += stdcxx
+
 SRC_CC += Devices/Audio/AudioHlp.cpp
 SRC_CC += Devices/Audio/AudioMixBuffer.cpp
 SRC_CC += Devices/Audio/AudioMixer.cpp

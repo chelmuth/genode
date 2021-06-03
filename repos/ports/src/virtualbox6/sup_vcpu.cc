@@ -39,6 +39,7 @@
 #include <stdlib.h> /* for exit() */
 #include <pthread.h>
 #include <errno.h>
+#include <unordered_map>
 
 /* local includes */
 #include <sup_vcpu.h>
@@ -76,6 +77,7 @@ namespace Sup {
 	struct Handle_exit_result
 	{
 		Exit_state   state;
+		unsigned     virt_exit;
 		VBOXSTRICTRC rc;
 	};
 
@@ -140,6 +142,76 @@ class Sup::Vcpu_impl : public Sup::Vcpu, Genode::Noncopyable
 		inline Current_state _handle_paused();
 		inline Current_state _handle_irq_window();
 		inline Current_state _handle_startup();
+
+		struct Stats
+		{
+			unsigned const _cpu;
+
+			unsigned long _virt_exit[256] { };
+			unsigned long _exit_state[6]  { };
+
+			unsigned long _total { 0 };
+
+			std::unordered_map<unsigned, unsigned long> _accessed_ports;
+
+			Stats(unsigned cpu) : _cpu(cpu) { }
+
+			unsigned long total() const { return _total; }
+
+			void log()
+			{
+				bool     const force = false;
+				unsigned const rate  = 100'000;
+
+				if (!force && _total % rate != 0)
+					return;
+
+				using Genode::log;
+
+				if (0) {
+					log("[", _cpu, "] total=", _total, " exit_state {"
+					   , _exit_state[(int)Exit_state::DEFAULT], ","
+					   , _exit_state[(int)Exit_state::NPT_EPT], ","
+					   , _exit_state[(int)Exit_state::PAUSED], ","
+					   , _exit_state[(int)Exit_state::IRQ_WINDOW], ","
+					   , _exit_state[(int)Exit_state::STARTUP], ","
+					   , _exit_state[(int)Exit_state::ERROR], "}");
+				}
+				if (0) {
+					log("[", _cpu, "] total=", _total, " virt_exit {");
+					unsigned i = 0;
+					for (unsigned long const &v : _virt_exit) {
+						if (v)
+							log("[", _cpu, "]  ", v, " ", i, "        ", HMGetVmxExitName(i));
+						++i;
+					}
+					log("[", _cpu, "] }");
+				}
+				if (0) {
+					log("[", _cpu, "] ports {");
+					for (auto &e : _accessed_ports) {
+						log("[", _cpu, "]  ", Hex(e.first), " : ", e.second);
+						e.second = 0;
+					}
+					log("[", _cpu, "] }");
+				}
+			}
+
+			void inc(Exit_state exit_state, unsigned virt_exit)
+			{
+				++_virt_exit[virt_exit];
+				++_exit_state[(int)exit_state];
+				++_total;
+			}
+
+			void access_port(unsigned port)
+			{
+				if (port < 0xd000 || port > 0xd04f) return;
+
+				_accessed_ports[port] += 1;
+			}
+
+		} _stats { _cpu.value };
 
 	public:
 
@@ -465,6 +537,59 @@ typename Sup::Vcpu_impl<T>::Current_state Sup::Vcpu_impl<T>::_handle_npt_ept(VBO
 
 	RTGCPHYS const GCPhys = RT_ALIGN(_vcpu.state().qual_secondary.value(), X86_PAGE_SIZE);
 
+	if (0) {
+		auto cb = [] (PVMCC pVM, PVMCPUCC pVCpu, RTGCPHYS GCPhys, PPGMPHYSNEMPAGEINFO pInfo, void *pvUser)
+		{
+			PGMPHYSNEMPAGEINFO &info = *pInfo;
+			if (info.fZeroPage && PGMPAGETYPE_IS_WRITEABLE(info.enmType)) {
+				error("cb(): GCPhys=", Hex(GCPhys)
+				     , " fNemProt="
+				        , (((unsigned)info.fNemProt) & NEM_PAGE_PROT_READ)    ? "r" : "-"
+				        , (((unsigned)info.fNemProt) & NEM_PAGE_PROT_WRITE)   ? "w" : "-"
+				        , (((unsigned)info.fNemProt) & NEM_PAGE_PROT_EXECUTE) ? "x" : "-"
+				     , " u2NemState=",       (int)info.u2NemState
+				     , " u2OldNemState=",    (int)info.u2OldNemState
+				     , " fHasHandlers=",     (int)info.fHasHandlers
+				     , " fZeroPage=",        (int)info.fZeroPage
+				     , " enmType=",          (int)info.enmType
+				     );
+			}
+			return VINF_SUCCESS;
+		};
+
+		PGMPHYSNEMPAGEINFO info;
+//struct PGMPHYSNEMPAGEINFO
+//{
+//    /** The host physical address of the page, NIL_HCPHYS if invalid page. */
+//    RTHCPHYS            HCPhys;
+//    /** The NEM access mode for the page, NEM_PAGE_PROT_XXX  */
+//    uint32_t            fNemProt : 8;
+//    /** The NEM state associated with the PAGE. */
+//    uint32_t            u2NemState : 2;
+//    /** The NEM state associated with the PAGE before pgmPhysPageMakeWritable was called. */
+//    uint32_t            u2OldNemState : 2;
+//    /** Set if the page has handler. */
+//    uint32_t            fHasHandlers : 1;
+//    /** Set if is the zero page backing it. */
+//    uint32_t            fZeroPage : 1;
+//    /** Set if the page has handler. */
+//    PGMPAGETYPE         enmType;
+//} PGMPHYSNEMPAGEINFO;
+		int ret = PGMPhysNemPageInfoChecker(&_vm, &_vmcpu, GCPhys, false /* fMakeWritable */, &info, cb, nullptr /* pvUser */);
+if (GCPhys < 2UL*1024*1024*1024)
+	error(__func__, ": GCPhys=", Hex(GCPhys), " ret=", ret
+	     , " fNemProt="
+	        , (((unsigned)info.fNemProt) & NEM_PAGE_PROT_READ)    ? "r" : "-"
+	        , (((unsigned)info.fNemProt) & NEM_PAGE_PROT_WRITE)   ? "w" : "-"
+	        , (((unsigned)info.fNemProt) & NEM_PAGE_PROT_EXECUTE) ? "x" : "-"
+	     , " u2NemState=",       (int)info.u2NemState
+	     , " u2OldNemState=",    (int)info.u2OldNemState
+	     , " fHasHandlers=",     (int)info.fHasHandlers
+	     , " fZeroPage=",        (int)info.fZeroPage
+	     , " enmType=",          (int)info.enmType
+	     );
+	}
+
 	PPGMRAMRANGE const pRam = pgmPhysGetRangeAtOrAbove(&_vm, GCPhys);
 	if (!pRam)
 		return PAUSED;
@@ -661,6 +786,9 @@ template <typename VIRT> VBOXSTRICTRC Sup::Vcpu_impl<VIRT>::_switch_to_hw()
 			_current_state = PAUSED;
 			break;
 		}
+
+		_stats.inc(result.state, result.virt_exit);
+		_stats.log();
 
 	} while (_current_state == RUNNING);
 
