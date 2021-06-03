@@ -218,7 +218,7 @@ append config {
 		<resource name="RAM" quantum="3000M"/>
 		<config vbox_file="virtualbox6.vbox" vm_name="TestVM">
 			<libc stdout="/dev/log" stderr="/dev/log" pipe="/pipe" rtc="/dev/rtc">
-				 <pthread placement="single-cpu"/>
+				<pthread placement="single-cpu"/>
 			</libc>
 			<vfs>
 				<dir name="dev">
