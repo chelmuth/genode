@@ -388,7 +388,7 @@ void Allocator_avl_base::free(void *addr)
 
 	if (new_addr != (addr_t)addr)
 		error(__PRETTY_FUNCTION__, ": given address (", addr, ") "
-		      "is not the block start address (", (void *)new_addr, ")");
+		      "is not the block start address (", (void *)new_addr, ",", (void *)(new_addr+new_size), ")");
 
 	_destroy_block(b);
 
