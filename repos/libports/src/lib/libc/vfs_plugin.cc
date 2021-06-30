@@ -1188,7 +1188,19 @@ Libc::Vfs_plugin::_ioctl_sndctl(File_descriptor *fd, unsigned long request, char
 	 */
 	int result = 0;
 
-	if (request == SNDCTL_DSP_CHANNELS) {
+	/* FIXME */
+//	static struct {
+//		unsigned max_frags = 0;
+//		unsigned frag_size = 0;
+//	} keep_values;
+
+	if (request == OSS_GETVERSION) {
+
+		*(int *)argp = SOUND_VERSION;
+
+		handled = true;
+
+	} else if (request == SNDCTL_DSP_CHANNELS) {
 
 		monitor().monitor([&] {
 			_with_info(*fd, [&] (Xml_node info) {
@@ -1208,6 +1220,7 @@ Libc::Vfs_plugin::_ioctl_sndctl(File_descriptor *fd, unsigned long request, char
 					result = EINVAL;
 					return;
 				}
+error("SNDCTL_DSP_CHANNELS avail_chans=", avail_chans, " num_chans=", num_chans);
 
 				if ((unsigned)num_chans != avail_chans) {
 					result = ENOTSUP;
@@ -1234,24 +1247,40 @@ Libc::Vfs_plugin::_ioctl_sndctl(File_descriptor *fd, unsigned long request, char
 					info.attribute_value("frag_size", 0U);
 				unsigned int const frag_avail =
 					info.attribute_value("frag_avail", 0U);
+				unsigned int const queue_size =
+					info.attribute_value("queue_size", 0U);
 				if (!frag_avail || !frag_size) {
 					result = ENOTSUP;
 					return;
 				}
 
-				int const fragsize  = (int)frag_size;
-				int const fragments = (int)frag_avail;
-				if (fragments < 0 || fragsize < 0) {
+				int const fragsize   = (int)frag_size;
+				int const fragments  = (int)frag_avail;
+				int const fragstotal = (int)queue_size;
+				if (fragments < 0 || fragsize < 0 || fragstotal < 0) {
+error("EINVAL!");
 					result = EINVAL;
 					return;
 				}
 
-				struct audio_buf_info *buf_info =
-					(struct audio_buf_info*)argp;
+				audio_buf_info &buf_info = *(audio_buf_info *)argp;
 
-				buf_info->fragments = fragments;
-				buf_info->fragsize  = fragsize;
-				buf_info->bytes     = fragments * fragsize;
+				buf_info.fragstotal = fragstotal;
+				buf_info.fragments  = fragments;
+				buf_info.fragsize   = fragsize;
+				buf_info.bytes      = fragments * fragsize;
+
+//				if (keep_values.frag_size) {
+//					buf_info.fragsize = keep_values.frag_size;
+//				}
+//				if (keep_values.max_frags) {
+//					buf_info.fragstotal = keep_values.max_frags;
+//					buf_info.fragments  = buf_info.fragstotal
+//					                    - (fragstotal - fragments);
+//					buf_info.bytes      = buf_info.fragments * buf_info.fragsize;
+//				}
+
+error("XXXXXXXXX  fragsize=", buf_info.fragsize, " fragments=", buf_info.fragments, "/", fragments, " fragstotal=", buf_info.fragstotal, " bytes=", buf_info.bytes);
 
 				handled = true;
 			});
@@ -1260,10 +1289,12 @@ Libc::Vfs_plugin::_ioctl_sndctl(File_descriptor *fd, unsigned long request, char
 		});
 
 	} else if (request == SNDCTL_DSP_POST) {
+error("SNDCTL_DSP_POST");
 
 		handled = true;
 
 	} else if (request == SNDCTL_DSP_RESET) {
+error("SNDCTL_DSP_RESET");
 
 		handled = true;
 
@@ -1283,6 +1314,7 @@ Libc::Vfs_plugin::_ioctl_sndctl(File_descriptor *fd, unsigned long request, char
 				}
 
 				int const requested_fmt = *(int const*)argp;
+error("SNDCTL_DSP_SAMPLESIZE requested_fmt=", requested_fmt, " format=", format);
 
 				if (requested_fmt != (int)format) {
 					result = ENOTSUP;
@@ -1311,12 +1343,20 @@ Libc::Vfs_plugin::_ioctl_sndctl(File_descriptor *fd, unsigned long request, char
 				unsigned int const queue_size =
 					info.attribute_value("queue_size", 0U);
 
+				unsigned const max_frags     = (*(unsigned const *)argp) >> 16;
+				unsigned const frag_size_sel = (*(unsigned const *)argp) & 0xffff;
+error("SNDCTL_DSP_SETFRAGMENT max_frags=", max_frags, " frag_size_sel=", frag_size_sel, " frag_size_log2=", frag_size_log2);
+
 				if (!queue_size || !frag_size_log2) {
 					result = ENOTSUP;
 					return;
 				}
 
-				/* ignore the given hint */
+				/* ignore the given hint !!! */
+
+				/* FIXME store these values and read them later in GETOSPACE etc. */
+//				keep_values.max_frags = max_frags;
+//				keep_values.frag_size = 1U << frag_size_sel;
 
 				handled = true;
 			});
@@ -1344,6 +1384,7 @@ Libc::Vfs_plugin::_ioctl_sndctl(File_descriptor *fd, unsigned long request, char
 					result = EINVAL;
 					return;
 				}
+error("SNDCTL_DSP_SPEED samplerate=", samplerate, " speed=", speed);
 
 				if ((unsigned)speed != samplerate) {
 					result = ENOTSUP;
@@ -1390,8 +1431,39 @@ int Libc::Vfs_plugin::ioctl(File_descriptor *fd, unsigned long request, char *ar
 	case SNDCTL_DSP_SAMPLESIZE:
 	case SNDCTL_DSP_SETFRAGMENT:
 	case SNDCTL_DSP_SPEED:
+	case OSS_GETVERSION:
 		result = _ioctl_sndctl(fd, request, argp);
 		break;
+	case SNDCTL_DSP_GETISPACE:
+		{
+			error("SNDCTL_DSP_GETISPACE");
+			audio_buf_info &abinfo = *(audio_buf_info *)argp;
+			abinfo = {
+				.fragments  = 0,
+				.fragstotal = 256,
+				.fragsize   = 2048,
+				.bytes      = 256*2048,
+			};
+		} return 0;
+	case SNDCTL_DSP_NONBLOCK:   error("SNDCTL_DSP_NONBLOCK");   return 0;
+	case SNDCTL_DSP_SETTRIGGER:
+		{
+			int const &trigger = *(int const *)argp;
+			error("SNDCTL_DSP_SETTRIGGER",
+			      trigger & PCM_ENABLE_INPUT ? " PCM_ENABLE_INPUT" : "",
+			      trigger & PCM_ENABLE_OUTPUT ? " PCM_ENABLE_OUTPUT" : "");
+		} return 0;
+	case SNDCTL_DSP_GETOPTR:
+		{
+			error("SNDCTL_DSP_GETOPTR");
+			count_info &ci = *(count_info *)argp;
+			ci = {
+				.bytes  = 0, /* Total # of bytes processed */
+				.blocks = 0, /* # of fragment transitions since last time */
+				.ptr    = 0, /* Current DMA pointer value */
+			};
+		} return 0;
+	case OSS_SYSINFO:           /*error("OSS_SYSINFO");*/       return 0;
 	default:
 		break;
 	}

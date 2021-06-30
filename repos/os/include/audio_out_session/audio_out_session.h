@@ -4,10 +4,10 @@
  * \date   2012-12-20
  *
  * An audio session corresponds to one output channel, which can be used to
- * send audio frames. Each session consists of an 'Audio_out::Stream' object
+ * send audio samples. Each session consists of an 'Audio_out::Stream' object
  * that resides in shared memory between the client and the server. The
  * 'Audio_out::Stream' in turn consists of 'Audio_out::Packet's that contain
- * the actual frames. Each packet within a stream is freely accessible or may
+ * the actual samples. Each packet within a stream is freely accessible or may
  * be allocated successively. Also there is a current position pointer for each
  * stream that is updated by the server. This way, it is possible to send
  * sporadic events that need immediate processing as well as streams that rely
@@ -55,14 +55,15 @@ namespace Audio_out {
 	};
 
 	/**
-	 * Samples per perios (~11.6ms)
+	 * Samples per period (10 ms)
 	 */
+//	static constexpr Genode::size_t PERIOD = SAMPLE_RATE/100;
 	static constexpr Genode::size_t PERIOD = 512;
 }
 
 
 /**
- * Audio_out packet containing frames
+ * Audio_out packet containing samples
  */
 class Audio_out::Packet
 {
@@ -83,24 +84,26 @@ class Audio_out::Packet
 		Packet() : _valid(false), _wait_for_play(false) { }
 
 		/**
-		 * Copy data into packet, if there are less frames given than 'PERIOD',
+		 * Copy data into packet, if there are less samples given than 'PERIOD',
 		 * the remainder is filled with zeros
 		 *
-		 * \param  data  frames to copy in
-		 * \param  size  number of frames to copy
+		 * \param  data  samples to copy in
+		 * \param  size  number of samples to copy
 		 */
 		void content(float const *data, Genode::size_t samples)
 		{
 			Genode::memcpy(_data, data, (samples > PERIOD ? PERIOD : samples) * SAMPLE_SIZE);
 
-			if (samples < PERIOD)
+			if (samples < PERIOD) {
+				Genode::warning("filling PERIOD with ", PERIOD - samples, " samples of silence");
 				Genode::memset(_data + samples, 0, (PERIOD - samples) * SAMPLE_SIZE);
+			}
 		}
 
 		/**
 		 * Get content
 		 *
-		 * \return  pointer to frame data
+		 * \return  pointer to sample data
 		 */
 		float *content() { return _data; }
 
@@ -204,9 +207,10 @@ class Audio_out::Stream
 		 * \return  Successor of packet or successor of current position if
 		 *          'packet' is zero
 		 */
-		Packet *next(Packet *packet = 0)
+		Packet *next(Packet *packet = nullptr)
 		{
-			return packet ? get(packet_position(packet) + 1) : get(pos() + 1);
+			unsigned const p = packet ? packet_position(packet) : pos();
+			return get(p + 1);
 		}
 
 		/**
