@@ -86,7 +86,7 @@ extern "C" {
  ** Debug settings **
  ********************/
 
-/* #define LWIP_DEBUG */
+#define LWIP_DEBUG
 /* #define DHCP_DEBUG      LWIP_DBG_ON */
 /* #define ETHARP_DEBUG    LWIP_DBG_ON */
 /* #define NETIF_DEBUG     LWIP_DBG_ON */
@@ -103,6 +103,8 @@ extern "C" {
 /* #define MEMP_DEBUG      LWIP_DBG_ON */
 /* #define SYS_DEBUG       LWIP_DBG_ON */
 /* #define TCP_DEBUG       LWIP_DBG_ON */
+#define TCP_WND_DEBUG LWIP_DBG_ON
+#define TCP_CWND_DEBUG LWIP_DBG_ON
 
 
 /*
