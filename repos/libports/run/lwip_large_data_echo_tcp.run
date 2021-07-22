@@ -23,6 +23,7 @@ create_boot_directory
 import_from_depot [depot_user]/pkg/[drivers_nic_pkg]
 import_from_depot [depot_user]/src/[base_src]
 import_from_depot [depot_user]/src/dynamic_rom
+import_from_depot [depot_user]/src/nic_router
 import_from_depot [depot_user]/src/init
 import_from_depot [depot_user]/src/libc
 import_from_depot [depot_user]/src/stdcxx
@@ -52,15 +53,36 @@ set config {
 			<service name="Timer"/>
 		</provides>
 	</start>
-	<start name="linux_nic_drv" ld="no">
-		<resource name="RAM" quantum="4M"/>
+	<start name="nic_router" caps="200">
+		<resource name="RAM" quantum="10M"/>
 		<provides>
 			<service name="Nic"/>
+			<service name="Uplink"/>
 		</provides>
+		<config verbose_domain_state="yes" verbose_packets="no">
+
+			<policy label_prefix="test-large_data_echo_tcp" domain="downlink"/>
+			<policy label_prefix="linux_nic_drv"            domain="uplink"/>
+
+			<domain name="uplink" interface="10.0.2.55/24" gateway="10.0.2.1">
+				<nat domain="downlink" tcp-ports="1000" udp-ports="1000" icmp-ids="1000"/>
+			</domain>
+
+			<domain name="downlink" interface="10.0.3.1/24">
+				<dhcp-server ip_first="10.0.3.2" ip_last="10.0.3.2"/>
+				<tcp dst="0.0.0.0/0"> <permit-any domain="uplink"/> </tcp>
+				<udp dst="0.0.0.0/0"> <permit-any domain="uplink"/> </udp>
+				<icmp dst="0.0.0.0/0" domain="uplink"/>
+			</domain>
+
+		</config>
+	</start>
+	<start name="linux_nic_drv" ld="no">
+		<resource name="RAM" quantum="4M"/>
 	</start>
 	<start name="test-large_data_echo_tcp" caps="200">
 		<resource name="RAM" quantum="256M"/>
-		<config server_ip="80.74.156.132" server_port="5000">
+		<config server_ip="10.0.2.1" server_port="5000">
 			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc" rng="/dev/random" socket="/dev/socket"/>
 			<vfs>
 				<dir name="dev">
@@ -68,15 +90,11 @@ set config {
 					<null/>
 					<inline name="rtc">2018-01-01 00:01</inline>
 					<dir name="socket">
-						<lwip ip_addr="169.254.70.100" netmask="255.255.255.0" gateway="169.254.70.1" nameserver="1.1.1.1"/>
+						<lwip dhcp="yes"/>
 					</dir>
 				</dir>
 			</vfs>
 		</config>
-		<route>
-			<service name="Nic"> <child name="linux_nic_drv"/> </service>
-			<any-service> <parent/> <any-child/> </any-service>
-		</route>
 	</start>
 </config>
 }
