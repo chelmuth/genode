@@ -444,6 +444,15 @@ install_config {
 		</route>
 	</start>
 
+	<start name="top" priority="0">
+		<resource name="RAM" quantum="2M"/>
+		<config period_ms="10000" sort_time="ec"/>
+		<route>
+			<service name="Timer"> <child name="timer"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
 	<start name="runtime" caps="50000" priority="-1">
 		<binary name="init"/>
 		<resource name="RAM" quantum="32G"/>
@@ -684,8 +693,8 @@ exec sh -c "tar cf [run_dir]/genode/depot_users.tar -C [genode_dir] \
 # Create boot image
 #
 
-build { virtualbox6 virtualbox5 }
+build { virtualbox6 virtualbox5 app/top lib/vfs/oss drivers/audio/pci_audio_drv }
 
-append boot_modules { virtualbox6 virtualbox5-nova }
+append boot_modules { virtualbox6 virtualbox5-nova top vfs_oss.lib.so libc.lib.so pci_audio_drv }
 
 build_boot_image $boot_modules
