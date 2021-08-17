@@ -15,9 +15,12 @@ if {[expr !$use_rumpfs && $use_vms > 1] } {
 	exit 1
 }
 
+set vdi_image "${flavor}.vdi"
 set raw_image "${flavor}.vmdk"
-set vbox_file "vbox6_win10.vbox"
-set overlay_image "overlay_vbox6.vdi"
+set vbox_file "vm_${flavor}.vbox"
+set overlay_image "overlay_${flavor}.vdi"
+#set vbox_file "vbox6_win10.vbox"
+#set overlay_image "overlay_vbox6.vdi"
 
 if {[info exists flavor_extension]} {
 	set vbox_file "vm_${flavor}${flavor_extension}.vbox"
@@ -369,7 +372,7 @@ if {![info exists use_check_result]} {
 	set use_check_result 0
 }
 
-run_genode_until forever
+#run_genode_until forever
 
 if {$use_check_result} {
 	run_genode_until {\[init -\> vbox.*].*Guest Additions capability report:.*seamless: no, hostWindowMapping: no, graphics: no} $wait_timeout

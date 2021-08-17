@@ -1,0 +1,261 @@
+create_boot_directory
+
+source ${genode_dir}/repos/base/run/platform_drv.inc
+build { init test/libc server/nitpicker drivers/framebuffer/intel server/report_rom timer drivers/platform drivers/ps2 drivers/acpi drivers/ahci drivers/rtc app/acpica virtualbox6 lib/vfs/pipe 	server/part_block}
+
+install_config {
+<config prio_levels="16" verbose="yes">
+	<parent-provides>
+		<service name="ROM"/>
+		<service name="IRQ"/>
+		<service name="IO_MEM"/>
+		<service name="IO_PORT"/>
+		<service name="PD"/>
+		<service name="RM"/>
+		<service name="CPU"/>
+		<service name="LOG"/>
+		<service name="VM"/>
+	</parent-provides>
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+	<default caps="100"/>
+
+	<start name="timer">
+		<resource name="RAM" quantum="1M"/>
+		<provides><service name="Timer"/></provides>
+	</start>
+
+	<!--
+	<start name="acpica" priority="-1" caps="400">
+		<resource name="RAM" quantum="6M"/>
+		<config verbose="no" ld_verbose="no" reset="no" poweroff="no" report="yes" acpi_ready="yes"/>
+		<route>
+			<service name="Report"> <child name="report_rom"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<service name="Acpi"> <child name="platform_drv"/> </service>
+			<service name="RM"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="ROM"> <parent/> </service>
+			<service name="IO_MEM"> <parent/> </service>
+			<service name="IO_PORT"> <parent/> </service>
+			<service name="IRQ"> <parent/> </service>
+		</route>
+	</start>
+	-->
+
+	<start name="rtc_drv" priority="-1" caps="200">
+		<resource name="RAM" quantum="2M"/>
+		<provides> <service name="Rtc"/> </provides>
+		<route>
+			<service name="ROM"> <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="IO_PORT"> <parent/> </service>
+		</route>
+	</start>
+
+	<!-- PS2 Configuration -->
+	<start name="ps2_drv" priority="-2" caps="200" >
+		<resource name="RAM" quantum="2M"/>
+		<config/>
+		<route>
+			<service name="Event"> <child name="nitpicker"/> </service>
+			<service name="Platform"> <child name="platform_drv"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<service name="ROM"> <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="IRQ"> <parent/> </service>
+		</route>
+	</start>
+
+	<start name="acpi_drv" priority="-1" caps="400">
+		<resource name="RAM" quantum="3M"/>
+		<route>
+			<service name="Report"> <child name="report_rom"/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="IO_MEM"> <parent/> </service>
+			<service name="RM"> <parent/> </service>
+			<service name="ROM"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+		</route>
+	</start>
+
+	<start name="intel_fb_drv" priority="0" caps="200">
+		<resource name="RAM" quantum="64M"/>
+		<provides> <service name="Framebuffer"/> </provides>
+		<config buffered="yes">
+			<report connectors="yes"/>
+			<connector name="eDP-1" width="1920" height="1080" enabled="yes" />
+		</config>
+		<route>
+			<service name="Capture"> <child name="nitpicker"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<service name="Platform"> <child name="platform_drv"/> </service>
+			<service name="Report"> <child name="report_rom"/> </service>
+			<service name="ROM"> <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="RM"> <parent/> </service>
+			<service name="IO_MEM"> <parent/> </service>
+			<service name="IO_PORT"> <parent/> </service>
+		</route>
+	</start>
+
+	<start name="platform_drv" priority="-1" caps="1000" managing_system="true">
+		<resource name="RAM" quantum="4M"/>
+		<provides>
+			<service name="Platform"/>
+			<service name="Acpi"/>
+		</provides>
+		<config verbose="yes" acpi="yes" system="yes" acpi_ready="no">
+			<policy label="fb_drv -> "> <pci class="VGA"/> </policy>
+			<policy label="nic_drv -> "> <pci class="ETHERNET"/> </policy>
+			<policy label="wifi_drv -> "> <pci class="WIFI"/> </policy>
+			<policy label="ahci_drv -> "> <pci class="AHCI"/> </policy>
+			<policy label_prefix="audio_drv -> "> <pci class="AUDIO"/> <pci class="HDAUDIO"/> </policy>
+			<policy label="usb_drv -> "> <pci class="USB"/> </policy>
+			<policy label="ps2_drv -> "> <device name="PS2"/> </policy>
+			<policy label_prefix="acpica"> <pci class="ALL"/> </policy>
+			<policy label="intel_fb_drv -> " irq_mode="nomsi">
+				<pci class="VGA"/>
+				<pci bus="0" device="0" function="0"/>
+				<pci class="ISABRIDGE"/>
+			</policy>
+		</config>
+		<route>
+			<service name="ROM" label="acpi"> <child name="report_rom"/> </service>
+			<service name="ROM" label="system"> <child name="report_rom"/> </service>
+			<service name="ROM" label="acpi_ready"> <child name="report_rom"/> </service>
+			<service name="ROM"> <parent/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="IO_MEM"> <parent/> </service>
+			<service name="IO_PORT"> <parent/> </service>
+			<service name="IRQ"> <parent/> </service>
+		</route>
+	</start>
+
+	<start name="nitpicker" priority="-1" caps="200">
+		<resource name="RAM" quantum="32M"/>
+		<provides> <service name="Gui"/> <service name="Capture"/> <service name="Event"/> </provides>
+		<config>
+			<capture/>
+			<event/>
+			<background color="#AABBCC"/>
+			<domain label="no" content="client" name="point" layer="1" origin="pointer"/>
+			<domain label="no" content="client" name="home" layer="3" focus="click" hover="always"/>
+			<policy domain="home" label_prefix="vbox -> "/>
+		</config>
+		<route>
+			<service name="Framebuffer"> <child name="intel_fb_drv"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<service name="Report"> <child name="rr_nitpicker"/> </service>
+			<service name="ROM"> <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="PlatAp"> <parent/> </service>
+		</route>
+	</start>
+
+	<start name="part_block" priority="-1" caps="200">
+		<resource name="RAM" quantum="20M"/>
+		<provides> <service name="Block"/> </provides>
+		<config ignore_mbr="no">
+			<policy label_prefix="vbox" partition="7" writeable="yes"/>
+		</config>
+		<route>
+			<service name="Block"> <child name="ahci_drv"/> </service>
+			<service name="ROM"> <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+		</route>
+	</start>
+
+	<start name="ahci_drv" priority="-1" caps="200">
+		<resource name="RAM" quantum="10M"/>
+		<provides> <service name="Block"/> </provides>
+		<config>
+			<policy label="part_block -> " device="2" writeable="yes"/>
+		</config>
+		<route>
+			<service name="Timer"> <child name="timer"/> </service>
+			<service name="Platform"> <child name="platform_drv"/> </service>
+			<service name="ROM"> <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+			<service name="IO_MEM"> <parent/> </service>
+		</route>
+	</start>
+
+	<start name="vbox" priority="-1" caps="2000">
+		<binary name="virtualbox6" />
+		<resource name="RAM" quantum="16G"/>
+		<exit propagate="yes"/>
+		<config vbox_file="machine.vbox" xhci="yes" vm_name="linux" ld_verbose="yes">
+			<vfs>
+				<dir name="dev"> <log/><rtc/><null/><zero/>
+					<block name="block" label="machine" block_buffer_count="128" />
+				</dir>
+				<dir name="pipe"> <pipe/> </dir>
+				<rom name="machine.vbox" />
+				<rom name="machine.vmdk" />
+			</vfs>
+			<libc stdout="/dev/log" stderr="/dev/log" pipe="/pipe">
+				<pthread placement="single-cpu"/>
+			</libc>
+			<arg value="virtualbox"/>
+			<env key="VBOX_USER_HOME" value="/"/>
+		</config>
+		<route>
+			<service name="ROM" label="usb_devices"> <child name="report_rom"/> </service>
+			<service name="Report" label="shape"> <child name="report_rom"/> </service>
+			<service name="Nic"> <parent/> </service>
+			<service name="Block"> <child name="part_block"/> </service>
+			<service name="Rtc"> <child name="rtc_drv"/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+			<service name="Gui"> <child name="nitpicker"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+	<start name="report_rom" priority="-1" caps="200" >
+		<binary name="report_rom"/>
+		<resource name="RAM" quantum="2M"/>
+		<provides> <service name="Report"/> <service name="ROM"/> </provides>
+		<config verbose="no">
+			<policy label="platform_drv -> acpi" report="acpi_drv -> acpi"/>
+			<policy label="platform_drv -> acpi_ready" report="acpica -> acpi_ready"/>
+			<policy label="platform_drv -> system" report="acpi_drv -> system"/>
+			<policy label="vbox -> usb_devices" report="none"/>
+			<policy label="" report="intel_fb_drv -> connectors"/>
+		</config>
+		<route>
+			<service name="ROM"> <parent/> </service>
+			<service name="CPU"> <parent/> </service>
+			<service name="PD"> <parent/> </service>
+			<service name="LOG"> <parent/> </service>
+		</route>
+	</start>
+</config>
+}
+
+file copy -force [genode_dir]/repos/ports/run/vbox6_ioapic.vmdk         [run_dir]/genode/machine.vmdk
+file copy -force [genode_dir]/repos/ports/run/vbox6_ioapic_peter.vbox   [run_dir]/genode/machine.vbox
+#file copy -force [genode_dir]/repos/ports/run/vbox6_ioapic_krishna.vbox [run_dir]/genode/machine.vbox
+
+build_boot_image { init report_rom timer platform_drv nitpicker intel_fb_drv acpica acpi_drv rtc_drv virtualbox6 libc.lib.so vfs.lib.so libiconv.lib.so libm.lib.so qemu-usb.lib.so stdcxx.lib.so vfs_pipe.lib.so ahci_drv part_block ps2_drv jpeg.lib.so}
+
+run_genode_until forever
