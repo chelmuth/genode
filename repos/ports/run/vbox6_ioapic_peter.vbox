@@ -6,12 +6,10 @@
 ** Use VBoxManage or the VirtualBox Manager GUI to make changes.
 -->
 <VirtualBox xmlns="http://www.innotek.de/VirtualBox-settings" version="1.14-linux">
-  <Machine uuid="{37ab43a5-38d8-4491-93f5-5b0b077f5c32}" name="ubuntu_16_04_64" OSType="Ubuntu_64" snapshotFolder="Snapshots" lastStateChange="2014-11-14T11:58:35Z">
+  <Machine uuid="{dc7344b5-a8ab-4da6-8e95-be856b753b0b}" name="ref_R03" OSType="Ubuntu_64" snapshotFolder="Snapshots" lastStateChange="2017-02-02T23:56:49Z">
     <MediaRegistry>
       <HardDisks>
-        <HardDisk uuid="{2a248ff9-7ac9-4862-98f9-14e31968f23d}" location="/ubuntu_16_04_64.vdi" format="VDI" type="Immutable">
-          <HardDisk uuid="{78a3a6a1-ade6-41bf-8b29-ec7cf16de4bb}" location="/ram/overlay_ubuntu_16_04_64.vdi" format="VDI" autoReset="true"/>
-        </HardDisk>
+        <HardDisk uuid="{74740507-f675-47e3-bbc7-415d9b2f4c56}" location="/machine.vmdk" format="VMDK"/>
       </HardDisks>
       <DVDImages/>
       <FloppyImages/>
@@ -19,26 +17,24 @@
     <ExtraData/>
     <Hardware version="2">
       <CPU count="2" hotplug="false">
-        <HardwareVirtEx enabled="true"/>
-        <HardwareVirtExNestedPaging enabled="true"/>
-        <HardwareVirtExVPID enabled="true"/>
-        <HardwareVirtExUX enabled="true"/>
         <PAE enabled="true"/>
         <LongMode enabled="true"/>
         <HardwareVirtExLargePages enabled="false"/>
-        <HardwareVirtForce enabled="false"/>
+        <HardwareVirtEx enabled="true"/>
+        <HardwareVirtExNestedPaging enabled="true"/>
+        <HardwareVirtExUX enabled="true"/>
       </CPU>
-      <Memory RAMSize="9216" PageFusion="false"/>
-      <HID Pointing="USBTablet" Keyboard="PS2Keyboard"/>
+      <Memory RAMSize="1024" PageFusion="false"/>/>
+      <HID Pointing="PS2Mouse" Keyboard="PS2Keyboard"/>
       <HPET enabled="false"/>
-      <Chipset type="PIIX3"/>
+			<!--Chipset type="ICH9"/-->
       <Boot>
         <Order position="1" device="Floppy"/>
         <Order position="2" device="DVD"/>
         <Order position="3" device="HardDisk"/>
         <Order position="4" device="None"/>
       </Boot>
-      <Display VRAMSize="20" monitorCount="1" accelerate3D="false" accelerate2DVideo="false"/>
+      <Display VRAMSize="20" monitorCount="1" accelerate3D="false" accelerate2DVideo="false"/> <!--controller="VBOXSVGA"-->
       <VideoCapture enabled="false" screens="18446744073709551615" horzRes="1024" vertRes="768" rate="512" fps="25"/>
       <RemoteDisplay enabled="false" authType="Null"/>
       <BIOS>
@@ -62,14 +58,14 @@
         </Adapter>
       </Network>
       <UART>
-        <Port slot="0" enabled="true"  IOBase="0x3f8" IRQ="4" path="/dev/terminal" hostMode="RawFile"/>
+        <Port slot="0" enabled="false"  IOBase="0x3f8" IRQ="4" path="/dev/terminal" hostMode="RawFile"/>
         <Port slot="1" enabled="false" IOBase="0x2f8" IRQ="3" hostMode="Disconnected"/>
       </UART>
       <LPT>
         <Port slot="0" enabled="false" IOBase="0x378" IRQ="7"/>
         <Port slot="1" enabled="false" IOBase="0x378" IRQ="7"/>
       </LPT>
-      <AudioAdapter controller="HDA" driver="Pulse" enabled="false"/>
+      <AudioAdapter controller="HDA" driver="Null" enabled="true"/>
       <RTC localOrUTC="UTC"/>
       <SharedFolders/>
       <Clipboard mode="Disabled"/>
@@ -90,7 +86,7 @@
     <StorageControllers>
       <StorageController name="SATA" type="AHCI" PortCount="2" useHostIOCache="true" Bootable="true">
         <AttachedDevice type="HardDisk" port="0" device="0">
-          <Image uuid="{78a3a6a1-ade6-41bf-8b29-ec7cf16de4bb}"/>
+          <Image uuid="{74740507-f675-47e3-bbc7-415d9b2f4c56}"/>
         </AttachedDevice>
         <AttachedDevice passthrough="false" type="DVD" port="1" device="0"/>
       </StorageController>
