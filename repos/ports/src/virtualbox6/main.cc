@@ -41,6 +41,10 @@
 
 using namespace Genode;
 
+#include <nova/syscalls.h>
+
+extern "C" void this_is_yield() { Nova::ec_ctrl(Nova::EC_YIELD); }
+
 
 struct Event_handler : Interface
 {

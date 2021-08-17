@@ -47,3 +47,6 @@ LIBS += blit
 vpath %.cc $(REP_DIR)/src/virtualbox6/
 
 CC_CXX_WARN_STRICT =
+
+INC_DIR += /home/krishna/src/genode.git/repos/base-nova/include/spec/64bit
+INC_DIR += /home/krishna/src/genode.git/repos/base-nova/include
