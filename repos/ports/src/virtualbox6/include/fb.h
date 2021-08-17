@@ -53,6 +53,7 @@ class Genodefb :
 		void _clear_screen()
 		{
 			if (!_fb_base) return;
+Genode::error(__func__);
 
 			size_t const max_h = Genode::min(_fb_mode.area.h(), _virtual_fb_mode.area.h());
 			size_t const num_pixels = _fb_mode.area.w() * max_h;
@@ -148,10 +149,13 @@ class Genodefb :
 			/* save the new bitmap reference */
 			_display->QuerySourceBitmap(screen, _display_bitmap.asOutParam());
 
-			bool ok = (w <= (ULONG)_fb_mode.area.w()) &&
-			          (h <= (ULONG)_fb_mode.area.h());
+			bool const ok = (w <= (ULONG)_fb_mode.area.w()) &&
+			                (h <= (ULONG)_fb_mode.area.h());
 
-			if (ok) {
+			bool const changed = (w != (ULONG)_virtual_fb_mode.area.w()) ||
+			                     (h != (ULONG)_virtual_fb_mode.area.h());
+
+			if (ok && changed) {
 				Genode::log("fb resize : [", screen, "] ",
 				            _virtual_fb_mode.area, " -> ",
 				            w, "x", h,
@@ -160,13 +164,15 @@ class Genodefb :
 				if ((w < (ULONG)_fb_mode.area.w()) ||
 				    (h < (ULONG)_fb_mode.area.h())) {
 					/* clear the old content around the new, smaller area. */
-				    _clear_screen();
+Genode::error("clear the old content around the new, smaller area.");
+					_clear_screen();
+Genode::error("done.");
 				}
 
 				_virtual_fb_mode = Fb_Genode::Mode { .area = { w, h } };
 
 				result = S_OK;
-			} else {
+			} else if (changed) {
 				Genode::log("fb resize : [", screen, "] ",
 				            _virtual_fb_mode.area, " -> ",
 				            w, "x", h, " ignored"
@@ -205,7 +211,9 @@ class Genodefb :
 			Lock();
 
 			if (_display_bitmap.isNull()) {
-				_clear_screen();
+Genode::error("_display_bitmap.isNull()");
+//				_clear_screen();
+//Genode::error("done.");
 				Unlock();
 				return S_OK;
 			}
