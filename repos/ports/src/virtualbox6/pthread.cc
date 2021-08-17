@@ -82,12 +82,16 @@ namespace {
 	};
 }
 
+extern "C" void this_is_yield();
+
 extern "C" int sched_yield()
 {
 	static unsigned long counter = 0;
 
 	if (++counter % 100'000 == 0)
 		warning(__func__, " called ", Sep(counter), " times");
+
+//	this_is_yield();
 
 	return 0;
 }
