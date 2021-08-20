@@ -25,6 +25,7 @@
 #include <iprt/initterm.h>
 #include <iprt/err.h>
 #include <VBox/com/listeners.h>
+#include <VBox/version.h>
 
 /* Virtualbox includes of generic Main frontend */
 #include "ConsoleImpl.h"
@@ -494,6 +495,8 @@ extern char **environ;
 
 void Libc::Component::construct(Libc::Env &env)
 {
+error("---===[[[ ", VBOX_RC_PRODUCT_VERSION_STR, " ", __DATE__, " ", __TIME__, " ]]]===---");
+
 	Libc::with_libc([&] () {
 
 		/* extract args and environment variables from config */
