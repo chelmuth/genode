@@ -62,3 +62,6 @@ LIBS += blit
 vpath %.cc $(REP_DIR)/src/virtualbox6/
 
 CC_CXX_WARN_STRICT =
+
+main.o: .FORCE
+.FORCE:
