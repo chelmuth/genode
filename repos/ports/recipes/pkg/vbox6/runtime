@@ -2,6 +2,7 @@
 
 	<requires>
 		<file_system label="vm"/>
+		<block label="block"/>
 		<file_system label="shared"/>
 		<vm/>
 		<timer/>
@@ -33,6 +34,7 @@
 			<service name="Rtc"/>
 			<service name="Report"/>
 			<service name="File_system"/>
+			<service name="Block"/>
 			<service name="Usb"/>
 			<service name="Nic"/>
 			<service name="Audio_out"/>
@@ -51,8 +53,8 @@
 				<vfs>
 					<dir name="dev">
 						<log/> <rtc/> <null/> <zero/> <oss name="dsp"/>
+						<block name="block" label="block" block_buffer_count="128"/>
 					</dir>
-					<oss name="dsp"/>
 					<dir name="pipe"> <pipe/> </dir>
 					<dir name="shared"> <fs label="shared" writeable="yes"/> </dir>
 					<rom name="VBoxSharedClipboard.so"/>
@@ -75,6 +77,7 @@
 				<service name="Audio_out">                  <parent/>                       </service>
 				<service name="File_system" label="shared"> <parent label="shared"/>        </service>
 				<service name="File_system">                <parent label="vm"/>            </service>
+				<service name="Block" label="block"> <parent label="block"/> </service>
 				<service name="ROM" label="usb_devices">    <parent label="usb_devices"/>   </service>
 				<service name="ROM" label="capslock">       <parent label="capslock"/>      </service>
 				<service name="ROM" label="platform_info">  <parent label="platform_info"/> </service>
