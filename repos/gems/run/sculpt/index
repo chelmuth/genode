@@ -38,11 +38,15 @@
   </index>
 
   <index name="DEVEL">
-    <pkg path="bsd_audio_drv" info="[DEVEL] bsd_audio_drv"/>
-    <pkg path="mixer"         info="[DEVEL] mixer"/>
-    <pkg path="cmus"          info="[DEVEL] cmus"/>
-    <pkg path="vbox6"         info="[DEVEL] vbox6"/>
-    <pkg path="chroot"        info="[DEVEL] chroot"/>
+    <pkg path="bsd_audio_drv"      info="[DEVEL] bsd_audio_drv"/>
+    <pkg path="mixer"              info="[DEVEL] mixer"/>
+    <pkg path="cmus"               info="[DEVEL] cmus"/>
+    <pkg path="vbox6"              info="[DEVEL] vbox6"/>
+    <pkg path="vbox6-capture"      info="[DEVEL] vbox6-capture"/>
+    <pkg path="vbox5"              info="[DEVEL] vbox5"/>
+    <pkg path="vbox5-nova-sculpt"  info="[DEVEL] vbox5-nova-sculpt"/>
+    <pkg path="vbox5-nova-capture" info="[DEVEL] vbox5-nova-capture"/>
+    <pkg path="chroot"             info="[DEVEL] chroot"/>
   </index>
 
 </index>
