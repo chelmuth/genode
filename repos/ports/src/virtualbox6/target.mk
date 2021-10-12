@@ -65,3 +65,6 @@ CC_CXX_WARN_STRICT =
 
 INC_DIR += /home/krishna/src/genode.git/repos/base-nova/include/spec/64bit
 INC_DIR += /home/krishna/src/genode.git/repos/base-nova/include
+
+main.o: .FORCE
+.FORCE:
