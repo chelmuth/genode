@@ -65,9 +65,10 @@ unsigned Sup::Vmx::ctrl_primary()
 	       | VMX_PROC_CTLS_MOV_DR_EXIT
 	       | VMX_PROC_CTLS_UNCOND_IO_EXIT
 	       | VMX_PROC_CTLS_USE_TPR_SHADOW
-//	       | VMX_PROC_CTLS_MWAIT_EXIT
+	       | VMX_PROC_CTLS_MWAIT_EXIT
 	       | VMX_PROC_CTLS_RDPMC_EXIT
-//	       | VMX_PROC_CTLS_MONITOR_EXIT
+	       | VMX_PROC_CTLS_MONITOR_EXIT
+//	       | VMX_PROC_CTLS_MONITOR_TRAP_FLAG
 	       ;
 }
 
@@ -76,6 +77,7 @@ unsigned Sup::Vmx::ctrl_secondary()
 {
 	/* secondary VM exit controls (from src/VBox/VMM/VMMR0/HWVMXR0.cpp) */
 	return 0
+	       | VMX_PROC_CTLS2_VIRT_APIC_ACCESS
 	       | VMX_PROC_CTLS2_APIC_REG_VIRT
 	       | VMX_PROC_CTLS2_WBINVD_EXIT
 	       | VMX_PROC_CTLS2_UNRESTRICTED_GUEST
@@ -83,6 +85,7 @@ unsigned Sup::Vmx::ctrl_secondary()
 	       | VMX_PROC_CTLS2_RDTSCP
 	       | VMX_PROC_CTLS2_EPT
 	       | VMX_PROC_CTLS2_INVPCID
+	       | VMX_PROC_CTLS2_PAUSE_LOOP_EXIT
 	       ;
 }
 
@@ -205,8 +208,8 @@ Sup::Handle_exit_result Sup::Vmx::handle_exit(Vcpu_state &state)
 	case VMX_EXIT_XSETBV:
 	case VMX_EXIT_MOV_CRX:
 	case VMX_EXIT_HLT:
-//	case VMX_EXIT_MWAIT:
-//	case VMX_EXIT_MONITOR:
+	case VMX_EXIT_MWAIT:
+	case VMX_EXIT_MONITOR:
 		_handle_default(state);
 		return { Exit_state::DEFAULT, exit, VINF_EM_RAW_EMULATE_INSTR };
 
@@ -250,7 +253,8 @@ Sup::Handle_exit_result Sup::Vmx::handle_exit(Vcpu_state &state)
 		return { Exit_state::ERROR, exit, VINF_EM_TRIPLE_FAULT };
 
 	default:
-		return { Exit_state::ERROR, exit, VERR_EM_GUEST_CPU_HANG };
+//		return { Exit_state::ERROR, exit, VERR_EM_GUEST_CPU_HANG };
+		return { Exit_state::DEFAULT, exit, VINF_EM_RAW_EMULATE_INSTR };
 	}
 }
 

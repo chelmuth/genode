@@ -19,6 +19,7 @@
 #include <cpu/vcpu_state.h>
 #include <cpu/memory_barrier.h>
 #include <libc/allocator.h>
+#include <timer_session/connection.h>
 
 /* VirtualBox includes */
 #include <VBox/vmm/cpum.h> /* must be included before CPUMInternal.h */
@@ -144,28 +145,61 @@ class Sup::Vcpu_impl : public Sup::Vcpu, Genode::Noncopyable
 
 		struct Stats
 		{
-			unsigned const _cpu;
+			unsigned const        _cpu;
+			Sup::Vcpu_impl<VIRT> &_vcpu;
 
 			unsigned long _virt_exit[256] { };
 			unsigned long _exit_state[6]  { };
 
 			unsigned long _total { 0 };
 
+			unsigned long _last_exit { ~0UL };
+			unsigned long _last_data { ~0UL };
+
+			bool _running { false };
+			bool _log_rip { false };
+
 			std::unordered_map<unsigned, unsigned long> _accessed_ports;
 
-			Stats(unsigned cpu) : _cpu(cpu) { }
+			static Stats *_cpu0;
+			static Stats *_cpu1;
+
+			Stats(unsigned cpu, Sup::Vcpu_impl<VIRT> &vcpu) : _cpu(cpu), _vcpu(vcpu)
+			{
+				switch (cpu) {
+				case 0: _cpu0 = this; break;
+				case 1: _cpu1 = this; break;
+				default: break;
+				}
+			}
 
 			unsigned long total() const { return _total; }
 
-			void log()
+			void log(bool const force = false)
 			{
-				bool     const force = false;
-				unsigned const rate  = 100'000;
+				using Genode::log;
+
+				if (!force && _log_rip && !_running) {
+					log("[", _cpu, "] rip=", (void *)CPUMGetGuestRIP(&_vcpu._vmcpu));
+					_log_rip = false;
+					DBGFR3InfoEx(_vcpu._vm.pUVM, _vcpu._vmcpu.idCpu, "cpumguest",      "", nullptr);
+					DBGFR3InfoEx(_vcpu._vm.pUVM, _vcpu._vmcpu.idCpu, "cpumguestinstr", "", nullptr);
+//					DBGFR3InfoEx(_vcpu._vm.pUVM, _vcpu._vmcpu.idCpu, "timers",         "", nullptr);
+//					DBGFR3InfoEx(_vcpu._vm.pUVM, _vcpu._vmcpu.idCpu, "clocks",         "", nullptr);
+					DBGFR3InfoEx(_vcpu._vm.pUVM, _vcpu._vmcpu.idCpu, "apic",           "", nullptr);
+					DBGFR3InfoEx(_vcpu._vm.pUVM, _vcpu._vmcpu.idCpu, "ioapic",         "", nullptr);
+					DBGFR3InfoEx(_vcpu._vm.pUVM, _vcpu._vmcpu.idCpu, "fflags",         "", nullptr);
+//					DBGFR3InfoEx(_vcpu._vm.pUVM, _vcpu._vmcpu.idCpu, "help",           "", nullptr);
+//					DBGFR3AddrFromSelOff(PUVM pUVM, VMCPUID idCpu, PDBGFADDRESS pAddress, RTSEL Sel, RTUINTPTR off);
+//					DBGFR3AddrToPhys(PUVM pUVM, VMCPUID idCpu, PCDBGFADDRESS pAddress, PRTGCPHYS pGCPhys);
+				}
+
+				if (!force) return;
+
+				unsigned const rate = 1'000;
 
 				if (!force && _total % rate != 0)
 					return;
-
-				using Genode::log;
 
 				if (0) {
 					log("[", _cpu, "] total=", _total, " exit_state {"
@@ -176,8 +210,8 @@ class Sup::Vcpu_impl : public Sup::Vcpu, Genode::Noncopyable
 					   , _exit_state[(int)Exit_state::STARTUP], ","
 					   , _exit_state[(int)Exit_state::ERROR], "}");
 				}
-				if (0) {
-					log("[", _cpu, "] total=", _total, " virt_exit {");
+				if (1) {
+					log("[", _cpu, "] total=", _total, " running=", _running, " last=", _last_exit, "/", Hex(_last_data), " virt_exit {");
 					unsigned i = 0;
 					for (unsigned long const &v : _virt_exit) {
 						if (v)
@@ -185,6 +219,13 @@ class Sup::Vcpu_impl : public Sup::Vcpu, Genode::Noncopyable
 						++i;
 					}
 					log("[", _cpu, "] }");
+
+					if (false && !force)
+						switch (_cpu) {
+						case 0: if (_cpu1) _cpu1->log(true); break;
+						case 1: if (_cpu0) _cpu0->log(true); break;
+						default: break;
+						}
 				}
 				if (0) {
 					log("[", _cpu, "] ports {");
@@ -196,11 +237,14 @@ class Sup::Vcpu_impl : public Sup::Vcpu, Genode::Noncopyable
 				}
 			}
 
-			void inc(Exit_state exit_state, unsigned virt_exit)
+			void inc(Exit_state exit_state, unsigned virt_exit, unsigned long data)
 			{
 				++_virt_exit[virt_exit];
 				++_exit_state[(int)exit_state];
 				++_total;
+
+				_last_exit = virt_exit;
+				_last_data = data;
 			}
 
 			void access_port(unsigned port)
@@ -210,9 +254,33 @@ class Sup::Vcpu_impl : public Sup::Vcpu, Genode::Noncopyable
 				_accessed_ports[port] += 1;
 			}
 
-		} _stats { _cpu.value };
+			void running() { _running = true; }
+			void paused()  { _running = false; }
+			void log_rip() { _log_rip = true; }
+
+		} _stats { _cpu.value, *this };
 
 	public:
+
+		Env &_env;
+
+		Timer::Connection _timer { _env };
+
+		Signal_handler<Vcpu_impl> _timer_handler { _env.ep(), *this, &Vcpu_impl::_handle_timer };
+
+		unsigned long _timer_last_total = 0;
+
+		void _handle_timer()
+		{
+			_stats.log(true);
+
+			if (_timer_last_total > 10 && _timer_last_total == _stats.total()) {
+				log("[", _cpu.value, "] got stuck at ", _timer_last_total, " exits? -> force exit via pause()");
+				_stats.log_rip();
+				pause();
+			}
+			_timer_last_total = _stats.total();
+		}
 
 		Vcpu_impl(Genode::Env &, VM &, Vm_connection &, Cpu_index, Pthread::Emt &);
 
@@ -227,15 +295,23 @@ class Sup::Vcpu_impl : public Sup::Vcpu, Genode::Noncopyable
 		void wake_up() override;
 };
 
+template <typename VIRT> typename Sup::Vcpu_impl<VIRT>::Stats * Sup::Vcpu_impl<VIRT>::Stats::_cpu0;
+template <typename VIRT> typename Sup::Vcpu_impl<VIRT>::Stats * Sup::Vcpu_impl<VIRT>::Stats::_cpu1;
+
 
 template <typename T> void Sup::Vcpu_impl<T>::_handle_exit()
 {
+	_stats.paused();
+
 	_emt.switch_to_emt();
 
 	if (_next_state == RUN)
 		_vcpu.run(); /* resume vCPU */
 	else
 		_vcpu.pause(); /* cause pause exit */
+
+	_stats.running();
+
 }
 
 
@@ -459,6 +535,9 @@ template <typename T> bool Sup::Vcpu_impl<T>::_check_and_request_irq_window()
 {
 	PVMCPU pVCpu = &_vmcpu;
 
+	if (VMCPU_FF_TEST_AND_CLEAR(pVCpu, VMCPU_FF_UPDATE_APIC))
+		APICUpdatePendingInterrupts(pVCpu);
+
 	if (VMCPU_FF_IS_SET(pVCpu, VMCPU_FF_INHIBIT_INTERRUPTS))
 		return false;
 
@@ -531,7 +610,7 @@ typename Sup::Vcpu_impl<T>::Current_state Sup::Vcpu_impl<T>::_handle_npt_ept(VBO
 {
 	rc = VINF_EM_RAW_EMULATE_INSTR;
 
-	RTGCPHYS const GCPhys = RT_ALIGN(_vcpu.state().qual_secondary.value(), X86_PAGE_SIZE);
+	RTGCPHYS const GCPhys = PAGE_ADDRESS(_vcpu.state().qual_secondary.value());
 
 	if (0) {
 		auto cb = [] (PVMCC pVM, PVMCPUCC pVCpu, RTGCPHYS GCPhys, PPGMPHYSNEMPAGEINFO pInfo, void *pvUser)
@@ -716,7 +795,8 @@ typename Sup::Vcpu_impl<T>::Current_state Sup::Vcpu_impl<T>::_handle_irq_window(
 	/* If a new event is pending, then dispatch it now. */
 	int rc = TRPMQueryTrapAll(pVCpu, &u8Vector, &enmType, &u32ErrorCode, &cr2, 0, 0);
 	AssertRC(rc);
-	Assert(enmType == TRPM_HARDWARE_INT);
+	if (enmType != TRPM_HARDWARE_INT)
+		log("XXXXXX  enmType=", (int)enmType, " u8Vector=", u8Vector);
 	Assert(u8Vector != X86_XCPT_NMI);
 
 	/* Clear the pending trap. */
@@ -740,6 +820,9 @@ typename Sup::Vcpu_impl<T>::Current_state Sup::Vcpu_impl<T>::_handle_irq_window(
 
 template <typename VIRT> VBOXSTRICTRC Sup::Vcpu_impl<VIRT>::_switch_to_hw()
 {
+	unsigned loop_count = 0;
+try {
+
 	Handle_exit_result result;
 	do {
 		_current_state = RUNNING;
@@ -783,12 +866,19 @@ template <typename VIRT> VBOXSTRICTRC Sup::Vcpu_impl<VIRT>::_switch_to_hw()
 			break;
 		}
 
-		_stats.inc(result.state, result.virt_exit);
+		_stats.inc(result.state, result.virt_exit, PAGE_ADDRESS(_vcpu.state().qual_secondary.value()));
 		_stats.log();
+
+		if (++loop_count > 3)
+			log("[", _cpu.value, "] loop_count=", loop_count);
 
 	} while (_current_state == RUNNING);
 
 	return result.rc;
+} catch (...) {
+	error("unexpected exc");
+	return VERR_EM_GUEST_CPU_HANG;
+}
 }
 
 
@@ -911,7 +1001,8 @@ Sup::Vcpu_impl<VIRT>::Vcpu_impl(Env &env, VM &vm, Vm_connection &vm_con,
                                 Cpu_index cpu, Pthread::Emt &emt)
 :
 	_emt(emt), _cpu(cpu), _vm(vm), _vmcpu(*vm.apCpusR3[cpu.value]),
-	_vcpu(vm_con, _alloc, _handler, VIRT::exit_config)
+	_vcpu(vm_con, _alloc, _handler, VIRT::exit_config),
+	_env(env)
 {
 	pthread_mutexattr_t _attr;
 	pthread_mutexattr_init(&_attr);
@@ -920,6 +1011,9 @@ Sup::Vcpu_impl<VIRT>::Vcpu_impl(Env &env, VM &vm, Vm_connection &vm_con,
 
 	pthread_mutexattr_settype(&_attr, PTHREAD_MUTEX_ERRORCHECK);
 	pthread_mutex_init(&_halt_mutex, &_attr);
+
+	_timer.sigh(_timer_handler);
+	_timer.trigger_periodic(10'000'000 /* us */);
 
 	/* run vCPU until initial startup exception */
 	_vcpu.run();
