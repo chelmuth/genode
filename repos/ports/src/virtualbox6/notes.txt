@@ -1,13 +1,7 @@
 Work items
 ==========
 
-* Guest Additions:  Display
-* Guest Additions:  Mouse Integration
-* Guest Additions:  Shared Folder
-* Basics:           ACPI Reset/Shutdown/PowerOff
-* Guest Additions:  Clipboard (investigate truncated data, interplay with file manager)
-
-* Devices:          check vbox5 improvements since fork (SVM, devxhci)
+* Basics:           ACPI Reset
 
 * Cleanups:         use TAP device in VFS for networking
 * Cleanups:         use libusb for USB raw access
@@ -18,13 +12,8 @@ Work items
 * Optimizations:    NEM Unmap Merging (ignore host range)
 * Optimizations:    Norman's VGA ideas
 
-* Devices:          Sound / OSS ?
 * Basics:           VBOX_WITH_EFI
 * Devices:          Touchscreen
-
-* Document the these changes
-  * VFS must provide /dev/null
-  * argv0 must be present
 
 * virtualbox6.port: split additional_steps into multiple rules
 * Assertion ticket: https://www.virtualbox.org/ticket/19939
