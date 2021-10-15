@@ -81,19 +81,22 @@ int SUPSemEventMultiCreate(PSUPDRVSESSION pSession,
 {
 	AssertPtrReturn(phEventMulti, VERR_INVALID_POINTER);
 
-	return RTSemEventMultiCreate((RTSEMEVENTMULTI*)phEventMulti);
+	return RTSemEventMultiCreate((RTSEMEVENTMULTI *)phEventMulti);
 }
 
 
 int SUPSemEventMultiClose(PSUPDRVSESSION   pSession,
                           SUPSEMEVENTMULTI hEventMulti)
 {
-	return RTSemEventMultiDestroy(reinterpret_cast<RTSEMEVENTMULTI>(hEventMulti));
+	return RTSemEventMultiDestroy((RTSEMEVENTMULTI)hEventMulti);
 }
 
 
 int SUPSemEventMultiSignal(PSUPDRVSESSION   pSession,
-                           SUPSEMEVENTMULTI hEventMulti) STOP
+                           SUPSEMEVENTMULTI hEventMulti)
+{
+	return RTSemEventMultiSignal((RTSEMEVENTMULTI)hEventMulti);
+}
 
 
 int SUPSemEventMultiReset(PSUPDRVSESSION   pSession,
@@ -102,7 +105,10 @@ int SUPSemEventMultiReset(PSUPDRVSESSION   pSession,
 
 int SUPSemEventMultiWaitNoResume(PSUPDRVSESSION   pSession,
                                  SUPSEMEVENTMULTI hEventMulti,
-                                 uint32_t         cMillies) STOP
+                                 uint32_t         cMillies)
+{
+	return RTSemEventMultiWaitNoResume((RTSEMEVENTMULTI)hEventMulti, cMillies);
+}
 
 
 int SUPSemEventMultiWaitNsAbsIntr(PSUPDRVSESSION   pSession,
@@ -112,7 +118,10 @@ int SUPSemEventMultiWaitNsAbsIntr(PSUPDRVSESSION   pSession,
 
 int SUPSemEventMultiWaitNsRelIntr(PSUPDRVSESSION   pSession,
                                   SUPSEMEVENTMULTI hEventMulti,
-                                  uint64_t         cNsTimeout) STOP
+                                  uint64_t         cNsTimeout)
+{
+	return RTSemEventMultiWaitNoResume((RTSEMEVENTMULTI)hEventMulti, cNsTimeout/1'000'000);
+}
 
 
 uint32_t SUPSemEventMultiGetResolution(PSUPDRVSESSION pSession)
