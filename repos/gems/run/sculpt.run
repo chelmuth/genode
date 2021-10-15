@@ -704,8 +704,8 @@ exec sh -c "tar cf [run_dir]/genode/depot_users.tar -C [genode_dir] \
 # Create boot image
 #
 
-build { lib/ld virtualbox6 virtualbox5 app/top lib/vfs/oss drivers/audio/pci_audio_drv server/mixer}
+build { lib/ld virtualbox6 virtualbox5 app/top lib/vfs/oss drivers/audio/pci_audio_drv server/mixer app/menu_view}
 
-append boot_modules { ld.lib.so virtualbox6 virtualbox5-nova top vfs_oss.lib.so libc.lib.so pci_audio_drv mixer }
+append boot_modules { ld.lib.so virtualbox6 virtualbox5-nova top vfs_oss.lib.so libc.lib.so pci_audio_drv mixer menu_view linux.iso }
 
 build_boot_image $boot_modules
