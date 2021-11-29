@@ -704,8 +704,8 @@ exec sh -c "tar cf [run_dir]/genode/depot_users.tar -C [genode_dir] \
 # Create boot image
 #
 
-build { lib/ld virtualbox6 virtualbox5 app/top }
+build { core lib/ld virtualbox6 virtualbox5 app/top }
 
-append boot_modules { ld.lib.so virtualbox6 virtualbox5-nova top libc.lib.so }
+append boot_modules { core ld.lib.so virtualbox6 virtualbox5-nova top libc.lib.so }
 
 build_boot_image $boot_modules
