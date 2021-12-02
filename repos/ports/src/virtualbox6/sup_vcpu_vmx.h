@@ -193,6 +193,77 @@ Sup::Handle_exit_result Sup::Vmx::handle_exit(Vcpu_state &state)
 	/* table 24-14. Format of Exit Reason - 15:0 Basic exit reason */
 	unsigned short const exit = state.exit_reason & 0xffff;
 
+#if 0
+	switch (exit) {
+	case VMX_EXIT_INIT_SIGNAL:
+		Genode::trace("VMX_EXIT_INIT_SIGNAL");
+		break;
+	case VMX_EXIT_TASK_SWITCH:
+		Genode::trace("VMX_EXIT_TASK_SWITCH");
+		break;
+	case VMX_EXIT_CPUID:
+		Genode::trace("VMX_EXIT_CPUID");
+		break;
+	case VMX_EXIT_RDTSC:
+		Genode::trace("VMX_EXIT_RDTSC");
+		break;
+	case VMX_EXIT_RDTSCP:
+		Genode::trace("VMX_EXIT_RDTSCP");
+		break;
+	case VMX_EXIT_VMCALL:
+		Genode::trace("VMX_EXIT_VMCALL");
+		break;
+	case VMX_EXIT_WBINVD:
+		Genode::trace("VMX_EXIT_WBINVD");
+		break;
+	case VMX_EXIT_MOV_DRX:
+		Genode::trace("VMX_EXIT_MOV_DRX");
+		break;
+	case VMX_EXIT_XSETBV:
+		Genode::trace("VMX_EXIT_XSETBV");
+		break;
+	case VMX_EXIT_MOV_CRX:
+		Genode::trace("VMX_EXIT_MOV_CRX");
+		break;
+	case VMX_EXIT_HLT:
+		Genode::trace("VMX_EXIT_HLT");
+		break;
+	case VMX_EXIT_INT_WINDOW:
+		Genode::trace("VMX_EXIT_INT_WINDOW");
+		break;
+	case VMX_EXIT_EPT_VIOLATION:
+		Genode::trace("VMX_EXIT_EPT_VIOLATION");
+		break;
+	case VMX_EXIT_IO_INSTR:
+		Genode::trace("VMX_EXIT_IO_INSTR");
+		break;
+	case VMX_EXIT_TPR_BELOW_THRESHOLD:
+		Genode::trace("VMX_EXIT_TPR_BELOW_THRESHOLD");
+		break;
+	case VMX_EXIT_RDMSR:
+		Genode::trace("VMX_EXIT_RDMSR");
+		break;
+	case VMX_EXIT_WRMSR:
+		Genode::trace("VMX_EXIT_WRMSR");
+		break;
+	case VCPU_PAUSED:
+		Genode::trace("VCPU_PAUSED");
+		break;
+	case VCPU_STARTUP:
+		Genode::trace("VCPU_STARTUP");
+		break;
+	case VMX_EXIT_ERR_INVALID_GUEST_STATE:
+		Genode::trace("VMX_EXIT_ERR_INVALID_GUEST_STATE");
+		break;
+	case VMX_EXIT_TRIPLE_FAULT:
+		Genode::trace("VMX_EXIT_TRIPLE_FAULT");
+		break;
+	default:
+		Genode::trace("default");
+		break;
+	}
+#endif
+
 	switch (exit) {
 	case VMX_EXIT_INIT_SIGNAL:
 	case VMX_EXIT_TASK_SWITCH:
