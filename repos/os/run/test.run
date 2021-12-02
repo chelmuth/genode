@@ -245,6 +245,8 @@ foreach rom [content_rom_modules] {
 
 lappend build_targets core init timer
 
+append build_targets { app/top app/trace_logger lib/trace/policy/null }
+
 # strip duplications
 set sorted_build_targets [lsort -unique $build_targets]
 
@@ -288,6 +290,41 @@ install_config {
 			</route>
 		</start>
 
+<!--
+		<start name="top" priority="0">
+			<resource name="RAM" quantum="2M"/>
+			<config period_ms="10000" sort_time="ec"/>
+			<route>
+				<service name="Timer"> <child name="timer"/> </service>
+				<any-service> <parent/> </any-service>
+			</route>
+		</start>
+-->
+
+		<start name="trace_logger" caps="200" priority="0">
+			<resource name="RAM" quantum="80M"/>
+			<route>
+				<service name="PD">      <parent/> </service>
+				<service name="CPU">     <parent/> </service>
+				<service name="LOG">     <parent/> </service>
+				<service name="ROM">     <parent/> </service>
+				<service name="TRACE">   <parent/> </service>
+				<service name="Timer"> <child name="timer"/> </service>
+			</route>
+			<config verbose="yes"
+				session_ram="10M"
+				session_parent_levels="1"
+				session_arg_buffer="64K"
+				period_sec="7"
+				activity="yes"
+				affinity="yes"
+				default_policy="null"
+				default_buffer="1M">
+
+				<policy label_prefix="init -> test -> test-pthread"/>
+			</config>
+		</start>
+
 		<start name="test" priority="-1" caps="} $caps {">
 			<resource name="RAM" quantum="} $ram {"/>
 			<binary name="} $binary {"/>
@@ -306,6 +343,8 @@ install_config {
 }
 
 lappend boot_modules core ld.lib.so init timer
+
+append boot_modules { top trace_logger null }
 
 build_boot_image [lsort -unique $boot_modules]
 
