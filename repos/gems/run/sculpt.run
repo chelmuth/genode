@@ -447,6 +447,7 @@ install_config {
 		</route>
 	</start>
 
+<!--
 	<start name="top" priority="0">
 		<resource name="RAM" quantum="2M"/>
 		<config period_ms="10000" sort_time="ec"/>
@@ -454,6 +455,24 @@ install_config {
 			<service name="Timer"> <child name="timer"/> </service>
 			<any-service> <parent/> </any-service>
 		</route>
+	</start>
+-->
+
+	<start name="trace_logger" caps="200" priority="-3">
+		<resource name="RAM" quantum="80M"/>
+		<config verbose="yes"
+			session_ram="10M"
+			session_parent_levels="1"
+			session_arg_buffer="64K"
+			period_sec="15"
+			activity="yes"
+			affinity="yes"
+			default_policy="null"
+			default_buffer="1M">
+
+			<!--policy label_prefix="init -> runtime -> bsd_audio_drv" thread="ep"/-->
+			<policy label_prefix="init -> runtime -> vbox6_ubuntu -> vbox"/>
+		</config>
 	</start>
 
 	<start name="runtime" caps="50000" priority="-1">
@@ -704,8 +723,8 @@ exec sh -c "tar cf [run_dir]/genode/depot_users.tar -C [genode_dir] \
 # Create boot image
 #
 
-build { core lib/ld virtualbox6 virtualbox5 app/top }
+build { core lib/ld virtualbox6 virtualbox5 app/top app/trace_logger lib/trace/policy/null }
 
-append boot_modules { core ld.lib.so virtualbox6 virtualbox5-nova top libc.lib.so }
+append boot_modules { core ld.lib.so virtualbox6 virtualbox5-nova top libc.lib.so trace_logger null }
 
 build_boot_image $boot_modules
