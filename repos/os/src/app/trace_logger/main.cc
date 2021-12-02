@@ -33,6 +33,7 @@ class Main
 	private:
 
 		enum { MAX_SUBJECTS                  = 512 };
+		enum { DEFAULT_UPDATE_MS             = 500 };
 		enum { DEFAULT_PERIOD_SEC            = 5 };
 		enum { DEFAULT_BUFFER                = 1024 * 4 };
 		enum { DEFAULT_SESSION_ARG_BUFFER    = 1024 * 4 };
@@ -52,7 +53,8 @@ class Main
 		bool                    const  _verbose             { _config.attribute_value("verbose",  false) };
 		Microseconds            const  _period_us           { read_sec_attr(_config, "period_sec", DEFAULT_PERIOD_SEC) };
 		Number_of_bytes         const  _default_buf_sz      { _config.attribute_value("default_buffer", Number_of_bytes(DEFAULT_BUFFER)) };
-		Timer::Periodic_timeout<Main>  _period              { _timer, *this, &Main::_handle_period, _period_us };
+		Microseconds                   _next_period_us      { _timer.curr_time().trunc_to_plain_us().value + _period_us.value };
+		Timer::Periodic_timeout<Main>  _update              { _timer, *this, &Main::_handle_update, Microseconds { 1000*DEFAULT_UPDATE_MS } };
 		Heap                           _heap                { _env.ram(), _env.rm() };
 		Monitor_tree                   _monitors_0          { };
 		Monitor_tree                   _monitors_1          { };
@@ -65,7 +67,7 @@ class Main
 		unsigned long                  _num_monitors        { 0 };
 		Trace::Subject_id              _subjects[MAX_SUBJECTS];
 
-		void _handle_period(Duration)
+		void _handle_update(Duration const curr_time)
 		{
 			/*
 			 * Update monitors
@@ -125,11 +127,15 @@ class Main
 				_destroy_monitor(old_monitors, *monitor);
 
 			/* dump information of each monitor in the new tree */
-			log("");
-			log("--- Report ", _report_id++, " (", _num_monitors, "/", _num_subjects, " subjects) ---");
-			new_monitors.for_each([&] (Monitor &monitor) {
-				monitor.print(_activity, _affinity);
-			});
+			if (curr_time.trunc_to_plain_us().value >= _next_period_us.value) {
+				_next_period_us = Microseconds { curr_time.trunc_to_plain_us().value + _period_us.value };
+
+				log("");
+				log("--- Report ", _report_id++, " (", _num_monitors, "/", _num_subjects, " subjects) ---");
+				new_monitors.for_each([&] (Monitor &monitor) {
+					monitor.print(_activity, _affinity);
+				});
+			}
 		}
 
 		void _destroy_monitor(Monitor_tree &monitors, Monitor &monitor)
@@ -152,13 +158,13 @@ class Main
 				Number_of_bytes const buffer_sz   = session_policy.attribute_value("buffer", _default_buf_sz);
 				Policy_name     const policy_name = session_policy.attribute_value("policy", _default_policy_name);
 				try {
-					_trace.trace(id.id, _policies.find_by_name(policy_name).id(), buffer_sz);
+					_trace.trace(id.id, _policies.find_by_name(policy_name).id(), buffer_sz / 2);
 				} catch (Policy_tree::No_match) {
 					Policy &policy = *new (_heap) Policy(_env, _trace, policy_name);
 					_policies.insert(policy);
-					_trace.trace(id.id, policy.id(), buffer_sz);
+					_trace.trace(id.id, policy.id(), buffer_sz / 2);
 				}
-				monitors.insert(new (_heap) Monitor(_trace, _env.rm(), id));
+				monitors.insert(new (_heap) Monitor(_trace, _env.rm(), id, _env.ram(), buffer_sz / 2));
 			}
 			catch (Trace::Already_traced         ) { warning("Cannot activate tracing: Already_traced"         ); return; }
 			catch (Trace::Source_is_dead         ) { warning("Cannot activate tracing: Source_is_dead"         ); return; }

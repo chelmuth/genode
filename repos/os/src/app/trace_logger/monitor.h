@@ -20,6 +20,8 @@
 /* Genode includes */
 #include <base/trace/types.h>
 #include <trace/trace_buffer.h>
+#include <base/attached_ram_dataspace.h>
+#include <base/snprintf.h>
 
 namespace Genode { namespace Trace { class Connection; } }
 
@@ -59,6 +61,7 @@ class Monitor : public Monitor_base,
 		Genode::Trace::Subject_info      _info             { };
 		unsigned long long               _recent_exec_time { 0 };
 		char                             _curr_entry_data[MAX_ENTRY_LENGTH];
+		Genode::Attached_ram_dataspace   _ram_ds;
 
 		void _update_info();
 
@@ -66,7 +69,9 @@ class Monitor : public Monitor_base,
 
 		Monitor(Genode::Trace::Connection &trace,
 		        Genode::Region_map        &rm,
-		        Genode::Trace::Subject_id  subject_id);
+		        Genode::Trace::Subject_id  subject_id,
+		        Genode::Ram_allocator &ram,
+		        Genode::size_t buffer_sz);
 
 		void print(bool activity, bool affinity);
 
