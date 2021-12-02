@@ -305,6 +305,8 @@ class pthread_mutex : Genode::Noncopyable
 		 */
 		bool _apply_for_mutex(pthread_t thread, Libc::uint64_t timeout_ms)
 		{
+Probe p(__func__, _timer_accessor(), timeout_ms);
+
 			if (Libc::Kernel::kernel().main_context()) {
 				Main_blockade blockade { timeout_ms };
 				return _applicant_for_mutex(thread, blockade);

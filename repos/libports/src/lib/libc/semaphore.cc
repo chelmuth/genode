@@ -132,6 +132,7 @@ struct sem : Genode::Noncopyable
 		 */
 		bool _apply_for_semaphore(Libc::uint64_t timeout_ms)
 		{
+Libc::Probe p(__func__, _timer_accessor(), timeout_ms);
 			if (Libc::Kernel::kernel().main_context()) {
 				Main_blockade blockade { timeout_ms };
 				return _applicant_for_semaphore(blockade);

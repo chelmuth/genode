@@ -48,7 +48,47 @@ namespace Libc {
 	class Kernel;
 	class Main_blockade;
 	class Main_job;
+	class Probe;
 }
+
+
+#include <os/backtrace.h>
+
+struct Libc::Probe
+{
+	char const * const context;
+
+	Libc::Timer_accessor &timer;
+
+	typedef Libc::uint64_t uint64_t;
+
+	uint64_t const timeout_ms;
+
+	uint64_t const t0 { timeout_ms ? timer.timer().curr_time().trunc_to_plain_ms().value : 0 };
+
+	Probe(char const *context, Libc::Timer_accessor &timer, uint64_t timeout_ms)
+	: context(context), timer(timer), timeout_ms(timeout_ms) { }
+
+	~Probe()
+	{
+		if (!timeout_ms) return;
+
+		uint64_t const t1 = timer.timer().curr_time().trunc_to_plain_ms().value;
+		uint64_t const duration = t1 - t0;
+
+		if (true && duration > 10) {
+			if (duration > timeout_ms)
+				trace(context, ": probe ", timeout_ms, " ms -> ", t1 - t0, " ms");
+			if (duration > 10*timeout_ms) {
+				enum { NUM_ADDRS = 8 };
+				addr_t buf[NUM_ADDRS];
+				backtrace(buf, NUM_ADDRS);
+				for (unsigned i = 0; i < NUM_ADDRS; ++i)
+					trace("  ", (void *)buf[i]);
+			}
+		}
+	}
+};
 
 
 class Libc::Main_blockade : public Blockade
@@ -547,6 +587,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 		Monitor::Result _monitor(Function &fn, uint64_t timeout_ms) override
 		{
 			if (_main_context()) {
+Probe p(__func__, _timer_accessor, timeout_ms);
 
 				_main_monitor_job.construct(fn, timeout_ms);
 
@@ -560,6 +601,7 @@ struct Libc::Kernel final : Vfs::Io_response_handler,
 				return job_result;
 
 			} else {
+Probe p(__func__, _timer_accessor, timeout_ms);
 				Pthread_job job { fn, _timer_accessor, timeout_ms };
 
 				_monitors.monitor(job);
