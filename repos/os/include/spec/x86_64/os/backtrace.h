@@ -18,7 +18,10 @@
 #include <base/stdint.h>
 #include <base/log.h>
 
-namespace Genode { void inline backtrace() __attribute__((always_inline)); }
+namespace Genode {
+	void inline backtrace() __attribute__((always_inline));
+	void inline backtrace(addr_t addr[], size_t elements) __attribute__((always_inline));
+}
 
 /**
  * Print frame pointer based backtrace
@@ -36,6 +39,18 @@ void inline Genode::backtrace()
 			Genode::log(Hex(*(fp + 1)));
 			fp = (Genode::addr_t*)*fp;
 		}
+}
+
+void inline Genode::backtrace(addr_t addr[], size_t const elements)
+{
+	addr_t *fp;
+
+	asm volatile ("movq %%rbp, %0" : "=r"(fp) : :);
+
+	for (size_t i = 0; i < elements && (fp && *(fp + 1)); ++i) {
+		addr[i] = *(fp + 1);
+		fp = (Genode::addr_t*)*fp;
+	}
 }
 
 #endif /* _INCLUDE__SPEC__X86_64__OS__BACKTRACE_H_ */
