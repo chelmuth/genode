@@ -825,6 +825,7 @@ struct Test_cond_timed
 
 	void signaller()
 	{
+sleep(1);
 		printf("signaller: started\n");
 
 		bool loop = true;
@@ -856,6 +857,7 @@ struct Test_cond_timed
 
 	void waiter(bool main_thread = false)
 	{
+sleep(1);
 		char const * const note = main_thread ? "(main thread)" : "";
 
 		printf("waiter%s: started\n", note);
@@ -895,6 +897,7 @@ struct Test_cond_timed
 		}
 
 		printf("waiter%s: finished\n", note);
+		sleep(5);
 	}
 
 	Test_cond_timed()
@@ -918,6 +921,7 @@ struct Test_cond_timed
 		}
 
 		waiter(true);
+sleep(10);
 		pthread_join(signaller_id, nullptr);
 		pthread_join(waiter1_id, nullptr);
 		pthread_join(waiter2_id, nullptr);
@@ -929,7 +933,7 @@ static void test_cond()
 {
 	printf("main thread: test condition variables\n");
 
-	{ Test_cond       test; }
+//	{ Test_cond       test; }
 	{ Test_cond_timed test; }
 }
 
@@ -1163,14 +1167,14 @@ int main(int argc, char **argv)
 	if (!pthread_main)
 		exit(-1);
 
-	test_interplay();
-	test_self_destruct();
-	test_mutex();
-	test_mutex_stress();
-	test_lock_and_sleep();
+//	test_interplay();
+//	test_self_destruct();
+//	test_mutex();
+//	test_mutex_stress();
+//	test_lock_and_sleep();
 	test_cond();
-	test_cleanup();
-	test_tls();
+//	test_cleanup();
+//	test_tls();
 
 	printf("--- returning from main ---\n");
 	return 0;
