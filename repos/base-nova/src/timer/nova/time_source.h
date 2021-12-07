@@ -35,42 +35,37 @@ class Timer::Time_source : public Threaded_time_source
 	private:
 
 		/* read the tsc frequency from platform info */
-		static unsigned long _obtain_tsc_khz(Genode::Env &env)
+		static unsigned _obtain_tsc_mhz(Genode::Env &env)
 		{
-			unsigned long result = 0;
+			unsigned result = 0;
 			try {
 				Genode::Attached_rom_dataspace info { env, "platform_info"};
 
 				result = info.xml().sub_node("hardware")
 				                   .sub_node("tsc")
-				                   .attribute_value("freq_khz", 0UL);
+				                   .attribute_value("freq_khz", 0U);
 			} catch (...) { }
 
 			if (result)
-				return result;
+				return result / 1000;
 
 			/*
 			 * The returned value must never be zero because it is used as
 			 * divisor by '_tsc_to_us'.
 			 */
 			Genode::warning("unable to obtain tsc frequency, assuming 1 GHz");
-			return 1000*1000;
+			return 1'000;
 		}
 
 		Genode::addr_t           _sem        { 0 };
 		uint64_t                 _timeout_us { 0 };
-		unsigned long      const _tsc_khz;
+		unsigned long      const _tsc_mhz;
 		Duration                 _curr_time  { Microseconds(0) };
 		Genode::Trace::Timestamp _tsc_start  { Genode::Trace::timestamp() };
 		Genode::Trace::Timestamp _tsc_last   { _tsc_start };
 
-		/* 1 / ((us / (1000 * 1000)) * (tsc_khz * 1000)) */
-		enum { TSC_FACTOR = 1000ULL };
-
-		inline uint64_t _tsc_to_us(uint64_t tsc) const
-		{
-			return (tsc) / (_tsc_khz / TSC_FACTOR);
-		}
+		uint64_t _us_to_tsc(uint64_t us)  const { return  us * _tsc_mhz; }
+		uint64_t _tsc_to_us(uint64_t tsc) const { return tsc / _tsc_mhz; }
 
 
 		/**************************
@@ -83,7 +78,7 @@ class Timer::Time_source : public Threaded_time_source
 
 		Time_source(Genode::Env &env)
 		:
-			Threaded_time_source(env), _tsc_khz(_obtain_tsc_khz(env))
+			Threaded_time_source(env), _tsc_mhz(_obtain_tsc_mhz(env))
 		{
 			start();
 		}
@@ -107,11 +102,8 @@ class Timer::Time_source : public Threaded_time_source
 			Timestamp    const curr_tsc = timestamp();
 			Microseconds const diff(_tsc_to_us(curr_tsc - _tsc_last));
 
-			/* update in irq context or if update rate is below 4000 irq/s */
-			if (_irq || diff.value > 250) {
-				_curr_time.add(diff);
-				_tsc_last = curr_tsc;
-			}
+			_curr_time.add(diff);
+			_tsc_last = curr_tsc;
 
 			return _curr_time;
 		}

@@ -50,7 +50,7 @@ Timer::Time_source::_wait_for_irq()
 	/* calculate absolute timeout */
 	unsigned long long const deadline_timestamp {
 		_timeout_us <= max_timeout().value ?
-			Trace::timestamp() + _timeout_us * (_tsc_khz / TSC_FACTOR) : 0 };
+			Trace::timestamp() + _us_to_tsc(_timeout_us) : 0 };
 
 	/* block until timeout fires or it gets canceled */
 	switch (sm_ctrl(_sem, SEMAPHORE_DOWN, deadline_timestamp)) {
