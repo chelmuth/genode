@@ -29,7 +29,7 @@ void Timer::Connection::_update_interpolation_quality(uint64_t min_factor,
 	if ((max_factor - min_factor) < (max_factor >> 3)) {
 		if (_interpolation_quality < MAX_INTERPOLATION_QUALITY) {
 			_interpolation_quality++; }
-	} else if (_interpolation_quality) {
+	} else {
 		_interpolation_quality = 0;
 	}
 }
@@ -96,13 +96,10 @@ Duration Timer::Connection::_update_interpolated_time(Duration &interpolated_tim
 
 void Timer::Connection::_handle_timeout()
 {
-	uint64_t const us = elapsed_us();
-	if (us - _us > REAL_TIME_UPDATE_PERIOD_US) {
-		_update_real_time();
-	}
-	if (_handler) {
+	_update_real_time();
+
+	if (_handler)
 		_handler->handle_timeout(curr_time());
-	}
 }
 
 

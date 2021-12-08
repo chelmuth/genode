@@ -44,6 +44,11 @@ void Timer::Connection::_update_real_time()
 		Timestamp const new_ts = _timestamp();
 		uint64_t  const new_us = elapsed_us();
 
+		/* too early for real-time update ? */
+		if (_interpolation_quality == MAX_INTERPOLATION_QUALITY
+		 && new_us - _us < REAL_TIME_UPDATE_PERIOD_US)
+			return;
+
 		/* do not proceed until the time difference is at least 1 us */
 		if (new_us == _us || new_ts == _ts) { continue; }
 		remote_time_trials++;
