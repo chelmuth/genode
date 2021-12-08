@@ -146,7 +146,7 @@ class Genode::Timeout_scheduler : private Noncopyable,
 		List<Timeout>       _timeouts           { };
 		Microseconds        _current_time       { 0 };
 		bool                _destructor_called  { false };
-		Microseconds        _rate_limit_period;
+		Microseconds const  _rate_limit_period;
 		Microseconds        _rate_limit_deadline;
 
 		void _insert_into_timeouts_list(Timeout &timeout);

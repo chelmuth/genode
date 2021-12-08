@@ -197,7 +197,7 @@ class Timer::Connection : public  Genode::Connection<Session>,
 		 ** Members for interaction with Timeout framework **
 		 ****************************************************/
 
-		enum { MIN_TIMEOUT_US             = 5000 };
+		enum { MIN_TIMEOUT_US             =   1000 };
 		enum { REAL_TIME_UPDATE_PERIOD_US = 500000 };
 		enum { MAX_INTERPOLATION_QUALITY  = 3 };
 		enum { MAX_REMOTE_TIME_LATENCY_US = 500 };
@@ -215,7 +215,7 @@ class Timer::Connection : public  Genode::Connection<Session>,
 		unsigned                  _interpolation_quality { 0 };
 		uint64_t                  _us_to_ts_factor       { 1 };
 		unsigned                  _us_to_ts_factor_shift { 0 };
-		Genode::Timeout_scheduler _timeout_scheduler     { *this, Microseconds { 1 } };
+		Genode::Timeout_scheduler _timeout_scheduler     { *this, Microseconds { MIN_TIMEOUT_US } };
 
 		Genode::Timeout_scheduler &_switch_to_timeout_framework_mode();
 
