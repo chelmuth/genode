@@ -54,11 +54,5 @@ void Timer::Time_source::set_timeout(Microseconds     duration,
 
 Duration Timer::Time_source::curr_time()
 {
-	/*
-	 * FIXME: the `Microseconds` constructor takes a machine-word as value
-	 * thereby limiting the possible value to something ~1.19 hours.
-	 * must be changed when the timeout framework internally does not use
-	 * machine-word wide microseconds values anymore.
-	 */
 	return Duration(Microseconds(Kernel::time()));
 }
