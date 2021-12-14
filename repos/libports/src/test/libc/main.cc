@@ -34,8 +34,30 @@ extern "C" {
 #include <unistd.h>
 }
 
+#include <base/log.h>
+
 int main(int argc, char **argv)
 {
+	Genode::trace("PREPARE 1");
+	sleep(1);
+	Genode::trace("PREPARE 2");
+	sleep(1);
+	Genode::trace("START");
+	timespec to { 0, 502'000'000 };
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	nanosleep(&to, nullptr); Genode::trace(__LINE__);
+	Genode::trace("END");
+	sleep(15);
+	exit(47);
+
 	printf("--- libC test ---\n");
 
 	printf("Does printf work?\n");

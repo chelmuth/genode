@@ -537,6 +537,8 @@ struct Fast_polling : Test
 
 	void main()
 	{
+timer_2.msleep(10);
+trace("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ", __LINE__);
 		/*
 		 * Estimate CPU speed
 		 *
@@ -614,6 +616,13 @@ struct Fast_polling : Test
 				remote_us_buf.value[poll]  = remote_us;
 				local_us_1_buf.value[poll] = local_us_1;
 				local_us_2_buf.value[poll] = local_us_2;
+{
+	uint64_t const err_us = remote_us > local_us_1
+	                      ? remote_us - local_us_1
+	                      : local_us_1 - remote_us;
+if (remote_us && local_us_2 && err_us > MAX_TIME_ERR_US)
+	trace("[", delay_loops_per_poll_, "] MAX_TIME_ERR_US ", remote_us, " ", local_us_1, " ", err_us);
+}
 
 				/* if the minimum round duration is reached, end polling */
 				if (remote_us > end_remote_us) {
@@ -685,6 +694,7 @@ struct Fast_polling : Test
 			Average_accumulator avg_time_err_us;
 			uint64_t            max_time_err_us = 0;
 
+trace("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX ", __LINE__);
 			for (unsigned poll = 0; poll < nr_of_polls; poll++) {
 
 				/* skip if this result was dismissed */
@@ -703,7 +713,8 @@ struct Fast_polling : Test
 
 				/* update max time error */
 				if (time_err_us > max_time_err_us) {
-					max_time_err_us = time_err_us; }
+					max_time_err_us = time_err_us;
+				}
 
 				/* update average time error */
 				avg_time_err_us.add(time_err_us);
@@ -798,7 +809,7 @@ struct Main
 
 	Main(Env &env) : env(env)
 	{
-		test_0.construct(env, error_cnt, test_0_done, 0);
+		test_2.construct(env, error_cnt, test_2_done, 0);
 	}
 
 	void handle_test_0_done()
@@ -815,6 +826,8 @@ struct Main
 
 	void handle_test_2_done()
 	{
+Timer::Connection _ { env }; _.msleep(8000);
+env.parent().exit(-1);
 		test_2.destruct();
 		test_3.construct(env, error_cnt, test_3_done, 3);
 	}
@@ -822,6 +835,7 @@ struct Main
 	void handle_test_3_done()
 	{
 		test_3.destruct();
+Timer::Connection _ { env }; _.msleep(8000);
 		if (error_cnt) {
 			error("test failed because of ", error_cnt, " error(s)");
 			env.parent().exit(-1);

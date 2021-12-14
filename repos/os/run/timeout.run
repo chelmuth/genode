@@ -78,7 +78,7 @@ proc precise_ref_time { } {
 	return true
 }
 
-build "core init drivers/platform timer test/timeout"
+build "core init drivers/platform timer test/timeout app/top app/trace_logger lib/trace/policy/rpc_name lib/trace/policy/null"
 
 #
 # Boot image
@@ -97,6 +97,7 @@ append config {
 			<service name="RM"/>
 			<service name="CPU"/>
 			<service name="LOG"/>
+			<service name="TRACE"/>
 		</parent-provides>
 		<default-route>
 			<any-service><parent/><any-child/></any-service>
@@ -106,6 +107,31 @@ append config {
 			<resource name="RAM" quantum="10M"/>
 			<provides><service name="Timer"/></provides>
 		</start>
+
+		<start name="trace_logger" caps="200" priority="0">
+			<resource name="RAM" quantum="80M"/>
+			<route>
+				<service name="PD">      <parent/> </service>
+				<service name="CPU">     <parent/> </service>
+				<service name="LOG">     <parent/> </service>
+				<service name="ROM">     <parent/> </service>
+				<service name="TRACE">   <parent/> </service>
+				<service name="Timer"> <child name="timer"/> </service>
+			</route>
+			<config verbose="yes"
+				session_ram="10M"
+				session_parent_levels="1"
+				session_arg_buffer="64K"
+				period_sec="16"
+				activity="yes"
+				affinity="yes"
+				default_policy="null"
+				default_buffer="1M">
+
+				<policy label_prefix="init -> test"/>
+			</config>
+		</start>
+
 		<start name="test" priority="-1">
 			<binary name="test-timeout"/>
 			<resource name="RAM" quantum="250M"/>
@@ -119,7 +145,7 @@ append config {
 
 install_config $config
 
-build_boot_image "core ld.lib.so init timer test-timeout"
+build_boot_image "core ld.lib.so init timer test-timeout trace_logger null rpc_name"
 
 #
 # Execution

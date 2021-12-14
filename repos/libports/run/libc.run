@@ -1,9 +1,15 @@
-build "core init timer test/libc"
+build {
+	core init timer test/libc
+	app/trace_logger
+	lib/trace/policy/null
+	lib/trace/policy/rpc_name
+	app/cpu_burner
+}
 
 create_boot_directory
 
 install_config {
-<config>
+<config prio_levels="4">
 	<parent-provides>
 		<service name="ROM"/>
 		<service name="IRQ"/>
@@ -13,18 +19,50 @@ install_config {
 		<service name="RM"/>
 		<service name="CPU"/>
 		<service name="LOG"/>
+		<service name="TRACE"/>
 	</parent-provides>
 	<default-route>
 		<any-service> <parent/> <any-child/> </any-service>
 	</default-route>
 	<default caps="200"/>
-	<start name="timer">
+	<start name="timer" priority="0">
 		<resource name="RAM" quantum="1M"/>
 		<provides> <service name="Timer"/> </provides>
 	</start>
-	<start name="test-libc">
+
+	<start name="trace_logger" caps="200" priority="-1">
+		<resource name="RAM" quantum="80M"/>
+		<route>
+			<service name="PD">      <parent/> </service>
+			<service name="CPU">     <parent/> </service>
+			<service name="LOG">     <parent/> </service>
+			<service name="ROM">     <parent/> </service>
+			<service name="TRACE">   <parent/> </service>
+			<service name="Timer"> <child name="timer"/> </service>
+		</route>
+		<config verbose="yes"
+			session_ram="10M"
+			session_parent_levels="1"
+			session_arg_buffer="64K"
+			period_sec="15"
+			activity="yes"
+			affinity="yes"
+			default_policy="null"
+			default_buffer="1M">
+
+			<policy label_prefix="init -> test-libc"/>
+		</config>
+	</start>
+
+	<start name="cpu_burner.1" priority="-2">
+		<binary name="cpu_burner"/>
+		<resource name="RAM" quantum="1M"/>
+		<config percent="99"/>
+	</start>
+
+	<start name="test-libc" priority="-2">
 		<resource name="RAM" quantum="400M"/>
-		<config>
+		<config ld_verbose="yes">
 			<vfs> <dir name="dev"> <log/> <inline name="rtc">2019-08-20 15:01</inline> </dir> </vfs>
 			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
 		</config>
@@ -35,6 +73,7 @@ install_config {
 build_boot_image {
 	core init timer test-libc
 	ld.lib.so libc.lib.so vfs.lib.so libm.lib.so posix.lib.so
+	trace_logger null rpc_name cpu_burner
 }
 
 append qemu_args " -nographic  "

@@ -15,6 +15,8 @@
 #include <timer/timeout.h>
 #include <timer_session/connection.h>
 
+#include <os/backtrace.h>
+
 using namespace Genode;
 
 
@@ -73,6 +75,11 @@ void Timeout_scheduler::handle_timeout(Duration curr_time)
 		/* apply rate limit to the handling of timeouts */
 		if (_current_time.value < _rate_limit_deadline.value) {
 
+			/* XXX could this timeout be rather short ? */
+trace(" xxx ", __func__
+     , " _current_time=", _current_time
+     , " _rate_limit_deadline=", _rate_limit_deadline
+     );
 			_time_source.set_timeout(
 				Microseconds { _rate_limit_deadline.value -
 				               _current_time.value },
@@ -159,6 +166,7 @@ void Timeout_scheduler::handle_timeout(Duration curr_time)
 			}
 			timeout._mutex.release();
 		}
+	Genode::trace(" --- ", __func__);
 		_set_time_source_timeout();
 	}
 	/* call the handler of each pending timeout */
@@ -236,6 +244,7 @@ void Timeout_scheduler::_enable()
 	if (_destructor_called) {
 		return;
 	}
+	Genode::trace(" --- ", __func__);
 	_set_time_source_timeout();
 }
 
@@ -249,14 +258,21 @@ void Timeout_scheduler::_set_time_source_timeout()
 }
 
 
-void Timeout_scheduler::_set_time_source_timeout(uint64_t duration_us)
+void Timeout_scheduler::_set_time_source_timeout(uint64_t const _duration_us)
 {
+	uint64_t duration_us = _duration_us;
 	if (duration_us < _rate_limit_period.value) {
 		duration_us = _rate_limit_period.value;
 	}
 	if (duration_us > _max_sleep_time.value) {
 		duration_us = _max_sleep_time.value;
 	}
+	Genode::trace(" --- ", __func__
+	             , " _duration_us=", _duration_us
+	             , " ", duration_us
+	             , " ", _rate_limit_period.value
+	             , " ", _max_sleep_time.value
+	             );
 	_time_source.set_timeout(Microseconds(duration_us), *this);
 }
 
@@ -318,6 +334,13 @@ void Timeout_scheduler::_schedule_timeout(Timeout         &timeout,
 	 * time-source timeout.
 	 */
 	if (_timeouts.first() == &timeout) {
+		Genode::trace(" --- ", __func__, " first!");
+//		enum { NUM_ADDRS = 32 };
+//		addr_t buf[NUM_ADDRS];
+//		size_t num = backtrace(buf, NUM_ADDRS);
+//		for (unsigned i = 0; i < num; ++i)
+//			trace("  ", (void *)buf[i]);
+
 		_set_time_source_timeout(deadline_us - curr_time_us);
 	}
 }

@@ -32,6 +32,7 @@ void Timer::Connection::_update_real_time()
 	uint64_t  us         = 0UL;
 	uint64_t  latency_us = ~0UL;
 
+	/* TODO use vbox6 loop here but keep MAX_REMOTE_TIME_TRIALS */
 	/*
 	 * We retry reading out timestamp plus remote time until the result
 	 * fulfills a given latency. If the maximum number of trials is
@@ -49,6 +50,7 @@ void Timer::Connection::_update_real_time()
 		 && new_us - _us < REAL_TIME_UPDATE_PERIOD_US)
 			return;
 
+trace(" +++ _update_real_time new_us=", new_us, " new_ts=", new_ts);
 		/* do not proceed until the time difference is at least 1 us */
 		if (new_us == _us || new_ts == _ts) { continue; }
 		remote_time_trials++;
@@ -69,6 +71,7 @@ void Timer::Connection::_update_real_time()
 
 		/* remember results if the latency was better than on the last trial */
 		if (new_latency_us < latency_us) {
+trace(" +++ _update_real_time latency_us=", latency_us, " new_latency_us=", new_latency_us);
 			us = new_us;
 			ts = new_ts;
 			latency_us = new_latency_us;
@@ -183,6 +186,7 @@ Duration Timer::Connection::curr_time()
 		interpolated_time.add(Microseconds(us_diff));
 
 	} else {
+trace(" +++ _interpolation_quality=", _interpolation_quality);
 		Timestamp const us      = (Timestamp)elapsed_us();
 		Timestamp const us_diff = (Timestamp)((us < _us) ? 0 : us - _us);
 

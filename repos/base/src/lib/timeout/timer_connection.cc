@@ -32,6 +32,10 @@ void Timer::Connection::_update_interpolation_quality(uint64_t min_factor,
 	} else {
 		_interpolation_quality = 0;
 	}
+	trace(" xxx ", __func__, " ", _interpolation_quality
+	     , " ", min_factor
+	     , " ", max_factor
+	     );
 }
 
 
@@ -106,6 +110,8 @@ void Timer::Connection::_handle_timeout()
 void Timer::Connection::set_timeout(Microseconds     duration,
                                     Timeout_handler &handler)
 {
+	Genode::trace(" --- ", __func__, " duration=", duration.value);
+
 	if (duration.value < MIN_TIMEOUT_US)
 		duration.value = MIN_TIMEOUT_US;
 
