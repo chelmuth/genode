@@ -7,7 +7,15 @@
 #
 # Note: the string must be exactly 5 bytes long.
 #
-proc sculpt_version { } { return "21.11" }
+proc sculpt_version { } {
+
+	global ::env
+
+	set version "21.11"
+	if {[info exists ::env(VERSION)]} {
+		set version "$::env(VERSION)" }
+	return $version
+}
 
 
 proc assert_platform_supported { } {
