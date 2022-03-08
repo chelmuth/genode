@@ -1,3 +1,4 @@
+_/pkg/sculpt
 _/pkg/system_shell
 _/pkg/chroot
 _/pkg/recall_fs
