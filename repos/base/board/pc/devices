@@ -10,4 +10,18 @@
 		<irq number="0"/>
 		<io_port_range address="0x40" size="4"/>
 	</device>
+
+<!--
+	<pci-fixup bus="0" device="0x15" function="3">
+		<bar id="0" address="0x4017002000"/>
+	</pci-fixup>
+-->
+
+	<device name="INT34C5" type="acpi">
+		<irq number="14" mode="level" polarity="low"/>
+		<io_mem address="0xfd690000" size="0x1000"/>
+		<io_mem address="0xfd6a0000" size="0x1000"/>
+		<io_mem address="0xfd6d0000" size="0x1000"/>
+		<io_mem address="0xfd6e0000" size="0x1000"/>
+	</device>
 </devices>
