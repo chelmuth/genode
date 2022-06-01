@@ -1,7 +1,7 @@
 /*
  * \brief  Dummy definitions of Linux Kernel functions
  * \author Automatically generated file - do no edit
- * \date   2022-10-19
+ * \date   2022-11-03
  */
 
 #include <lx_emul.h>
@@ -1579,14 +1579,6 @@ int pagecache_write_end(struct file * file,struct address_space * mapping,loff_t
 #include <linux/reboot.h>
 
 enum reboot_mode panic_reboot_mode;
-
-
-#include <linux/pci.h>
-
-int pci_dev_present(const struct pci_device_id * ids)
-{
-	lx_emul_trace_and_stop(__func__);
-}
 
 
 #include <linux/pci.h>

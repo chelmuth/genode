@@ -614,3 +614,11 @@ int pci_bus_write_config_byte(struct pci_bus *bus, unsigned int devfn,
 {
 	lx_emul_trace_and_stop(__func__);
 }
+
+
+int __register_chrdev(unsigned int major,unsigned int baseminor,unsigned int count,const char * name,const struct file_operations * fops)
+{
+	lx_emul_trace(__func__);
+	return 0;
+}
+
