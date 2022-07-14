@@ -566,6 +566,17 @@ install_config {
 		</route>
 	</start>
 
+	<!--
+	<start name="top" priority="0">
+		<resource name="RAM" quantum="2M"/>
+		<config period_ms="10000" sort_time="sc"/>
+		<route>
+			<service name="Timer"> <child name="timer"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+	-->
+
 	<start name="runtime" caps="50000" priority="-1">
 		<binary name="init"/>
 		<resource name="RAM" quantum="32G"/>
@@ -899,6 +910,7 @@ proc create_depot_archive { } {
 	if {[depot_archive] == "tar"} {
 		create_tar_from_depot_binaries [run_dir]/genode/depot.tar \
                                {*}[pkg_archive_paths [referenced_pkg_values]]
+		copy_file [run_dir]/genode/depot.tar /tmp/
 
 	} elseif {[depot_archive] == "list"} {
 		puts "Do not forget to publish:"
