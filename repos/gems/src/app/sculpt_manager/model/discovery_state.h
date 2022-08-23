@@ -84,6 +84,10 @@ struct Sculpt::Discovery_state
 				 && device.whole_device_partition->file_system.accessible())
 					target = Storage_target { device.label, Partition::Number() }; });
 
+		/* fall-back to ram_fs */
+		if (!target.valid())
+			target = Storage_target { "ram_fs", Partition::Number() };
+
 		if (target.valid())
 			_done = true;
 
