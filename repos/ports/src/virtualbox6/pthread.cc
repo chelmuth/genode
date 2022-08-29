@@ -42,13 +42,52 @@ static bool const debug = true; /* required by stub_macros.h */
 
 using namespace Genode;
 
+namespace {
+	struct Sep
+	{
+		unsigned long long const _value;
+
+		template <typename T>
+		explicit Sep(T value) : _value(value) { }
+
+		static unsigned long long pow10(unsigned exp)
+		{
+			if (!exp)
+				return 1;
+			else
+				return 10*pow10(exp - 1);
+		};
+
+		void print(Output &o) const
+		{
+			unsigned digits = 1;
+			for (auto v = _value; v > 9; v /= 10)
+				++digits;
+
+			bool const neg = _value < 0 ? true : false;
+			unsigned long long const abs_value = neg ? -_value : _value;
+
+			if (neg) Genode::print(o, "-");
+			for (auto v = abs_value; digits;) {
+				--digits;
+				auto const d = v/pow10(digits);
+
+				Genode::print(o, d);
+				if (digits && digits % 3 == 0)
+					Genode::print(o, "'");
+
+				v -= d*pow10(digits);
+			}
+		}
+	};
+}
 
 extern "C" int sched_yield()
 {
 	static unsigned long counter = 0;
 
 	if (++counter % 100'000 == 0)
-		warning(__func__, " called ", counter, " times");
+		warning(__func__, " called ", Sep(counter), " times");
 
 	return 0;
 }
