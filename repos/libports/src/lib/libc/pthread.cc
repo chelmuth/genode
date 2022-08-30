@@ -954,8 +954,8 @@ extern "C" {
 		switch (type) {
 		case PTHREAD_MUTEX_NORMAL:      *mutex = new (alloc) Pthread_mutex_normal; break;
 		case PTHREAD_MUTEX_ADAPTIVE_NP: *mutex = new (alloc) Pthread_mutex_normal; break;
-		case PTHREAD_MUTEX_ERRORCHECK:  *mutex = new (alloc) Pthread_mutex_errorcheck; break;
-		case PTHREAD_MUTEX_RECURSIVE:   *mutex = new (alloc) Pthread_mutex_recursive; break;
+		case PTHREAD_MUTEX_ERRORCHECK:  *mutex = new (alloc) Pthread_mutex_errorcheck; log("----- PTHREAD_MUTEX_ERRORCHECK"); break;
+		case PTHREAD_MUTEX_RECURSIVE:   *mutex = new (alloc) Pthread_mutex_recursive;  log("----- PTHREAD_MUTEX_RECURSIVE"); break;
 
 		default:
 			*mutex = nullptr;

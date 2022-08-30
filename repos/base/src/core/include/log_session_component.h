@@ -52,7 +52,7 @@ namespace Genode {
 			void write(String const &string_buf) override
 			{
 				if (!(string_buf.valid_string())) {
-					error("corrupted string");
+					error("Core::Log_session_component: corrupted string base=", string_buf.base(), " size=", string_buf.size());
 					return;
 				}
 
