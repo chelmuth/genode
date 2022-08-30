@@ -228,14 +228,16 @@ class Genode::Log_tsc_probe : Noncopyable
 
 			void print(Output &out) const
 			{
-				Timestamp const K = 1000, M = 1000*K, G = 1000*M;
+//				Timestamp const K = 1000, M = 1000*K, G = 1000*M;
 
 				using Genode::print;
 
-				if      (value > 100*G) print(out, value/G, "G");
-				else if (value > 100*M) print(out, value/M, "M");
-				else if (value > 100*K) print(out, value/K, "K");
-				else                    print(out, value);
+				print(out, value/1992, " us");
+
+//				if      (value > 100*G) print(out, value/G, "G");
+//				else if (value > 100*M) print(out, value/M, "M");
+//				else if (value > 100*K) print(out, value/K, "K");
+//				else                    print(out, value);
 			}
 		};
 
