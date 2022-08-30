@@ -55,7 +55,7 @@ namespace Genode {
 			void write(String const &string_buf) override
 			{
 				if (!(string_buf.valid_string())) {
-					Genode::error("corrupted string");
+					Genode::error("corrupted string size=", string_buf.size(), " MAX_SIZE=", (unsigned)String::MAX_SIZE);
 					return;
 				}
 
