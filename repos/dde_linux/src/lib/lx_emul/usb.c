@@ -110,6 +110,11 @@ static unsigned config_descriptor(genode_usb_bus_num_t bus,
 	else
 		memset(conf_desc, 0, sizeof(struct usb_config_descriptor));
 
+	if (udev->speed >= USB_SPEED_SUPER_PLUS) {
+		printk("%s: %u-%u speed=%u->%u\n", __func__, bus, dev, udev->speed, USB_SPEED_SUPER);
+		return USB_SPEED_SUPER;
+	}
+
 	return udev->speed;
 }
 
