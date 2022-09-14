@@ -80,8 +80,11 @@ proc run_boot_dir {binaries} {
 	build_core_image $binaries
 
 	exec mkdir -p [run_dir]/boot
+puts "objcopy hypervisor"
 	exec [cross_dev_prefix]objcopy -O elf32-i386 [run_dir]/genode/hypervisor [run_dir]/boot/hypervisor
+puts "strip hypervisor"
 	exec [cross_dev_prefix]strip [run_dir]/boot/hypervisor
+puts "strip hypervisor done"
 
 	remove_genode_dir
 
@@ -106,7 +109,9 @@ proc run_boot_dir {binaries} {
 		#
 		# Compress Genode image, to be uncompressed by GRUB
 		#
+puts "gzip image.elf"
 		exec gzip [run_dir]/boot/image.elf
+puts "gzip image.elf done"
 
 		if {[have_include "image/disk"]} {
 			exec mkdir -p [run_dir]/boot/grub
