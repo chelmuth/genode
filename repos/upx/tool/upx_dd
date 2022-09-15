@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+if [ "$UID" != "0" ]; then
+	echo "Must be run as root... "
+	sudo $0 "$@"
+	exit
+fi
+
+if [ $# -gt 0 ]; then
+	dd if=/dev/zero of=/var/tmp/blob$1 bs=1M count=$2K conv=fsync
+	exit
+fi
+
+JOBS=16 #$(nproc)
+GIB=$(( 16 / $JOBS))
+
+echo "JOBS=$JOBS"
+parallel -j $JOBS -n 2 $0 -- $(seq -f "%.0f $GIB" $JOBS)
+
+cat /proc/loadavg
