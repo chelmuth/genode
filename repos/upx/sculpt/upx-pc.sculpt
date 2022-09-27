@@ -1,0 +1,36 @@
+# mandatory config (if not changed 'default' is used)
+#clipboard:     default
+deploy:        upx
+drivers:       upx
+#fb_drv:        default
+#leitzentrale:  default
+#nitpicker:     default
+#numlock_remap: default
+ram_fs:        upx
+system:        pc
+#usb:           default
+
+# optional config (managed by sculpt if not specified)
+nic_router:   upx
+gpu_drv:      intel
+#fonts:        
+#event_filter: 
+#wifi:         
+#runtime:      
+
+import: pkg/drivers_managed-pc src/ipxe_nic_drv
+
+# machine.vbox, machine.vbox6, upx.vmdk etc. in /ram/vm/upx/
+import: raw/upx
+
+# configure depot user
+depot: chelmuth
+
+launcher: shared_fs
+launcher: upx_fs upx_usb_devices
+launcher: upx_vbox5_cpu1 upx_vbox5_cpu2 upx_vbox5_cpu4
+launcher: upx_vbox6_cpu1 upx_vbox6_cpu2 upx_vbox6_cpu4
+launcher: trace_logger
+
+build: virtualbox6
+build: app/top

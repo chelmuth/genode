@@ -1,0 +1,263 @@
+                 Modular Sculpt Testing on UP Extreme Edge
+
+                             Christian Helmuth
+
+
+Preparations
+############
+
+Test machine
+============
+
+* Reference hardware is UPX-EDGEI7-A10-1664-F01 with Samsung 970 EVO
+  Plus NVMe (500 GB, M.2 2280)
+
+* The used GPT partition scheme looks like follows.
+
+  ! > sudo parted -s /dev/nvme0n1 "unit mib  print free"
+  !
+  ! Model: Samsung SSD 970 EVO Plus 500GB (nvme)
+  ! Disk /dev/nvme0n1: 476940MiB
+  ! Sector size (logical/physical): 512B/512B
+  ! Partition Table: gpt
+  ! Disk Flags: 
+  ! 
+  ! Number  Start      End        Size       File system     Name    Flags
+  !         0,02MiB    1,00MiB    0,98MiB    Free Space
+  !  1      1,00MiB    122MiB     121MiB     fat32           EFI     boot, esp
+  !         122MiB     62622MiB   62500MiB   Free Space
+  !  3      62622MiB   78247MiB   15625MiB   linux-swap(v1)  SWAP    swap
+  !  4      78247MiB   140747MiB  62500MiB   ext2            GENODE
+  !  5      140747MiB  390747MiB  250000MiB                  VM
+  !  2      390747MiB  476939MiB  86192MiB   ext4            LINUX
+  !         476939MiB  476940MiB  1,01MiB    Free Space
+
+  * Partition 2 hosts a native Ubuntu 20.04.5 LTS installation.
+  * Partition 4 hosts the Genode Sculpt "Default" file system
+  * Partition 5 hosts the VM block device containing a virtual Ubuntu Server
+    20.04.5 LTS installation.
+
+* The device is booted from an iPXE prepared USB thumb drive for the Sculpt
+  scenario that uses ethernet port LAN1.
+
+* Debug log is captured from serial port COM1.
+
+* The test machine is addressable via DNS as upx1 (alternatively replace
+  upx1 by an IP address).
+
+
+Native Ubuntu installation
+==========================
+
+Beside the standard desktop installation the following packages were
+installed.
+
+* virtualbox-qt 6.1.34-dfsg-3~ubuntu1.20.04.1
+
+  * native VirtualBox for baseline benchmarks
+  * virtual disk referencing /dev/nvme0n1p5 via disk.vmdk
+    ! vboxmanage internalcommands createrawvmdk -filename disk.vmdk -rawdisk /dev/nvme0n1p5
+  * VM configurations for 2 and 4 guest CPUs
+    ! vboxmanage list vms
+    !
+    ! "Ubuntu Server 20.04 (cpu4)" {132b541f-ce59-4fb5-bb05-21941cf48a05}
+    ! "Ubuntu Server 20.04 (cpu2)" {182ebcee-3b4b-4378-b70d-0bb8ba374780}
+
+  * port-forwarding rule for easy access to guest openssh-server
+    ! vboxmanage modifyvm "132b541f-ce59-4fb5-bb05-21941cf48a05" --natpf1 "guestssh,tcp,,2222,,22"
+    ! vboxmanage modifyvm "182ebcee-3b4b-4378-b70d-0bb8ba374780" --natpf1 "guestssh,tcp,,2222,,22"
+  * virtual Ubuntu Server 20.04.5 LTS installation
+
+* openssh-server 8.2p1-4ubuntu0.5
+
+  for remote terminal access to the host and the VM running in native
+  VirtualBox
+
+The standard user is "genode" and is permitted to SUDO any command.
+The following command should successfully login from a remote machine.
+
+! ssh -t genode@upx1
+
+
+Virtual Ubuntu Server installation
+==================================
+
+Beside the standard server installation the following packages were
+installed.
+
+* moreutils 0.63-1
+
+  For the "parallel" utility used in the tools described below.
+
+* build-essential 12.8ubuntu1.1
+
+  All tools required for building tools - used to prepare Tiobench.
+
+* Tiobench c91485abf2b99ffa76e6ecf0a11bf2bc8b994699
+
+  ! mkdir -p tiotest; cd tiotest
+  ! git clone https://github.com/mkuoppal/tiobench tiobench.git; cd tiobench.git
+  ! make
+
+* stress-ng 0.11.07-1ubuntu2
+
+  System stressor utility
+
+The standard user is "genode" and is permitted to SUDO any command.
+The following command should successfully login from a remote machine via
+the native Ubuntu host (and later via Sculpt).
+
+! ssh -p 2222 -t genode@upx1
+
+
+Modular Sculpt configuration
+============================
+
+:sculpt/upx-pc.sculpt:
+
+This file configures the used scenario and references the configuration
+pieces described in the following.
+
+The depot user could be changed by adapting the following lines. This step
+is optional as the packages are not published but integrated directly into
+the boot image.
+
+! # configure depot user
+! depot: <depot user>
+
+:sculpt/deploy/upx:
+
+The scenario deploys a Sculpt desktop (fonts_fs, themed_wm, system_clock-pc,
+black_hole) with Default file system in RAM. Also, the NVMe partitions are
+made available (nvme-0.part_block) with an additional file system on
+partition 4 (nvme-0.4.fs) and the VM block device in partition 5. For
+diagnostic purposes, the scenario also includes the trace_logger that logs
+information about VirtualBox and the Kernel-Idle-Times.
+
+On the desktop, the deploy configuration automatically runs the selected
+VirtualBox variant (version 5/6; 1, 2, or 4 virtual CPUs) and required
+components for shared file system (shared_fs), USB-passthrough config
+(upx_usb_devices), and VirtualBox configuration chroot file system (upx_fs).
+
+:sculpt/drivers/upx:
+
+The drivers subsystem is quite similar to the original Sculpt drivers/pc except
+the disabled, non-working (and quite busy looping) PS/2 driver.
+
+:sculpt/launcher/upx_fs:
+
+Sandbox for VirtualBox config file system in RAM (/vm/upx).
+
+:sculpt/launcher/upx_usb_devices:
+
+Empty USB device config ROM.
+
+:sculpt/launcher/upx_vbox5_cpu1:
+:sculpt/launcher/upx_vbox5_cpu2:
+:sculpt/launcher/upx_vbox5_cpu4:
+:sculpt/launcher/upx_vbox6_cpu1:
+:sculpt/launcher/upx_vbox6_cpu2:
+:sculpt/launcher/upx_vbox6_cpu4:
+
+Launchers for variants of VirtualBox 5/6 with 1, 2, or 4 virtual CPUs. Note
+the routes to upx_fs and nvme-0.part_block.
+
+:sculpt/nic_router/upx:
+
+NIC router configuration using the ethernet driver by default. It also
+includes a port-forwarding rule similar to native Ubuntu for external port
+2222 to VirtualBox port 22.
+
+:sculpt/ram_fs/upx:
+
+The RAM file system configuration imports the depot.tar (depot packages) and
+upx.tar (VirtualBox configuration) ROM from the boot image.
+
+
+Build and run
+#############
+
+:./recipes/pkg/upx_vbox5_cpu1:
+:./recipes/pkg/upx_vbox5_cpu2:
+:./recipes/pkg/upx_vbox5_cpu4:
+:./recipes/pkg/upx_vbox6_cpu1:
+:./recipes/pkg/upx_vbox6_cpu2:
+:./recipes/pkg/upx_vbox6_cpu4:
+:./recipes/raw/upx:
+
+The scenario uses these packages for variants of VirtualBox 5/6 on
+1, 2, and 4 CPUs. This is necessary as the number of CPUs must be configured
+in the .vbox/.vbox6 file.
+
+:./run/upx.run:
+
+The following steps are required to build and run the scenario.
+
+* add repos/upx to REPOSITORIES
+
+* setup appropriate RUN_OPT, for example
+
+  ! RUN_OPT += --depot-auto-update
+  ! RUN_OPT += --amt-tool wsman
+  ! RUN_OPT += --include power_on/amt
+  ! RUN_OPT +=   --power-on-amt-host upx1-amt
+  ! RUN_OPT +=   --power-on-amt-password 'PASSWORD'
+  ! RUN_OPT +=   --power-on-amt-timeout 15
+  ! RUN_OPT += --include log/serial
+  ! RUN_OPT +=   --log-serial-cmd 'picocom -b 115200 /dev/ttyUSB0'
+  ! RUN_OPT += --include image/uefi
+  ! RUN_OPT += --include load/ipxe
+  ! RUN_OPT +=   --load-ipxe-base-dir /tftpboot/
+  ! RUN_OPT +=   --load-ipxe-boot-dir /upx1
+  ! # enable the following to start lighttpd on demand - port must match ipxe config
+  ! #RUN_OPT +=   --load-ipxe-lighttpd
+  ! #RUN_OPT +=   --load-ipxe-lighttpd-port 2209
+
+* run the scenario in the build directory
+
+  ! make run/upx KERNEL=nova BOARD=pc CCACHE=yes DEPOT_USER=chelmuth
+
+
+Tools and benchmarking
+######################
+
+The tools can be used to benchmark the VM, and must, therefore, be
+copied onto the virtual disk (e.g., by using scp).
+
+:tool/upx_dd:
+
+* runs one instance of _dd_ per CPU to write a total of 16 GiB to disk
+
+:tool/upx_tiotest:
+
+* runs Tiobench's tiotest [1] and stores results amended by VMM information
+  (VirtualBox version, number of CPUs)
+
+* requires tiobench.git clone in _home/genode/tiotest/tiobench.git
+
+* requires SUDO rights
+
+* usage example: start 1000 threads to sequentially write 16 MiB each (16
+  GiB total) with a buffer size of 1 MiB
+
+  ! upx_tiotest -k 1 -k 2 -k 3 -L -F -b 1048576 -t 1000 -f 16"
+
+After the scenario has started on Genode or VirtualBox on native Ubuntu, the
+VM can be benchmarked and controlled from remote like follows.
+
+Login for interactive use
+
+! ssh -p 2222 -t genode@upx1
+
+Power off the VM (e.g., before rebooting)
+
+! ssh -p 2222 -t genode@upx1 sudo poweroff
+
+Run dd based test
+
+! ssh -p 2222 -t genode@upx1 tiotest/upx_dd
+
+Run Tiobench benchmark
+
+! ssh -p 2222 -t genode@upx1 tiotest/upx_tiotest -k 1 -k 2 -k 3 -L -F -b 1048576 -t 1000 -f 16
+
