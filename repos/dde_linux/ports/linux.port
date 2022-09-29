@@ -9,9 +9,10 @@ DIR(linux) := src/linux
 #
 # Patches
 #
-PATCH_FILES := i915_irq.patch i915_alderlake.patch xhci_abort_ring.patch
+PATCH_FILES := i915_irq.patch i915_alderlake.patch xhci_abort_ring.patch sof_ipc_timeout.patch
 PATCHES += $(addprefix patches/,$(PATCH_FILES))
 
 # i915
 PATCH_OPT(patches/i915_irq.patch) := -p1 -d${DIR(linux)}
 PATCH_OPT(patches/xhci_abort_ring.patch) := -p1 -d${DIR(linux)}
+PATCH_OPT(patches/sof_ipc_timeout.patch) := -p1 -d${DIR(linux)}
