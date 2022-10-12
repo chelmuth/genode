@@ -40,6 +40,8 @@ namespace Vmm {
 	enum class Exit : unsigned {
 		INTEL_CPUID         = 0x0a,
 		INTEL_HLT           = 0x0c,
+		INTEL_RDMSR         = 0x1f,
+		INTEL_WRMSR         = 0x20,
 		INTEL_INVALID_STATE = 0x21,
 		INTEL_EPT           = 0x30,
 		AMD_PF              = 0x4e,
