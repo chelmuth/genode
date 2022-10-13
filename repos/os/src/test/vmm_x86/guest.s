@@ -25,6 +25,12 @@
 	jmp .
 	hlt
 
+	rdtsc
+	mov $0x10,%ecx
+	rdmsr
+	wrmsr
+	hlt
+
 	jmp .
 
 /* reset vector entry - just jmp to code start above */

@@ -167,6 +167,8 @@ class Vmm::Vcpu
 
 		unsigned id() const { return _id; }
 
+		Vcpu_state const &vcpu_state() { return _vcpu.state(); };
+
 		void run()   { _vcpu.run(); }
 		void pause() { _vcpu.pause(); }
 
@@ -195,6 +197,8 @@ class Vmm::Vcpu
 			return _test_state == State::PAUSED && _pause_count == 3; }
 		bool paused_4th() const {
 			return _test_state == State::PAUSED && _pause_count == 4; }
+		bool paused_5th() const {
+			return _test_state == State::PAUSED && _pause_count == 5; }
 
 		void break_endless_loop()
 		{
@@ -411,12 +415,18 @@ void Vmm::Vm::_handle_timer()
 		_vcpu1.skip_instruction(1*2 /* 1x jmp endless loop size */);
 		_vcpu1.run();
 	} else if (_vcpu1.paused_4th()) {
-		log("vcpu test finished - de-arm timer");
-		_timer.trigger_periodic(0);
+		log(Thread::myself()->name(), "     : NEXT ip=",  Hex(_vcpu1.vcpu_state().ip.value()));
 
-		/* trigger destruction of VM session */
-		Signal_transmitter(_signal_destruction).submit();
+		_vcpu1.skip_instruction(1*1 /* 1x hlt instruction size */);
+		_vcpu1.claim_state_unknown();
+		_vcpu1.run();
+	} else if (_vcpu1.paused_5th()) {
+		log(Thread::myself()->name(), "     : DEBUG! ip=", Hex(_vcpu1.vcpu_state().ip.value()));
+		_timer.trigger_periodic(0);
 	}
+//		/* trigger destruction of VM session */
+//		Signal_transmitter(_signal_destruction).submit();
+//	}
 }
 
 
@@ -437,7 +447,9 @@ void Vmm::Vcpu::_handle_vcpu_exit()
 
 	log("vcpu ", _id, " : ", _exit_count, ". vm exit - ",
 	    "reason ", Hex((unsigned)exit), " handled by '",
-	    Thread::myself()->name(), "'");
+	    Thread::myself()->name(),
+	    "' ip=", Hex(state.ip.value()),
+	    "' cx=", Hex(state.cx.value()));
 
 	switch (exit) {
 
@@ -499,7 +511,7 @@ void Vmm::Vcpu::_handle_vcpu_exit()
 			}
 			if (guest_fault_addr != 0xfffffff0UL) {
 				error("vcpu ", _id, " : ", _exit_count, ". vm exit - "
-				      " unknown guest fault address");
+				      " unknown guest fault address - ip=", Hex(state.ip.value()));
 				return;
 			}
 
