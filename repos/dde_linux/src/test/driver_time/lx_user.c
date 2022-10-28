@@ -16,7 +16,12 @@
 
 #include <linux/delay.h>
 
-#include "i915_drv.h" /* test wait_for() macro */
+/* test wait_for() macro */
+#define CONFIG_DRM_I915_TIMESLICE_DURATION 1
+#define CONFIG_DRM_I915_PREEMPT_TIMEOUT    640
+#define CONFIG_DRM_I915_HEARTBEAT_INTERVAL 2500
+
+#include "i915_drv.h"
 
 #include <lx_emul/time.h>
 

@@ -1,16 +1,14 @@
 REQUIRES := x86_64
 
 TARGET  := test-driver_time
-LIBS    := base pc_lx_emul jitterentropy
+LIBS    := base virt_lx_emul jitterentropy
 
 SRC_CC  += main.cc time.cc
 SRC_C   += lx_user.c
+SRC_C   += delay.c
 SRC_C   += dummies.c
 SRC_C   += generated_dummies.c
-
-SRC_C   += lx_emul/common_dummies.c
-SRC_C   += lx_emul/shadow/lib/kobject_uevent.c
-SRC_C   += lx_emul/shadow/drivers/char/random.c
+SRC_CC  += lx_emul/random.cc
 
 vpath %.c  $(REP_DIR)/src/lib/pc
 vpath %.cc $(REP_DIR)/src/lib/pc

@@ -11,6 +11,13 @@
  * version 2.
  */
 
+/* Needed to trace and stop */
+#include <lx_emul/debug.h>
+
+/* fix for missing includes in generated_dummies */
+#include <linux/compiler_attributes.h>
+#include <linux/sched/debug.h>
+#include <linux/irq.h>
 
 #ifdef __cplusplus
 extern "C" {
