@@ -45,29 +45,34 @@ namespace Net {
 
 	bool log_udp_port(Port const port)
 	{
-		if (port == Port { 53 }   ||
-			port == Port { 123 }  ||
-			port == Port { 5353 }) {
+		if (port == Port {   53 } /* DNS */
+		 || port == Port {  123 } /* NTP */
+		 || port == Port {  443 } /* QUIC */
+		 || port == Port { 5353 } /* mDNS */
+		   )
 			return false;
-		}
-		return true;
+		else
+			return true;
 	}
 
 	bool log_tcp_port(Port const port)
 	{
-		if (port == Port { 80 }   ||
-			port == Port { 631 }  ||
-			port == Port { 443 }) {
+		if (port == Port {   80 } /* HTTP */
+		 || port == Port {  587 } /* SMTP submission */
+		 || port == Port {  631 } /* IPP */
+		 || port == Port {  443 } /* HTTPS */
+		 || port == Port {  993 } /* IMAPS */
+		 || port == Port {  995 } /* POPS */
+		   )
 			return false;
-		}
-		return true;
+		else
+			return true;
 	}
 
 	bool log_ip_addr(Ipv4_address const ip)
 	{
-		return
-			!ip.is_multicast() &&
-			!(ip == Ipv4_packet::broadcast());
+		return !ip.is_multicast()
+		    && !(ip == Ipv4_packet::broadcast());
 	}
 }
 
