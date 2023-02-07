@@ -427,7 +427,7 @@ asmlinkage __visible void dump_stack(void)
 {
 	printk("backtrace omitted\n");
 /*
-	lx_backtrace();
+	lx_emul_backtrace();
 */
 }
 
@@ -482,7 +482,7 @@ void page_frag_free(void * addr)
 	struct page *page = lx_emul_virt_to_pages(addr, 1ul);
 	if (!page) {
 		printk("BUG %s: page for addr: %p not found\n", __func__, addr);
-		lx_backtrace();
+		lx_emul_backtrace();
 	}
 
 	__free_pages(page, 0ul);
