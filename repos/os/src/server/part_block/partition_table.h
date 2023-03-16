@@ -32,7 +32,30 @@ namespace Block {
 }
 
 
-struct Block::Partition
+struct Block::Job : public Block_connection::Job
+{
+	Registry<Job>::Element registry_element;
+
+	addr_t  const index;                /* job index */
+	long    const number;               /* parition number */
+	Request       request;
+	addr_t  const addr;                 /* target payload address */
+	bool          completed { false };
+
+	Job(Block_connection &connection,
+	    Operation         operation,
+	    Registry<Job>    &registry,
+	    addr_t const      index,
+	    addr_t const      number,
+	    Request           request,
+	    addr_t            addr)
+	: Block_connection::Job(connection, operation),
+	  registry_element(registry, *this),
+	  index(index), number(number), request(request), addr(addr) { }
+};
+
+
+struct Block::Partition : Noncopyable
 {
 	block_number_t lba;     /* logical block address on device */
 	block_count_t  sectors; /* number of sectors in patitions */
@@ -69,30 +92,7 @@ struct Block::Partition
 };
 
 
-struct Block::Job : public Block_connection::Job
-{
-	Registry<Job>::Element registry_element;
-
-	addr_t  const index;                /* job index */
-	long    const number;               /* parition number */
-	Request       request;
-	addr_t  const addr;                 /* target payload address */
-	bool          completed { false };
-
-	Job(Block_connection &connection,
-	    Operation         operation,
-	    Registry<Job>    &registry,
-	    addr_t const      index,
-	    addr_t const      number,
-	    Request           request,
-	    addr_t            addr)
-	: Block_connection::Job(connection, operation),
-	  registry_element(registry, *this),
-	  index(index), number(number), request(request), addr(addr) { }
-};
-
-
-struct Block::Partition_table : Interface
+struct Block::Partition_table : Interface, Noncopyable
 {
 		struct Sector;
 

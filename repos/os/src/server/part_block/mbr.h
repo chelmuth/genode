@@ -211,8 +211,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 						Fs::Type const fs_type =
 							Fs::probe(fs.addr<uint8_t*>(), PROBE_BYTES);
 
-						_part_list[i].construct(
-							Partition(lba, r.sectors(), fs_type, r.type()));
+						_part_list[i].construct(lba, r.sectors(), fs_type, r.type());
 					}
 				});
 			}
@@ -222,15 +221,13 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 			if (_ahdi_valid)
 				Ahdi::for_each_partition(s, [&] (unsigned i, Partition info) {
 					if (i < MAX_PARTITIONS)
-						_part_list[i].construct(
-							Partition(info.lba, info.sectors, Fs::Type(), 0));
+						_part_list[i].construct(info.lba, info.sectors, Fs::Type(), (uint8_t)0);
 				});
 
 			/* no partition table, use whole disc as partition 0 */
 			if (!_mbr_valid && !_ahdi_valid)
 				_part_list[0].construct(
-					Partition(0, (block_count_t)(block.info().block_count - 1),
-					          Fs::Type(), 0));
+					0, (block_count_t)(block.info().block_count - 1), Fs::Type(), (uint8_t)0);
 
 			bool any_partition_valid = false;
 			_for_each_valid_partition([&] (unsigned) {
