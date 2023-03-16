@@ -53,7 +53,7 @@
 			<route>
 				<any-service><child name="vfs_block"/> <parent/><any-child/></any-service>
 			</route>
-			<config use_gpt="yes">
+			<config>
 				<report partitions="yes"/>
 				<policy label_prefix="test-part1" partition="2"/>
 				<policy label_prefix="test-part2" partition="1"/>
