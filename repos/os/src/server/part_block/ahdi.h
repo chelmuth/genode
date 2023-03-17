@@ -1,6 +1,7 @@
 /*
  * \brief  Atari ST partition scheme (AHDI)
  * \author Norman Feske
+ * \author Christian Helmuth
  * \date   2019-08-09
  */
 
@@ -16,11 +17,10 @@
 
 #include "partition_table.h"
 
+namespace Block { struct Ahdi; }
 
-struct Ahdi
+struct Block::Ahdi
 {
-	typedef Block::Partition_table::Sector Sector;
-
 	typedef Genode::uint32_t uint32_t;
 	typedef Genode::uint8_t  uint8_t;
 
@@ -70,7 +70,7 @@ struct Ahdi
 
 	} __attribute__((packed));
 
-	static bool valid(Sector const &sector)
+	static bool valid(Sync_read const &sector)
 	{
 		bool any_partition_valid = false;
 
@@ -83,7 +83,7 @@ struct Ahdi
 	}
 
 	template <typename FN>
-	static void for_each_partition(Sector const &sector, FN const &fn)
+	static void for_each_partition(Sync_read const &sector, FN const &fn)
 	{
 		Root_sector &root = *sector.addr<Root_sector *>();
 

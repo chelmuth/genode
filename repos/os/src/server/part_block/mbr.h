@@ -4,6 +4,7 @@
  * \author Stefan Kalkowski
  * \author Josef Soentgen
  * \author Norman Feske
+ * \author Christian Helmuth
  * \date   2013-12-04
  */
 
@@ -17,13 +18,7 @@
 #ifndef _PART_BLOCK__MBR_H_
 #define _PART_BLOCK__MBR_H_
 
-#include <base/env.h>
-#include <base/log.h>
-#include <block_session/client.h>
-#include <util/mmio.h>
-
 #include "partition_table.h"
-#include "fsprobe.h"
 #include "ahdi.h"
 
 namespace Block {
@@ -37,8 +32,6 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 		class Protective_mbr_found { };
 
 	private:
-
-		typedef Block::Partition_table::Sector Sector;
 
 		/**
 		 * Partition table entry format
@@ -113,7 +106,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 			/* first logical partition number */
 			int nr = 5;
 			do {
-				Sector s(const_cast<Sector_data&>(data), lba, 1);
+				Sync_read s(_handler, _alloc, lba, 1);
 				Mbr const ebr(s.addr<addr_t>());
 
 				if (!ebr.valid())
@@ -187,9 +180,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 
 		bool parse() override
 		{
-			block.sigh(io_sigh);
-
-			Sector s(data, 0, 1);
+			Sync_read s(_handler, _alloc, 0, 1);
 
 			/* check for MBR */
 			Mbr const mbr(s.addr<addr_t>());
@@ -207,7 +198,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 
 						/* probe for known file-system types */
 						enum { PROBE_BYTES = 4096, };
-						Sector fs(data, lba , PROBE_BYTES / block.info().block_size);
+						Sync_read fs(_handler, _alloc, lba , PROBE_BYTES / _info.block_size);
 						Fs::Type const fs_type =
 							Fs::probe(fs.addr<uint8_t*>(), PROBE_BYTES);
 
@@ -225,9 +216,10 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 				});
 
 			/* no partition table, use whole disc as partition 0 */
-			if (!_mbr_valid && !_ahdi_valid)
-				_part_list[0].construct(
-					0, (block_count_t)(block.info().block_count - 1), Fs::Type(), (uint8_t)0);
+			if (!_mbr_valid && !_ahdi_valid) {
+				block_count_t block_count = _info.block_count - 1;
+				_part_list[0].construct(0, block_count, Fs::Type(), (uint8_t)0);
+			}
 
 			bool any_partition_valid = false;
 			_for_each_valid_partition([&] (unsigned) {
@@ -242,12 +234,10 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 			{
 				Partition const &part = *_part_list[i];
 
-				size_t const block_size = block.info().block_size;
-
 				xml.attribute("number",     i);
 				xml.attribute("start",      part.lba);
 				xml.attribute("length",     part.sectors);
-				xml.attribute("block_size", block_size);
+				xml.attribute("block_size", _info.block_size);
 
 				if (_mbr_valid)
 					xml.attribute("type", part.mbr_type);
