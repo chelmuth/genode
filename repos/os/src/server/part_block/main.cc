@@ -226,7 +226,7 @@ class Block::Main : Rpc_object<Typed_root<Session>>,
 		Block_connection        _block    { _env, &_block_alloc, _io_buffer_size };
 		Session::Info           _info     { _block.info() };
 		Io_signal_handler<Main> _io_sigh  { _env.ep(), *this, &Main::_handle_io };
-		Mbr_partition_table     _mbr      { *this, _heap, _info };
+		Mbr                     _mbr      { *this, _heap, _info };
 		Gpt                     _gpt      { *this, _heap, _info };
 		Partition_table        &_partition_table { _table() };
 
@@ -535,7 +535,7 @@ Block::Partition_table & Block::Main::_table()
 	 */
 
 	if (!ignore_mbr) {
-		using Parse_result = Mbr_partition_table::Parse_result;
+		using Parse_result = Mbr::Parse_result;
 
 		switch (_mbr.parse()) {
 		case Parse_result::MBR:

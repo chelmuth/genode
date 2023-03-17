@@ -23,7 +23,7 @@
 
 namespace Block {
 	struct Mbr_partition;
-	struct Mbr_partition_table;
+	struct Mbr;
 };
 
 
@@ -42,7 +42,7 @@ struct Block::Mbr_partition : Partition
 };
 
 
-class Block::Mbr_partition_table : public Partition_table
+class Block::Mbr : public Partition_table
 {
 	public:
 
@@ -84,16 +84,16 @@ class Block::Mbr_partition_table : public Partition_table
 		/**
 		 * Master/Extented boot record format
 		 */
-		struct Mbr : Mmio
+		struct Boot_record : Mmio
 		{
 			struct Magic : Register<510, 16>
 			{
 				enum { NUMBER = 0xaa55 };
 			};
 
-			Mbr() = delete;
+			Boot_record() = delete;
 
-			Mbr(addr_t base) : Mmio(base) { }
+			Boot_record(addr_t base) : Mmio(base) { }
 
 			bool valid() const
 			{
@@ -124,7 +124,7 @@ class Block::Mbr_partition_table : public Partition_table
 			int nr = 5;
 			do {
 				Sync_read s(_handler, _alloc, lba, 1);
-				Mbr const ebr(s.addr<addr_t>());
+				Boot_record const ebr(s.addr<addr_t>());
 
 				if (!ebr.valid())
 					return;
@@ -150,7 +150,7 @@ class Block::Mbr_partition_table : public Partition_table
 		}
 
 		template <typename FUNC>
-		Parse_result _parse_mbr(Mbr const &mbr, FUNC const &f) const
+		Parse_result _parse_mbr(Boot_record const &mbr, FUNC const &f) const
 		{
 			for (int i = 0; i < 4; i++) {
 				Partition_record const r(mbr.record(i));
@@ -202,7 +202,7 @@ class Block::Mbr_partition_table : public Partition_table
 			Sync_read s(_handler, _alloc, 0, 1);
 
 			/* check for MBR */
-			Mbr const mbr(s.addr<addr_t>());
+			Boot_record const mbr(s.addr<addr_t>());
 			_mbr_valid = mbr.valid();
 			if (_mbr_valid) {
 				return _parse_mbr(mbr, [&] (int i, Partition_record const &r, unsigned offset) {
