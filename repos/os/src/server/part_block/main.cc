@@ -535,16 +535,22 @@ Block::Partition_table & Block::Main::_table()
 	 */
 
 	if (!ignore_mbr) {
-		try { valid_mbr = _mbr.parse(); }
-		catch (Mbr_partition_table::Protective_mbr_found) {
+		using Parse_result = Mbr_partition_table::Parse_result;
+
+		switch (_mbr.parse()) {
+		case Parse_result::MBR:
+		case Parse_result::AHDI:
+		case Parse_result::DISK:
+			valid_mbr = true;
+			break;
+		case Parse_result::PROTECTIVE_MBR:
 			pmbr_found = true;
-		} catch (...) { };
+			break;
+		}
 	}
 
-	if (!ignore_gpt) {
-		try { valid_gpt = _gpt.parse(); }
-		catch (...) { }
-	}
+	if (!ignore_gpt)
+		valid_gpt = _gpt.parse();
 
 	/*
 	 * Both tables are valid (although we would have expected a PMBR in
@@ -556,11 +562,11 @@ Block::Partition_table & Block::Main::_table()
 		throw Ambiguous_tables();
 	}
 
+	/* PMBR missing, i.e, MBR part[0] contains whole disk and GPT valid */
 	if (valid_gpt && !pmbr_found) {
 		warning("will use GPT without proper protective MBR");
 	}
 
-	/* PMBR missing, i.e, MBR part[0] contains whole disk and GPT valid */
 	if (pmbr_found && ignore_gpt) {
 		warning("found protective MBR but GPT is to be ignored");
 	}

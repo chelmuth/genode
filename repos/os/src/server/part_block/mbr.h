@@ -29,7 +29,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 {
 	public:
 
-		class Protective_mbr_found { };
+		enum class Parse_result { MBR, PROTECTIVE_MBR, AHDI, DISK };
 
 	private:
 
@@ -133,7 +133,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 		}
 
 		template <typename FUNC>
-		void _parse_mbr(Mbr const &mbr, FUNC const &f) const
+		Parse_result _parse_mbr(Mbr const &mbr, FUNC const &f) const
 		{
 			for (int i = 0; i < 4; i++) {
 				Partition_record const r(mbr.record(i));
@@ -142,13 +142,15 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 					continue;
 
 				if (r.protective())
-					throw Protective_mbr_found();
+					return Parse_result::PROTECTIVE_MBR;
 
 				f(i + 1, r, 0);
 
 				if (r.extended())
 					_parse_extended(r, f);
 			}
+
+			return Parse_result::MBR;
 		}
 
 		/* state for partitions report */
@@ -178,7 +180,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 					fn(i);
 		};
 
-		bool parse() override
+		Parse_result parse()
 		{
 			Sync_read s(_handler, _alloc, 0, 1);
 
@@ -186,7 +188,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 			Mbr const mbr(s.addr<addr_t>());
 			_mbr_valid = mbr.valid();
 			if (_mbr_valid) {
-				_parse_mbr(mbr, [&] (int i, Partition_record const &r, unsigned offset) {
+				return _parse_mbr(mbr, [&] (int i, Partition_record const &r, unsigned offset) {
 					log("MBR Partition ", i, ": LBA ",
 					    r.lba() + offset, " (",
 					    r.sectors(), " blocks) type: ",
@@ -209,11 +211,13 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 
 			/* check for AHDI partition table */
 			_ahdi_valid = !_mbr_valid && Ahdi::valid(s);
-			if (_ahdi_valid)
+			if (_ahdi_valid) {
 				Ahdi::for_each_partition(s, [&] (unsigned i, Partition info) {
 					if (i < MAX_PARTITIONS)
 						_part_list[i].construct(info.lba, info.sectors, Fs::Type(), (uint8_t)0);
 				});
+				return Parse_result::AHDI;
+			}
 
 			/* no partition table, use whole disc as partition 0 */
 			if (!_mbr_valid && !_ahdi_valid) {
@@ -221,11 +225,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 				_part_list[0].construct(0, block_count, Fs::Type(), (uint8_t)0);
 			}
 
-			bool any_partition_valid = false;
-			_for_each_valid_partition([&] (unsigned) {
-				any_partition_valid = true; });
-
-			return any_partition_valid;
+			return Parse_result::DISK;
 		}
 
 		void generate_report(Xml_generator &xml) const override

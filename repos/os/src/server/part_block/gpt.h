@@ -374,20 +374,7 @@ class Block::Gpt : public Block::Partition_table
 
 		using Partition_table::Partition_table;
 
-		Partition &partition(long num) override
-		{
-			num -= 1;
-
-			if (num < 0 || num > MAX_PARTITIONS)
-				throw -1;
-
-			if (!_part_list[num].constructed())
-				throw -1;
-
-			return *_part_list[num];
-		}
-
-		bool parse() override
+		bool parse()
 		{
 			Sync_read s(_handler, _alloc, Gpt_hdr::Hdr_lba::LBA, 1);
 			Gpt_hdr gpt_hdr(s.addr<addr_t>());
@@ -399,6 +386,19 @@ class Block::Gpt : public Block::Partition_table
 				if (_part_list[num].constructed())
 					return true;
 			return false;
+		}
+
+		Partition &partition(long num) override
+		{
+			num -= 1;
+
+			if (num < 0 || num > MAX_PARTITIONS)
+				throw -1;
+
+			if (!_part_list[num].constructed())
+				throw -1;
+
+			return *_part_list[num];
 		}
 
 		void generate_report(Xml_generator &xml) const override

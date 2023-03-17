@@ -80,8 +80,6 @@ class Block::Partition_table : Interface, Noncopyable
 
 		virtual Partition &partition(long num) = 0;
 
-		virtual bool parse() = 0;
-
 		virtual void generate_report(Xml_generator &xml) const = 0;
 };
 
