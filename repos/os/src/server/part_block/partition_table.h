@@ -28,38 +28,15 @@ namespace Block {
 
 struct Block::Partition : Noncopyable
 {
-	block_number_t lba;     /* logical block address on device */
-	block_count_t  sectors; /* number of sectors in patitions */
+	block_number_t const lba;     /* logical block address on device */
+	block_count_t  const sectors; /* number of sectors in patitions */
 
 	Fs::Type fs_type { };
 
-	uint8_t  mbr_type { 0 };
-
-	using Uuid = String<40>;
-	Uuid guid     { };
-	Uuid gpt_type { };
-
-	using Name = String<72>; /* use GPT name antry length */
-	Name name { };
-
 	Partition(block_number_t lba,
 	          block_count_t  sectors,
-	          Fs::Type       fs_type,
-	          uint8_t        mbr_type)
-	:
-		lba(lba), sectors(sectors), fs_type(fs_type),
-		mbr_type(mbr_type)
-	{ }
-
-	Partition(block_number_t lba,
-	          block_count_t  sectors,
-	          Fs::Type       fs_type,
-	          Uuid const &guid, Uuid const &gpt_type,
-	          Name const &name)
-	:
-		lba(lba), sectors(sectors), fs_type(fs_type),
-		guid(guid), gpt_type(gpt_type), name(name)
-	{ }
+	          Fs::Type       fs_type)
+	: lba(lba), sectors(sectors), fs_type(fs_type) { }
 };
 
 

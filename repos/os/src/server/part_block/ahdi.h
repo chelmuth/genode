@@ -90,8 +90,7 @@ struct Block::Ahdi
 		for (unsigned i = 0; i < MAX_PARTITIONS; i++) {
 			Partition_record const &part = root.partitions[i];
 			if (part.valid())
-				fn(i + 1, Block::Partition(part.start.value(), part.length.value(),
-				                           Fs::Type(), 0));
+				fn(i + 1, Partition(part.start.value(), part.length.value(), Fs::Type()));
 		}
 	}
 };

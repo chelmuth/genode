@@ -21,8 +21,32 @@
 static bool constexpr verbose = false;
 
 namespace Block {
+	class Gpt_partition;
 	class Gpt;
 };
+
+
+struct Block::Gpt_partition : Partition
+{
+	using Uuid = String<40>;
+	Uuid guid { };
+	Uuid type { };
+
+	using Name = String<72>; /* use GPT name entry length */
+	Name name { };
+
+	Gpt_partition(block_number_t lba,
+	              block_count_t  sectors,
+	              Fs::Type       fs_type,
+	              Uuid    const &guid,
+	              Uuid    const &type,
+	              Name    const &name)
+	:
+		Partition(lba, sectors, fs_type),
+		guid(guid), type(type), name(name)
+	{ }
+};
+
 
 class Block::Gpt : public Block::Partition_table
 {
@@ -31,7 +55,7 @@ class Block::Gpt : public Block::Partition_table
 		enum { MAX_PARTITIONS = 128 };
 
 		/* contains valid partitions or not constructed */
-		Constructible<Partition> _part_list[MAX_PARTITIONS];
+		Constructible<Gpt_partition> _part_list[MAX_PARTITIONS];
 
 		/**
 		 * DCE uuid struct
@@ -413,12 +437,12 @@ class Block::Gpt : public Block::Partition_table
 
 			_for_each_valid_partition([&] (unsigned i) {
 
-				Block::Partition const &part = *_part_list[i];
+				Gpt_partition const &part = *_part_list[i];
 
 				xml.node("partition", [&] () {
 					xml.attribute("number",     i + 1);
 					xml.attribute("name",       part.name);
-					xml.attribute("type",       part.gpt_type);
+					xml.attribute("type",       part.type);
 					xml.attribute("guid",       part.guid);
 					xml.attribute("start",      part.lba);
 					xml.attribute("length",     part.sectors);

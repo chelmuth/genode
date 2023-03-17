@@ -22,10 +22,27 @@
 #include "ahdi.h"
 
 namespace Block {
+	struct Mbr_partition;
 	struct Mbr_partition_table;
 };
 
-struct Block::Mbr_partition_table : public Block::Partition_table
+
+struct Block::Mbr_partition : Partition
+{
+	uint8_t const type;
+
+	Mbr_partition(block_number_t lba,
+	              block_count_t  sectors,
+	              Fs::Type       fs_type,
+	              uint8_t        type)
+	:
+		Partition(lba, sectors, fs_type),
+		type(type)
+	{ }
+};
+
+
+class Block::Mbr_partition_table : public Partition_table
 {
 	public:
 
@@ -94,7 +111,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 		enum { MAX_PARTITIONS = 32 };
 
 		/* contains pointers to valid partitions or 0 */
-		Constructible<Partition> _part_list[MAX_PARTITIONS];
+		Constructible<Mbr_partition> _part_list[MAX_PARTITIONS];
 
 		template <typename FUNC>
 		void _parse_extended(Partition_record const &record, FUNC const &f) const
@@ -232,7 +249,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 		{
 			auto gen_partition_attr = [&] (Xml_generator &xml, unsigned i)
 			{
-				Partition const &part = *_part_list[i];
+				Mbr_partition const &part = *_part_list[i];
 
 				xml.attribute("number",     i);
 				xml.attribute("start",      part.lba);
@@ -240,7 +257,7 @@ struct Block::Mbr_partition_table : public Block::Partition_table
 				xml.attribute("block_size", _info.block_size);
 
 				if (_mbr_valid)
-					xml.attribute("type", part.mbr_type);
+					xml.attribute("type", part.type);
 				else if (_ahdi_valid)
 					xml.attribute("type", "bgm");
 
