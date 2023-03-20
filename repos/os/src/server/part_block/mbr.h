@@ -19,7 +19,6 @@
 #define _PART_BLOCK__MBR_H_
 
 #include "partition_table.h"
-#include "ahdi.h"
 
 namespace Block {
 	struct Mbr_partition;
@@ -46,7 +45,7 @@ class Block::Mbr : public Partition_table
 {
 	public:
 
-		enum class Parse_result { MBR, PROTECTIVE_MBR, AHDI, DISK };
+		enum class Parse_result { MBR, PROTECTIVE_MBR, NO_MBR };
 
 	private:
 
@@ -107,10 +106,8 @@ class Block::Mbr : public Partition_table
 			}
 		};
 
-
 		enum { MAX_PARTITIONS = 32 };
 
-		/* contains pointers to valid partitions or 0 */
 		Constructible<Mbr_partition> _part_list[MAX_PARTITIONS];
 
 		template <typename FUNC>
@@ -170,25 +167,6 @@ class Block::Mbr : public Partition_table
 			return Parse_result::MBR;
 		}
 
-		/* state for partitions report */
-		bool _mbr_valid  { false };
-		bool _ahdi_valid { false };
-
-	public:
-
-		using Partition_table::Partition_table;
-
-		Partition &partition(long num) override
-		{
-			if (num < 0 || num > MAX_PARTITIONS)
-				throw -1;
-
-			if (!_part_list[num].constructed())
-				throw -1;
-
-			return *_part_list[num];
-		}
-
 		template <typename FN>
 		void _for_each_valid_partition(FN const &fn) const
 		{
@@ -197,52 +175,60 @@ class Block::Mbr : public Partition_table
 					fn(i);
 		};
 
+	public:
+
+		using Partition_table::Partition_table;
+
 		Parse_result parse()
 		{
 			Sync_read s(_handler, _alloc, 0, 1);
 
 			/* check for MBR */
 			Boot_record const mbr(s.addr<addr_t>());
-			_mbr_valid = mbr.valid();
-			if (_mbr_valid) {
-				return _parse_mbr(mbr, [&] (int i, Partition_record const &r, unsigned offset) {
-					log("MBR Partition ", i, ": LBA ",
-					    r.lba() + offset, " (",
-					    r.sectors(), " blocks) type: ",
-					    Hex(r.type(), Hex::OMIT_PREFIX));
+			if (!mbr.valid())
+				return Parse_result::NO_MBR;
 
-					if (!r.extended()) {
+			return _parse_mbr(mbr, [&] (int nr, Partition_record const &r, unsigned offset)
+			{
+				log("MBR Partition ", nr, ": LBA ",
+				    r.lba() + offset, " (",
+				    r.sectors(), " blocks) type: ",
+				    Hex(r.type(), Hex::OMIT_PREFIX));
 
-						block_number_t const lba = r.lba() + offset;
+				if (!r.extended()) {
 
-						/* probe for known file-system types */
-						enum { PROBE_BYTES = 4096, };
-						Sync_read fs(_handler, _alloc, lba , PROBE_BYTES / _info.block_size);
-						Fs::Type const fs_type =
-							Fs::probe(fs.addr<uint8_t*>(), PROBE_BYTES);
+					block_number_t const lba = r.lba() + offset;
 
-						_part_list[i].construct(lba, r.sectors(), fs_type, r.type());
-					}
-				});
-			}
+					/* probe for known file-system types */
+					enum { PROBE_BYTES = 4096, };
+					Sync_read fs(_handler, _alloc, lba , PROBE_BYTES / _info.block_size);
+					Fs::Type const fs_type =
+						Fs::probe(fs.addr<uint8_t*>(), PROBE_BYTES);
 
-			/* check for AHDI partition table */
-			_ahdi_valid = !_mbr_valid && Ahdi::valid(s);
-			if (_ahdi_valid) {
-				Ahdi::for_each_partition(s, [&] (unsigned i, Partition info) {
-					if (i < MAX_PARTITIONS)
-						_part_list[i].construct(info.lba, info.sectors, Fs::Type(), (uint8_t)0);
-				});
-				return Parse_result::AHDI;
-			}
+					_part_list[nr - 1].construct(lba, r.sectors(), fs_type, r.type());
+				}
+			});
+		}
 
-			/* no partition table, use whole disc as partition 0 */
-			if (!_mbr_valid && !_ahdi_valid) {
-				block_count_t block_count = _info.block_count - 1;
-				_part_list[0].construct(0, block_count, Fs::Type(), (uint8_t)0);
-			}
+		bool partition_valid(long num) const override
+		{
+			/* 1-based partition number to 0-based array index */
+			num -= 1;
 
-			return Parse_result::DISK;
+			if (num < 0 || num >= MAX_PARTITIONS)
+				return false;
+
+			return _part_list[num].constructed();
+		}
+
+		block_number_t partition_lba(long num) const override
+		{
+			return partition_valid(num) ? _part_list[num - 1]->lba : 0;
+		}
+
+		block_count_t  partition_sectors(long num) const override
+		{
+			return partition_valid(num) ? _part_list[num - 1]->sectors : 0;
 		}
 
 		void generate_report(Xml_generator &xml) const override
@@ -251,34 +237,21 @@ class Block::Mbr : public Partition_table
 			{
 				Mbr_partition const &part = *_part_list[i];
 
-				xml.attribute("number",     i);
+				xml.attribute("number",     i + 1);
 				xml.attribute("start",      part.lba);
 				xml.attribute("length",     part.sectors);
 				xml.attribute("block_size", _info.block_size);
-
-				if (_mbr_valid)
-					xml.attribute("type", part.type);
-				else if (_ahdi_valid)
-					xml.attribute("type", "bgm");
+				xml.attribute("type",       part.type);
 
 				if (part.fs_type.valid())
 					xml.attribute("file_system", part.fs_type);
 			};
 
-			xml.attribute("type", _mbr_valid  ? "mbr"  :
-			                      _ahdi_valid ? "ahdi" :
-			                                    "disk");
+			xml.attribute("type", "mbr");
 
-			if (_mbr_valid || _ahdi_valid) {
-				_for_each_valid_partition([&] (unsigned i) {
-					xml.node("partition", [&] {
-						gen_partition_attr(xml, i); }); });
-
-			} else {
-
+			_for_each_valid_partition([&] (unsigned i) {
 				xml.node("partition", [&] {
-					gen_partition_attr(xml, 0); });
-			}
+					gen_partition_attr(xml, i); }); });
 		}
 };
 

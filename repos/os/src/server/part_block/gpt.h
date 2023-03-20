@@ -29,11 +29,11 @@ namespace Block {
 struct Block::Gpt_partition : Partition
 {
 	using Uuid = String<40>;
-	Uuid guid { };
-	Uuid type { };
+	Uuid guid;
+	Uuid type;
 
 	using Name = String<72>; /* use GPT name entry length */
-	Name name { };
+	Name name;
 
 	Gpt_partition(block_number_t lba,
 	              block_count_t  sectors,
@@ -412,17 +412,25 @@ class Block::Gpt : public Block::Partition_table
 			return false;
 		}
 
-		Partition &partition(long num) override
+		bool partition_valid(long num) const override
 		{
+			/* 1-based partition number to 0-based array index */
 			num -= 1;
 
-			if (num < 0 || num > MAX_PARTITIONS)
-				throw -1;
+			if (num < 0 || num >= MAX_PARTITIONS)
+				return false;
 
-			if (!_part_list[num].constructed())
-				throw -1;
+			return _part_list[num].constructed();
+		}
 
-			return *_part_list[num];
+		block_number_t partition_lba(long num) const override
+		{
+			return partition_valid(num) ? _part_list[num - 1]->lba : 0;
+		}
+
+		block_count_t partition_sectors(long num) const override
+		{
+			return partition_valid(num) ? _part_list[num - 1]->sectors : 0;
 		}
 
 		void generate_report(Xml_generator &xml) const override

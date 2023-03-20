@@ -55,7 +55,9 @@ class Block::Partition_table : Interface, Noncopyable
 		                Session::Info       info)
 		: _handler(handler), _alloc(alloc), _info(info) { }
 
-		virtual Partition &partition(long num) = 0;
+		virtual bool           partition_valid(long num)   const = 0;
+		virtual block_number_t partition_lba(long num)     const = 0;
+		virtual block_count_t  partition_sectors(long num) const = 0;
 
 		virtual void generate_report(Xml_generator &xml) const = 0;
 };

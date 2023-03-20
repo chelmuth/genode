@@ -1,6 +1,7 @@
 /*
  * \brief  Poor man's partition probe for known file system
  * \author Josef Soentgen
+ * \author Christian Helmuth
  * \date   2018-05-03
  */
 

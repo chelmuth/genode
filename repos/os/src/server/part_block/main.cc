@@ -27,6 +27,8 @@
 
 #include "gpt.h"
 #include "mbr.h"
+#include "ahdi.h"
+#include "disk.h"
 
 namespace Block {
 	class  Session_component;
@@ -205,7 +207,7 @@ class Block::Session_component : public Rpc_object<Block::Session>,
 
 
 class Block::Main : Rpc_object<Typed_root<Session>>,
-                    Dispatch, Sync_read::Handler
+                    Dispatch, public Sync_read::Handler
 {
 	private:
 
@@ -228,7 +230,11 @@ class Block::Main : Rpc_object<Typed_root<Session>>,
 		Io_signal_handler<Main> _io_sigh  { _env.ep(), *this, &Main::_handle_io };
 		Mbr                     _mbr      { *this, _heap, _info };
 		Gpt                     _gpt      { *this, _heap, _info };
-		Partition_table        &_partition_table { _table() };
+		Ahdi                    _ahdi     { *this, _heap, _info };
+
+		Constructible<Disk> _disk { };
+
+		Partition_table & _partition_table { _table() };
 
 		enum { MAX_SESSIONS = 128 };
 		Session_component   *_sessions[MAX_SESSIONS] { };
@@ -331,10 +337,7 @@ class Block::Main : Rpc_object<Typed_root<Session>>,
 				throw Service_denied();
 			}
 
-			try {
-				_partition_table.partition(num);
-			}
-			catch (...) {
+			if (!_partition_table.partition_valid(num)) {
 				error("Partition ", num, " unavailable for '", label, "'");
 				throw Service_denied();
 			}
@@ -365,7 +368,7 @@ class Block::Main : Rpc_object<Typed_root<Session>>,
 
 			Session::Info info {
 				.block_size  = _block.info().block_size,
-				.block_count = _partition_table.partition(num).sectors,
+				.block_count = _partition_table.partition_sectors(num),
 				.align_log2  = 0,
 				.writeable   = writeable,
 			};
@@ -421,10 +424,9 @@ class Block::Main : Rpc_object<Typed_root<Session>>,
 
 		Response submit(long number, Request const &request, addr_t addr) override
 		{
-			Partition &partition = _partition_table.partition(number);
-			block_number_t last  = request.operation.block_number + request.operation.count;
+			block_number_t last = request.operation.block_number + request.operation.count;
 
-			if (last > partition.sectors)
+			if (last > _partition_table.partition_sectors(number))
 				return Response::REJECTED;
 
 			addr_t index = 0;
@@ -435,7 +437,7 @@ class Block::Main : Rpc_object<Typed_root<Session>>,
 			_job_queue.with_job(index, [&](Job_object &job) {
 
 				Operation op     = request.operation;
-				op.block_number += partition.lba;
+				op.block_number += _partition_table.partition_lba(number);
 
 				job.construct(_block, op, _job_registry, index, number, request, addr);
 			});
@@ -502,6 +504,7 @@ Block::Partition_table & Block::Main::_table()
 	bool valid_mbr  = false;
 	bool valid_gpt  = false;
 	bool pmbr_found = false;
+	bool valid_ahdi = false;
 	bool report     = false;
 
 	if (ignore_gpt && ignore_mbr) {
@@ -539,18 +542,20 @@ Block::Partition_table & Block::Main::_table()
 
 		switch (_mbr.parse()) {
 		case Parse_result::MBR:
-		case Parse_result::AHDI:
-		case Parse_result::DISK:
 			valid_mbr = true;
 			break;
 		case Parse_result::PROTECTIVE_MBR:
 			pmbr_found = true;
+			break;
+		case Parse_result::NO_MBR:
 			break;
 		}
 	}
 
 	if (!ignore_gpt)
 		valid_gpt = _gpt.parse();
+
+	valid_ahdi = _ahdi.parse();
 
 	/*
 	 * Both tables are valid (although we would have expected a PMBR in
@@ -562,7 +567,6 @@ Block::Partition_table & Block::Main::_table()
 		throw Ambiguous_tables();
 	}
 
-	/* PMBR missing, i.e, MBR part[0] contains whole disk and GPT valid */
 	if (valid_gpt && !pmbr_found) {
 		warning("will use GPT without proper protective MBR");
 	}
@@ -571,22 +575,27 @@ Block::Partition_table & Block::Main::_table()
 		warning("found protective MBR but GPT is to be ignored");
 	}
 
+	auto pick_final_table = [&] () -> Partition_table & {
+		if (valid_gpt)  return _gpt;
+		if (valid_mbr)  return _mbr;
+		if (valid_ahdi) return _ahdi;
+
+		/* fall back to entire disk in partition 0 */
+		_disk.construct(*this, _heap, _info);
+
+		return *_disk;
+	};
+
+	Partition_table &table = pick_final_table();
+
 	/* generate appropriate report */
-	if (_reporter.constructed())
+	if (_reporter.constructed()) {
 		_reporter->generate([&] (Xml_generator &xml) {
-			if (valid_gpt) _gpt.generate_report(xml);
-			if (valid_mbr) _mbr.generate_report(xml);
+			table.generate_report(xml);
 		});
+	}
 
-	/*
-	 * Return the appropriate table or abort if none is found.
-	 */
-
-	if (valid_gpt) return _gpt;
-	if (valid_mbr) return _mbr;
-
-	error("Aborting: no partition table found.");
-	throw No_partition_table();
+	return table;
 }
 
 void Component::construct(Genode::Env &env) { static Block::Main main(env); }
