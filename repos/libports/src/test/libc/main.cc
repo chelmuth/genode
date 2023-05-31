@@ -34,8 +34,30 @@ extern "C" {
 #include <unistd.h>
 }
 
+
+#include <base/log.h>
+#include <util/string.h>
+
+static int trace_logger_example()
+{
+	for (unsigned i = 0; ; ++i) {
+		sleep(1);
+
+		Genode::String<32> index { "-", i, "-" };
+
+		Genode::trace("-", index, "- trace");    /* generates trace item with timestamp  */
+		Genode::log("-", index, "- log");        /* may be intercepted by log_output policy */
+		printf("-%s- printf\n", index.string()); /* uses dedicated LOG connection in VFS */
+	}
+
+	return 0;
+}
+
+
 int main(int argc, char **argv)
 {
+	return trace_logger_example();
+
 	printf("--- libC test ---\n");
 
 	printf("Does printf work?\n");

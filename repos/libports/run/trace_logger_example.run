@@ -1,0 +1,99 @@
+#
+# Example for trace_logger usage with test-libc
+#
+# Notes
+#
+# - trace_logger <config>
+#   - increase 'period_sec' for longer uninterrupted tracing periods
+#   - increase 'session_arg_buffer' for comprehensive traces
+#   - adapt 'default_policy' to your needs
+#     null       - does nothing at general trace points
+#     log_output - captures log messages and generates trace items for each #     message
+#     rpc_name   - traces RPCs
+#   - uncomment <policy> nodes to select components/threads for tracing
+#
+# - repos/libports/src/test/libc/main.cc
+#   - test program enhanced by simple loop with potential trace points
+#     Genode::trace() - generates trace items if thread is traced
+#     Genode::log()   - converted trace items if thread is traced by log_output
+#     printf()        - can be traced indirectly via rpc_name (but is not captured)
+#
+# Documentation resources
+#
+# - repos/os/src/app/trace_logger/README
+# - https://genode.org/documentation/release-notes/22.05#Revised_tracing_facilities
+# - https://genodians.org/jschlatow/2022-08-29-trace-recorder
+
+build {
+	core init lib/ld timer
+	test/libc lib/posix
+	app/trace_logger trace/policy
+}
+
+create_boot_directory
+
+install_config {
+<config>
+	<parent-provides>
+		<service name="LOG"/>
+		<service name="PD"/>
+		<service name="CPU"/>
+		<service name="ROM"/>
+		<service name="TRACE"/>
+	</parent-provides>
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+	<default caps="200"/>
+
+	<start name="timer">
+		<resource name="RAM" quantum="1M"/>
+		<provides> <service name="Timer"/> </provides>
+	</start>
+
+	<start name="test-libc">
+		<resource name="RAM" quantum="400M"/>
+		<config>
+			<vfs> <dir name="dev"> <log/> <inline name="rtc">2019-08-20 15:01</inline> </dir> </vfs>
+			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
+		</config>
+	</start>
+
+	<start name="trace_logger">
+		<resource name="RAM" quantum="100M"/>
+		<config verbose="no"
+		        sc_time="yes"
+		        session_ram="90M"
+		        session_arg_buffer="1M"
+		        session_parent_levels="1"
+		        period_sec="10"
+		        default_policy="null"
+		        default_buffer="8K">
+
+			<!-- select subtree of components
+			<policy label_prefix="init -> test-libc"/>
+			-->
+			<!-- specific thread
+			<policy label_prefix="init -> test-libc" thread="ep"/>
+			-->
+			<!-- all components incl. core
+			<policy label_prefix=""/>
+			-->
+			<!-- kernel idle
+			<policy label_prefix="kernel" thread="idle"/>
+			-->
+			<!-- kernel all
+			<policy label_prefix="kernel"/>
+			-->
+		</config>
+	</start>
+
+</config>
+}
+
+build_boot_image [build_artifacts]
+
+append qemu_args "-nographic "
+
+run_genode_until forever
+
