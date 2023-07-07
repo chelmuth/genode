@@ -1,0 +1,154 @@
+assert_spec x86_64
+
+set build_components {
+	drivers/pin/pch
+	app/acpica
+}
+
+build $build_components
+
+create_boot_directory
+
+import_from_depot \
+	[depot_user]/src/[base_src] \
+	[depot_user]/src/report_rom \
+	[depot_user]/src/init \
+	[depot_user]/src/acpi_drv \
+	[depot_user]/src/pci_decode \
+	[depot_user]/src/platform_drv \
+	[depot_user]/src/acpi_event
+
+append config {
+<config prio_levels="4" verbose="yes">
+	<parent-provides>
+		<service name="LOG"/>
+		<service name="PD"/>
+		<service name="CPU"/>
+		<service name="ROM"/>
+		<service name="IO_MEM"/>
+		<service name="IO_PORT"/>
+		<service name="IRQ"/>
+		<service name="RM"/>
+	</parent-provides>
+
+	<default caps="100"/>
+
+	<default-route>
+		<any-service> <parent/> <any-child/> </any-service>
+	</default-route>
+
+	<start name="timer" priority="0">
+		<resource name="RAM" quantum="1M"/>
+		<provides> <service name="Timer"/> </provides>
+	</start>
+
+	<start name="drivers_reports" caps="100" priority="-1">
+		<binary name="report_rom"/>
+		<resource name="RAM" quantum="1M"/>
+		<provides>
+			<service name="Report"/>
+			<service name="ROM"/>
+		</provides>
+		<config verbose="no">
+			<policy label="pci_decode -> system" report="acpi_drv -> acpi"/>
+			<policy label="platform_drv -> devices" report="pci_decode -> devices"/>
+		</config>
+	</start>
+
+	<start name="acpi_drv" caps="350" priority="-1">
+		<resource name="RAM" quantum="4M"/>
+		<route>
+			<service name="Report"> <child name="drivers_reports"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
+
+	<start name="pci_decode" caps="350" priority="-1">
+		<resource name="RAM" quantum="1M"/>
+		<route>
+			<service name="ROM" label="system"> <child name="drivers_reports"/> </service>
+			<service name="Report"> <child name="drivers_reports"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
+
+	<start name="platform_drv" caps="400" managing_system="yes" priority="-1">
+		<resource name="RAM" quantum="4M"/>
+		<provides>
+			<service name="Platform"/>
+		</provides>
+		<config>
+			<report devices="yes"/>
+			<policy label_prefix="pc_pch_gpio_drv" info="yes">
+				<device name="INT34C5" type="acpi"/>
+			</policy>
+			<policy label_prefix="acpica">
+				<device name="acpi"/>
+			</policy>
+		</config>
+		<route>
+			<service name="ROM" label="devices"> <child name="drivers_reports"/> </service>
+			<service name="Report"> <child name="drivers_reports"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
+
+	<start name="pc_pch_gpio_drv" priority="-2" caps="120">
+		<resource name="RAM" quantum="8M"/>
+		<provides>
+			<service name="Pin_state"/>
+			<service name="Pin_control"/>
+			<service name="IRQ"/>
+		</provides>
+		<config>
+			<!-- PAD_CFG_DW0_GPPC_D_4 community 1 - 0x940 -->
+			<in name="lid" community="1" gpp="D" index="4" irq="edges" route="sci"/>
+
+			<policy label="acpica -> LID" pin="lid"/>
+		</config>
+	</start>
+
+	<start name="acpica" caps="200" priority="-3">
+		<resource name="RAM" quantum="8M"/>
+		<config ld_verbose="yes" reset="no" poweroff="no" report="yes" report_period_ms="0">
+			<gpio name="INT34C5"> <!-- Intel Tigerlake platform -->
+				<map iomem="0xfd6d0940" pin="LID"/> <!-- Fujitsu U4711, Fuji5b -->
+			</gpio>
+		</config>
+		<route>
+			<service name="ROM" label="system"> <child name="drivers_reports"/> </service>
+			<service name="Report">  <child name="acpi_state"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
+
+	<start name="acpi_state" caps="100" priority="-3">
+		<binary name="report_rom"/>
+		<resource name="RAM" quantum="2M"/>
+		<provides>
+			<service name="ROM" />
+			<service name="Report" />
+		</provides>
+		<config verbose="yes">
+			<policy label="acpi_event -> acpi_ac"      report="acpica -> acpi_ac"/>
+			<policy label="acpi_event -> acpi_battery" report="acpica -> acpi_battery"/>
+			<policy label="acpi_event -> acpi_ec"      report="acpica -> acpi_ec"/>
+			<policy label="acpi_event -> acpi_fixed"   report="acpica -> acpi_fixed"/>
+			<policy label="acpi_event -> acpi_lid"     report="acpica -> acpi_lid"/>
+			<policy label="acpi_event -> acpi_hid"     report="acpica -> acpi_hid"/>
+		</config>
+		<route>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+</config>
+}
+
+install_config $config
+
+build_boot_image [build_artifacts]
+
+run_genode_until forever
+
+# vi: set ft=tcl :
