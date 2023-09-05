@@ -1,8 +1,15 @@
 assert_spec x86_64
 
+proc kernel_output { } { return "novga logmem" }
+
 set build_components {
 	drivers/i2c_hid/pc
 	server/event_dump
+
+	app/log_core
+	drivers/framebuffer/boot
+	server/terminal_log
+	test/nitpicker
 }
 
 build $build_components
@@ -16,6 +23,8 @@ import_from_depot \
 	[depot_user]/src/acpi_drv \
 	[depot_user]/src/pci_decode \
 	[depot_user]/src/platform_drv \
+	[depot_user]/src/nitpicker \
+	[depot_user]/pkg/terminal \
 	[depot_user]/src/pc_i2c_hid_drv
 
 append config {
@@ -41,6 +50,81 @@ append config {
 		<provides> <service name="Timer"/> </provides>
 	</start>
 
+	<start name="boot_fb_drv" caps="1000">
+		<resource name="RAM" quantum="60M"/>
+		<config>
+			<report connectors="no"/>
+		</config>
+	</start>
+
+	<start name="nitpicker">
+		<resource name="RAM" quantum="2M"/>
+		<provides>
+			<service name="Gui"/> <service name="Capture"/> <service name="Event"/>
+		</provides>
+		<config>
+			<capture/> <event/>
+			<domain name="pointer" layer="1" content="client" label="no" origin="pointer" />
+			<domain name="overlay" layer="2" content="client" label="no" focus="click" hover="always" />
+			<domain name="default" layer="3" content="client" label="no" focus="click" hover="always" />
+			<policy label_prefix="pointer" domain="pointer"/>
+			<policy label_prefix="testnit" domain="overlay"/>
+			<default-policy domain="default"/>
+		</config>
+		<route> <any-service> <parent/> <any-child/> </any-service> </route>
+	</start>
+
+	<start name="testnit">
+		<resource name="RAM" quantum="2M"/>
+	</start>
+
+	<start name="pointer">
+		<resource name="RAM" quantum="2M"/>
+	</start>
+
+	<start name="terminal" caps="110">
+		<resource name="RAM" quantum="32M"/>
+		<provides><service name="Terminal"/></provides>
+		<route>
+			<service name="ROM" label="config"> <parent label="terminal.config"/> </service>
+			<service name="Gui"> <child name="nitpicker"/> </service>
+			<any-service> <parent/> <any-child/></any-service>
+		</route>
+	</start>
+
+	<start name="terminal_log">
+		<resource name="RAM" quantum="32M"/>
+		<provides> <service name="LOG"/> </provides>
+		<config/>
+		<route>
+			<service name="Terminal"> <child name="terminal"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+	<start name="log_kernel">
+		<binary name="log_core"/>
+		<resource name="RAM" quantum="10M"/>
+		<config period_ms="800"/>
+		<route>
+			<service name="ROM" label="log"> <parent label="kernel_log"/> </service>
+			<service name="Timer">           <child name="timer"/> </service>
+			<service name="LOG" label="log"> <child name="terminal_log" label="kernel"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
+	<start name="log_core">
+		<resource name="RAM" quantum="10M"/>
+		<config period_ms="800"/>
+		<route>
+			<service name="ROM" label="log"> <parent label="core_log"/> </service>
+			<service name="Timer">           <child name="timer"/> </service>
+			<service name="LOG" label="log"> <child name="terminal_log" label="core"/> </service>
+			<any-service> <parent/> </any-service>
+		</route>
+	</start>
+
 	<start name="drivers_reports" caps="100">
 		<binary name="report_rom"/>
 		<resource name="RAM" quantum="1M"/>
@@ -55,7 +139,7 @@ append config {
 	</start>
 
 	<start name="acpi_drv" caps="350">
-		<resource name="RAM" quantum="6M"/>
+		<resource name="RAM" quantum="16M"/>
 		<route>
 			<service name="Report"> <child name="drivers_reports"/> </service>
 			<any-service> <parent/> <any-child/> </any-service>
@@ -93,6 +177,10 @@ append config {
 	<start name="pc_i2c_hid_drv" priority="-1" caps="120">
 		<resource name="RAM" quantum="8M"/>
 		<config ld_verbose="yes"/>
+		<route>
+			<service name="Event"> <child name="nitpicker"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
 	</start>
 
 	<start name="event_dump">
