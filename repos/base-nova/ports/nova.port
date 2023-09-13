@@ -2,9 +2,9 @@ LICENSE   := GPLv2
 VERSION   := git
 DOWNLOADS := nova.git
 
-# r10 branch
-URL(nova) := https://github.com/alex-ab/NOVA.git
-REV(nova) := af3a087934e88f43ec2b8547d7195cf29b319cfa
+# atopia/4968-new-vmm-api-new branch
+URL(nova) := https://github.com/atopia/NOVA.git
+REV(nova) := 9057e01d62983c04f10355128896c168b320cf78
 DIR(nova) := src/kernel/nova
 
 PATCHES   := $(sort $(wildcard $(REP_DIR)/patches/*.patch))
