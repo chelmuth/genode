@@ -802,7 +802,13 @@ file copy [initial_config_file VERSION] [run_dir]/genode/VERSION
 # Generate build info as boot module
 #
 
-proc build_date { } { return [clock format [clock seconds] -format %Y-%m-%d] }
+proc build_date { } {
+	if {[info exists ::env(BUILD_DATE)]} {
+		return "$::env(BUILD_DATE)"
+	} else {
+		return [clock format [clock seconds] -format %Y-%m-%d]
+	}
+}
 
 proc genode_version { } {
 
