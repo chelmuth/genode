@@ -1,7 +1,7 @@
 /*
  * \brief  Intel Tigerlake PCH 500 GPIO driver
- * \author Norman Feske
- * \date   2021-04-14
+ * \author Alexander Böttcher
+ * \date   2023-07-07
  */
 
 /* Genode includes */
@@ -304,7 +304,7 @@ void Pio_driver::Main::_handle_config()
 		pin.update_from_xml(node, _pio);
 	};
 
-	update_list_model_from_xml(_pins, _config.xml(), create, destroy, update);
+	_pins.update_from_xml(_config.xml(), create, destroy, update);
 
 	/*
 	 * Re-assign sessions to pins
