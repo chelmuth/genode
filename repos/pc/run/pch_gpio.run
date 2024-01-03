@@ -3,6 +3,7 @@ assert_spec x86_64
 set build_components {
 	drivers/pin/pch
 	app/acpica
+	drivers/acpi
 }
 
 build $build_components
@@ -108,7 +109,7 @@ append config {
 		</config>
 	</start>
 
-	<start name="acpica" caps="200" priority="-3">
+	<start name="acpica" caps="400" priority="-3">
 		<resource name="RAM" quantum="8M"/>
 		<config ld_verbose="yes" reset="no" poweroff="no" report="yes" report_period_ms="0">
 			<gpio name="INT34C5"> <!-- Intel Tigerlake platform -->
