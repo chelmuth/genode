@@ -259,7 +259,7 @@ void Decorator::Window_stack::update_model(Genode::Xml_node root_node,
 
 	auto stack_back_most_window = [&] (Window_base &window) {
 
-		if (window.stacked())
+		if (window.back_most())
 			return;
 
 		if (new_front_most_window(window))
@@ -272,7 +272,7 @@ void Decorator::Window_stack::update_model(Genode::Xml_node root_node,
 
 	auto stack_window = [&] (Window_base &window, Window_base &neighbor) {
 
-		if (window.stacked() && window.in_front_of(neighbor))
+		if (window.in_front_of(neighbor))
 			return;
 
 		if (new_front_most_window(window))
