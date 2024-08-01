@@ -1,0 +1,17 @@
+board:        g1i
+deploy:       modular_sculpt_ubuntu_Slot_A
+gpu:          empty
+event_filter: modular_sculpt
+manager:      use_ram_fs
+network:      modular_sculpt
+platform:     g1i
+ram_fs:       modular_sculpt
+system:       pc
+usb:          Slot_A
+
+import: pkg/sculpt_drivers-pc
+import: pkg/pc_audio
+import: raw/vbox_files
+
+# options not referenced by deploy preset
+option: test-webcam
