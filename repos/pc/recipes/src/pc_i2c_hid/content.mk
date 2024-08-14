@@ -1,4 +1,4 @@
-MIRROR_FROM_REP_DIR := src/drivers/i2c_hid/pc \
+MIRROR_FROM_REP_DIR := src/driver/i2c_hid/pc \
                        src/lib/pc/lx_emul \
                        src/include
 

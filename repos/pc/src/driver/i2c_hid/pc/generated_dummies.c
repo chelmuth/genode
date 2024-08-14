@@ -1,7 +1,7 @@
 /*
  * \brief  Dummy definitions of Linux Kernel functions
  * \author Automatically generated file - do no edit
- * \date   2024-07-25
+ * \date   2024-08-14
  */
 
 #include <lx_emul.h>
@@ -171,8 +171,8 @@ struct file * anon_inode_getfile(const char * name,const struct file_operations 
 }
 
 
-extern void arch_trigger_cpumask_backtrace(const cpumask_t * mask,bool exclude_self);
-void arch_trigger_cpumask_backtrace(const cpumask_t * mask,bool exclude_self)
+extern void arch_trigger_cpumask_backtrace(const cpumask_t * mask,int exclude_cpu);
+void arch_trigger_cpumask_backtrace(const cpumask_t * mask,int exclude_cpu)
 {
 	lx_emul_trace_and_stop(__func__);
 }
@@ -266,9 +266,57 @@ const struct cpumask * cpu_clustergroup_mask(int cpu)
 }
 
 
+#include <linux/cpumask.h>
+
+unsigned int cpumask_any_and_distribute(const struct cpumask * src1p,const struct cpumask * src2p)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <linux/sched/topology.h>
+
+bool cpus_share_cache(int this_cpu,int that_cpu)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <drm/drm_panel.h>
+
+bool drm_is_panel_follower(struct device * dev)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <drm/drm_panel.h>
+
+int drm_panel_add_follower(struct device * follower_dev,struct drm_panel_follower * follower)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <drm/drm_panel.h>
+
+void drm_panel_remove_follower(struct drm_panel_follower * follower)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
 #include <linux/printk.h>
 
 asmlinkage __visible void dump_stack(void)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <linux/printk.h>
+
+asmlinkage __visible void dump_stack_lvl(const char * log_lvl)
 {
 	lx_emul_trace_and_stop(__func__);
 }
@@ -282,8 +330,7 @@ void emergency_restart(void)
 }
 
 
-#include <linux/file.h>
-
+extern void fd_install(unsigned int fd,struct file * file);
 void fd_install(unsigned int fd,struct file * file)
 {
 	lx_emul_trace_and_stop(__func__);
@@ -375,11 +422,6 @@ long __sched io_schedule_timeout(long timeout)
 }
 
 
-#include <linux/swiotlb.h>
-
-struct io_tlb_mem io_tlb_default_mem;
-
-
 #include <linux/iommu.h>
 
 void iommu_device_unuse_default_domain(struct device * dev)
@@ -423,6 +465,11 @@ int kobject_synth_uevent(struct kobject * kobj,const char * buf,size_t count)
 {
 	lx_emul_trace_and_stop(__func__);
 }
+
+
+#include <linux/delay.h>
+
+unsigned long loops_per_jiffy;
 
 
 #include <linux/fs.h>
@@ -489,6 +536,20 @@ void put_unused_fd(unsigned int fd)
 #include <linux/rational.h>
 
 void rational_best_approximation(unsigned long given_numerator,unsigned long given_denominator,unsigned long max_numerator,unsigned long max_denominator,unsigned long * best_numerator,unsigned long * best_denominator)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+extern void raw_spin_rq_lock_nested(struct rq * rq,int subclass);
+void raw_spin_rq_lock_nested(struct rq * rq,int subclass)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+extern void raw_spin_rq_unlock(struct rq * rq);
+void raw_spin_rq_unlock(struct rq * rq)
 {
 	lx_emul_trace_and_stop(__func__);
 }
@@ -571,6 +632,25 @@ int seq_release(struct inode * inode,struct file * file)
 }
 
 
+extern void set_rq_offline(struct rq * rq);
+void set_rq_offline(struct rq * rq)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+extern void set_rq_online(struct rq * rq);
+void set_rq_online(struct rq * rq)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <linux/smp.h>
+
+unsigned int setup_max_cpus;
+
+
 #include <linux/sched/debug.h>
 
 void show_state_filter(unsigned int state_filter)
@@ -605,6 +685,13 @@ bool static_key_initialized;
 int suppress_printk;
 
 
+extern struct gpio_desc * swnode_find_gpio(struct fwnode_handle * fwnode,const char * con_id,unsigned int idx,unsigned long * flags);
+struct gpio_desc * swnode_find_gpio(struct fwnode_handle * fwnode,const char * con_id,unsigned int idx,unsigned long * flags)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
 #include <linux/rcupdate.h>
 
 void synchronize_rcu(void)
@@ -635,6 +722,13 @@ void unregister_handler_proc(unsigned int irq,struct irqaction * action)
 
 extern void unregister_irq_proc(unsigned int irq,struct irq_desc * desc);
 void unregister_irq_proc(unsigned int irq,struct irq_desc * desc)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+extern void update_group_capacity(struct sched_domain * sd,int cpu);
+void update_group_capacity(struct sched_domain * sd,int cpu)
 {
 	lx_emul_trace_and_stop(__func__);
 }

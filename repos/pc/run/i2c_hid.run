@@ -1,7 +1,7 @@
 assert_spec x86_64
 
 set build_components {
-	drivers/i2c_hid/pc
+	driver/i2c_hid/pc
 	server/event_dump
 }
 

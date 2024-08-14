@@ -15,6 +15,7 @@ drivers/base/pinctrl.c
 drivers/base/platform.c
 drivers/base/property.c
 drivers/base/regmap/regcache-flat.c
+drivers/base/regmap/regcache-maple.c
 drivers/base/regmap/regcache-rbtree.c
 drivers/base/regmap/regcache.c
 drivers/base/regmap/regmap.c
@@ -107,6 +108,7 @@ lib/kobject.c
 lib/kstrtox.c
 lib/list_sort.c
 lib/llist.c
+lib/maple_tree.c
 lib/math/reciprocal_div.c
 lib/radix-tree.c
 lib/rbtree.c
