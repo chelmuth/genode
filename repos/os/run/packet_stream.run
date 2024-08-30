@@ -1,0 +1,96 @@
+create_boot_directory
+
+import_from_depot [depot_user]/src/[base_src] \
+                  [depot_user]/src/init \
+                  [depot_user]/src/libc \
+                  [depot_user]/src/pc_rtc \
+                  [depot_user]/src/sandbox \
+                  [depot_user]/src/stdcxx \
+                  [depot_user]/src/vfs
+
+build { test/packet_stream }
+
+install_config {
+<config prio_levels="2" verbose="yes">
+  <parent-provides>
+    <service name="ROM"/>
+    <service name="RAM"/>
+    <service name="IRQ"/>
+    <service name="PD"/>
+    <service name="RM"/>
+    <service name="CPU"/>
+    <service name="LOG"/>
+    <service name="IO_MEM"/>
+    <service name="IO_PORT"/>
+    <service name="TRACE"/>
+  </parent-provides>
+
+  <resource name="RAM" preserve="8M"/>
+  <affinity-space width="4" height="2"/>
+  <default caps="100"/>
+
+  <start name="timer">
+    <resource name="RAM" quantum="4M"/>
+    <provides>
+      <service name="Timer"/>
+    </provides>
+    <route>
+      <service name="LOG">    <parent/> </service>
+      <service name="PD">     <parent/> </service>
+      <service name="CPU">    <parent/> </service>
+      <service name="ROM">    <parent/> </service>
+    </route>
+  </start>
+
+  <start name="pc_rtc" caps="200" >
+    <resource name="RAM" quantum="2M"/>
+    <provides> <service name="Rtc"/> </provides>
+    <route>
+      <service name="LOG">    <parent/> </service>
+      <service name="PD">     <parent/> </service>
+      <service name="CPU">    <parent/> </service>
+      <service name="ROM">    <parent/> </service>
+    </route>
+  </start>
+
+  <start name="test-packet_stream-server" caps="2000">
+    <resource name="RAM" quantum="128M"/>
+    <affinity xpos="1" ypos="0" width="1" height="1"/>
+    <provides>
+      <service name="Test"/>
+    </provides>
+    <route>
+      <service name="Timer">  <child name="timer"/> </service>
+      <service name="LOG">    <parent/> </service>
+      <service name="PD">     <parent/> </service>
+      <service name="CPU">    <parent/> </service>
+      <service name="ROM">    <parent/> </service>
+    </route>
+  </start>
+
+  <start name="test-packet_stream-client" caps="1000">
+    <resource name="RAM" quantum="256M"/>
+    <affinity xpos="3" ypos="1" width="1" height="1"/>
+    <config>
+      <libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
+      <vfs>
+        <dir name="dev"> <log/> <rtc/> </dir>
+      </vfs>
+    </config>
+    <route>
+      <service name="Test">   <child name="test-packet_stream-server"/> </service>
+      <service name="Timer">  <child name="timer"/> </service>
+      <service name="Rtc">    <child name="pc_rtc"/> </service>
+      <service name="ROM">    <parent/> </service>
+      <service name="CPU">    <parent/> </service>
+      <service name="PD">     <parent/> </service>
+      <service name="LOG">    <parent/> </service>
+    </route>
+  </start>
+
+</config>
+}
+
+build_boot_image [build_artifacts]
+
+run_genode_until forever
