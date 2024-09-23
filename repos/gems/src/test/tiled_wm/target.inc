@@ -8,6 +8,9 @@ QT5_GENODE_LIBS_APP += ld.lib.so
 
 qmake_prepared.tag: $(addprefix build_dependencies/lib/,$(QT5_GENODE_LIBS_APP))
 
+# TODO move to libc
+INC_DIR += $(call select_from_repositories,src/lib/libc)
+
 #
 # We need Qt headers in a local directory for MOC to work correctly
 #

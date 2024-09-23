@@ -40,6 +40,56 @@ using Name = Genode::String<32>;
 
 
 /*
+ * TODO move to libc
+ */
+
+#include <base/entrypoint.h>
+
+/* libc internal */
+#include <internal/thread_create.h> /* Libc::pthread_create() */
+
+namespace Libc {
+	class Entrypoint;
+
+	using namespace Genode;
+}
+
+class Libc::Entrypoint : public Genode::Entrypoint
+{
+	private:
+
+		Blockade _construction_finalized { };
+
+		pthread_t _pthread { };
+
+		void _finalize_construction()
+		{
+			Thread &myself = *Thread::myself();
+
+			int dummy = 0;
+			Libc::pthread_create_from_thread(&_pthread, myself, &dummy);
+
+			_construction_finalized.wakeup();
+		}
+
+		Signal_handler<Entrypoint> _finalize_construction_sigh {
+			*this, *this, &Entrypoint::_finalize_construction };
+
+	public:
+
+		Entrypoint(Env &env, size_t stack_size, char const *name,
+		           Affinity::Location location)
+		:
+			Genode::Entrypoint(env, stack_size, name, location)
+		{
+			Signal_transmitter(_finalize_construction_sigh).submit();
+
+			_construction_finalized.block();
+		}
+};
+
+
+/*
  * Genode signal to queued Qt signal proxy
  */
 class Genode_signal_proxy : public QObject,
