@@ -99,7 +99,7 @@ class Genode_signal_proxy : public QObject,
 
 	public:
 
-		Genode_signal_proxy(Genode::Entrypoint &sig_ep)
+		Genode_signal_proxy(Libc::Entrypoint &sig_ep)
 		:
 			Genode::Signal_handler<Genode_signal_proxy>(
 				sig_ep, *this, &Genode_signal_proxy::handle_genode_signal)

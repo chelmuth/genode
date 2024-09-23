@@ -91,7 +91,7 @@ void App_bar::_handle_apps()
 }
 
 
-App_bar::App_bar(Genode::Env &env, Genode::Entrypoint &sig_ep)
+App_bar::App_bar(Genode::Env &env, Libc::Entrypoint &sig_ep)
 :
 	_apps(env, "apps"), _content_request(env, "content_request"),
 	_apps_proxy(sig_ep)
@@ -121,7 +121,7 @@ void Panel::_wifi_toggled(bool checked)
 }
 
 
-Panel::Panel(Genode::Env &env, Genode::Entrypoint &sig_ep)
+Panel::Panel(Genode::Env &env, Libc::Entrypoint &sig_ep)
 :
 	_overlay(env, "overlay"), _overlay_request(env, "overlay_request"),
 	_panel_button("Panel"), _app_bar(env, sig_ep)

@@ -21,8 +21,8 @@ struct Main
 {
 	Libc::Env &env;
 
-	Genode::Entrypoint signal_ep { env, 0x4000, "signal ep",
-	                               Genode::Affinity::Location() };
+	Libc::Entrypoint signal_ep { env, 0x4000, "signal ep",
+	                             Genode::Affinity::Location() };
 
 	QApplication &app { qt5_initialization(env) };
 
