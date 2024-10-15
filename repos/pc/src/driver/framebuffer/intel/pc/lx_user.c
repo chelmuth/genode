@@ -723,7 +723,7 @@ static bool reconfigure(struct drm_client_dev * const dev)
 				                      mode, fb, connector);
 			}
 
-			/* convert kernel internal mode to user mode expectecd via ioctl */
+			/* convert kernel internal mode to user mode expected via ioctl */
 			drm_mode_convert_to_umode(&user_mode, mode);
 
 			/* assign fb & connector to crtc with specified mode */
@@ -759,7 +759,7 @@ static bool reconfigure(struct drm_client_dev * const dev)
 			       conf_mode.mirror ? " mirror  " : " discrete",
 			       mode->hdisplay, mode->vdisplay, drm_mode_vrefresh(mode),
 			       drm_mode_vrefresh(mode) < 100 ? " ": "",
-			       framebuffer.hdisplay, framebuffer.vdisplay,
+			       fb_info.var.xres, fb_info.var.yres,
 			       (err || no_match) ? "" : "\n");
 
 			if (no_match)

@@ -69,6 +69,7 @@ struct Framebuffer::Driver
 
 		Space::Element            id_element;
 		Signal_handler<Connector> capture_wakeup;
+		Signal_handler<Connector> screen_size_changed;
 
 		addr_t        base      { };
 		Capture::Area size      { };
@@ -81,8 +82,20 @@ struct Framebuffer::Driver
 		Connector(Env &env, Space &space, Id id)
 		:
 			id_element(*this, space, id),
-			capture_wakeup(env.ep(), *this, &Connector::wakeup_handler)
+			capture_wakeup     (env.ep(), *this, &Connector::wakeup_handler),
+			screen_size_changed(env.ep(), *this, &Connector::size_handler)
 		{ }
+
+		void size_handler()
+		{
+			if (!capture.constructed() || !screen.constructed())
+				return;
+
+			if (base)
+				memset((void *)base, 0, size_phys.count() * 4);
+
+			wakeup_handler();
+		}
 
 		void wakeup_handler()
 		{
@@ -143,7 +156,8 @@ struct Framebuffer::Driver
 			conn.capture.construct(env, label);
 			conn.screen .construct(*conn.capture, env.rm(), attr);
 
-			conn.capture->wakeup_sigh(conn.capture_wakeup);
+			conn.capture->wakeup_sigh     (conn.capture_wakeup);
+			conn.capture->screen_size_sigh(conn.screen_size_changed);
 		} else {
 			conn.screen .destruct();
 			conn.capture.destruct();
@@ -346,6 +360,7 @@ void Framebuffer::Driver::generate_report()
 
 			xml.node("merge", [&] () {
 				node.with_optional_sub_node("merge", [&](auto const &merge) {
+					xml.attribute("name=", merge_label);
 					with_force(merge, [&](unsigned width, unsigned height) {
 						xml.attribute("width",  width);
 						xml.attribute("height", height);
