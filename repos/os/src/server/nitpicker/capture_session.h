@@ -266,8 +266,10 @@ class Nitpicker::Capture_session : public Session_object<Capture::Session>
 
 				if (i < Affected_rects::NUM_RECTS) {
 					Rect const translated(rect.p1() - _anchor_point() - pos, rect.area);
-					Rect const clipped = Rect::intersect(translated, buffer_rect);
-					affected.rects[i++] = clipped;
+					Rect const clipped = Rect::intersect({ Point(), screen_size() },
+					                     Rect::intersect(translated, buffer_rect));
+					if (clipped.valid())
+						affected.rects[i++] = clipped;
 				}
 			});
 
