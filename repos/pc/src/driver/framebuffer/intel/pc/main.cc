@@ -91,6 +91,8 @@ struct Framebuffer::Driver
 			if (!capture.constructed() || !screen.constructed())
 				return;
 
+			size = capture->screen_size();
+
 			if (base)
 				memset((void *)base, 0, size_phys.count() * 4);
 
@@ -120,7 +122,7 @@ struct Framebuffer::Driver
 
 			Surface<Pixel> surface((Pixel*)connector.base, connector.size_phys);
 
-			auto box = connector.screen->apply_to_surface(surface);
+			auto box = connector.screen->apply_to_surface(surface, connector.size);
 
 			if (box.valid())
 				dirty = true;
@@ -158,6 +160,8 @@ struct Framebuffer::Driver
 
 			conn.capture->wakeup_sigh     (conn.capture_wakeup);
 			conn.capture->screen_size_sigh(conn.screen_size_changed);
+
+			conn.size = conn.capture->screen_size();
 		} else {
 			conn.screen .destruct();
 			conn.capture.destruct();

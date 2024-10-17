@@ -124,7 +124,7 @@ class Capture::Connection::Screen
 
 		void with_texture(auto const &fn) const { fn(_texture); }
 
-		Rect apply_to_surface(Surface<Pixel> &surface)
+		Rect apply_to_surface(Surface<Pixel> &surface, Area screen_size = Area())
 		{
 			Rect bounding_box { };
 
@@ -134,7 +134,10 @@ class Capture::Connection::Screen
 
 			with_texture([&] (Texture<Pixel> const &texture) {
 
-				affected.for_each_rect([&] (Capture::Rect const rect) {
+				affected.for_each_rect([&] (Capture::Rect rect) {
+
+					if (screen_size.valid())
+						rect = Rect::intersect({ Point(), screen_size }, rect);
 
 					surface.clip(rect);
 
