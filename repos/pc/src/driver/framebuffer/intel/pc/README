@@ -3,16 +3,17 @@ This driver is for Intel i915 compatible graphic cards.
 Default behaviour
 ~~~~~~~~~~~~~~~~~
 
-When no configuration is provided to the driver, it will enable all connectors
-with attached displays and allocate for each display a discrete framebuffer.
-It will use the highest resolution as provided by the BIOS or EDID information.
-For each connector a separate Capture connection will be requested labeled
-according to the connector name.  When newly connected displays are detected
-by the driver, the new connectors are enabled and another Capture session
-labeled according to the connector will be requested.
+When no configuration is provided to the driver, it will enable all
+connectors with attached displays in non-discrete mode (see below). It will
+use the preferred resolution as provided by the BIOS or EDID information if
+available or fall back to the highest rsolution. For each discrete connector
+a separate Capture connection will be requested labeled according to the
+connector name.  When newly connected displays are detected by the driver,
+the new connectors are enabled and another Capture session labeled according
+to the connector will be requested.
 
 By default, on hotplug of a display, the current config of the driver will be
-re-parsed and re-applied.  This behaviour can be disabled by
+re-parsed and re-applied. This behaviour can be disabled by
 
 ! <config apply_on_hotplug="no"/>
 
@@ -44,7 +45,7 @@ The exported report has the following format:
 !   <connector name="HDMI-A-1" connected="false"/>
 ! </connectors>
 
-The physical dimension of the display is reported as width_mm and height_mm
+The physical dimension of the display is reported as 'width_mm' and 'height_mm'
 in millimeter per connector and if available, also per mode. The values can
 be used as input to DPI calculations. The currently used mode of the connector
 is tagged in the report explicitly.
