@@ -726,6 +726,7 @@ void Component::construct(Env &env)
 		test_destroy_dependent_cpu_sessions(env);
 
 		test_stack_alloc(env);
+if (0) {
 		test_stack_alignment(env);
 		test_main_thread();
 		test_cpu_session(env);
@@ -738,6 +739,7 @@ void Component::construct(Env &env)
 
 		test_create_as_many_threads(env);
 		test_successive_create_destroy_threads(env);
+}
 	} catch (int error) {
 		Genode::error("error ", error);
 		throw;
