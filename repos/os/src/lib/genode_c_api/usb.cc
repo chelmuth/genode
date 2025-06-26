@@ -1177,6 +1177,13 @@ Session_component::_acquire(genode_usb_device::Label const &name, bool controls)
 void Session_component::_release(Device_component &dc)
 {
 	genode_usb_device::Label name = dc._device_label;
+
+	_devices.apply(
+		[&] (genode_usb_device & device) {
+			return device.label() == name; },
+		[&] (genode_usb_device & device) {
+			_release_fn(device.bus, device.dev); });
+
 	destroy(_heap, &dc);
 
 	_devices.apply(
@@ -1525,14 +1532,7 @@ Session_component::~Session_component()
 {
 	_state = IN_DESTRUCTION;
 	_device_sessions.for_each([&] (Device_component & dc) {
-		_devices.apply(
-			[&] (genode_usb_device & device) {
-				return device.label() == dc._device_label; },
-			[&] (genode_usb_device & device) {
-				_release_fn(device.bus, device.dev); });
-
-		_release(dc);
-	});
+		_release(dc); });
 }
 
 
