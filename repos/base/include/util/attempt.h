@@ -80,6 +80,15 @@ class Genode::Attempt
 				fail_fn(_error);
 		}
 
+		[[noreturn]] static void missing_check_for_failed();
+
+		[[nodiscard]] ERROR error() const
+		{
+			if (failed()) return _error;
+
+			missing_check_for_failed();
+		}
+
 		bool operator == (ERROR const &rhs) const {
 			return failed() && (_error == rhs); }
 
@@ -150,6 +159,15 @@ class Genode::Unique_attempt : Noncopyable
 		{
 			if (!_result.constructed())
 				fail_fn(_error);
+		}
+
+		[[noreturn]] static void missing_check_for_failed();
+
+		[[nodiscard]] ERROR error() const
+		{
+			if (failed()) return _error;
+
+			missing_check_for_failed();
 		}
 
 		bool operator == (ERROR const &rhs) const {
