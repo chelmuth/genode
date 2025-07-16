@@ -20,6 +20,8 @@
 
 using namespace Genode;
 
+static volatile int _spinlock_state = SPINLOCK_UNLOCKED;
+
 
 static inline Genode::Thread *invalid_thread_base()
 {
@@ -164,7 +166,6 @@ void Lock::unlock()
 
 Lock::Lock(Lock::State initial)
 :
-	_spinlock_state(SPINLOCK_UNLOCKED),
 	_state(UNLOCKED),
 	_last_applicant(0),
 	_owner(invalid_thread_base())

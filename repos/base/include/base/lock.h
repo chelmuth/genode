@@ -56,12 +56,6 @@ class Genode::Lock
 				bool operator != (Applicant &a) { return _thread_base != a.thread_base(); }
 		};
 
-		/*
-		 * Note that modifications of the applicants queue must be performed
-		 * atomically. Hence, we use the additional spinlock here.
-		 */
-
-		volatile int _spinlock_state = 0;
 		volatile int _state          = 0;
 
 		Applicant * volatile _last_applicant = nullptr;
