@@ -8,13 +8,14 @@ if {[get_cmd_switch --autopilot] && ![have_include "power_on/qemu"]} {
 	exit 0
 }
 
-proc usb_device_label {} { return "usb-1-2" }
+proc usb_device_label {} { return "usb-2-2" }
 
 create_boot_directory
 import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/pkg/test_usb_host_drv-[board] \
                   [depot_user]/src/report_rom \
                   [depot_user]/src/usb_block_drv \
+                  [depot_user]/src/part_block \
                   [depot_user]/src/init
 
 build { app/block_tester }
@@ -66,7 +67,7 @@ install_config {
 	<start name="usb_block_drv">
 		<resource name="RAM" quantum="4M"/>
 		<provides> <service name="Block"/> </provides>
-		<config report="yes" writeable="no"/>
+		<config report="yes" writeable="yes"/>
 		<route>
 			<service name="Usb"> <child name="usb_drv" label="} [usb_device_label] {"/> </service>
 			<service name="Report"> <child name="report_rom"/> </service>
@@ -74,18 +75,30 @@ install_config {
 		</route>
 	</start>
 
+	<start name="part_block">
+		<resource name="RAM" quantum="16M"/>
+		<provides> <service name="Block"/> </provides>
+		<config>
+			<policy label="1" partition="1" writeable="yes"/>
+			<policy label="2" partition="2" writeable="yes"/>
+			<policy label="3" partition="3" writeable="yes"/>
+		</config>
+		<route>
+			<service name="Block"> <child name="usb_block_drv"/> </service>
+			<any-service> <parent/> <any-child/> </any-service>
+		</route>
+	</start>
 	<start name="block_tester">
 		<resource name="RAM" quantum="64M" />
 		<config verbose="no" report="no" log="yes" stop_on_error="no">
 			<tests>
-				<sequential length="8M" size="1M" io_buffer="8M" batch="4"/>
-
-				<!-- enable 'writeable="yes"' at usb_block_drv for write test -->
-				<!-- <sequential write="yes" start="4000" length="2M" size="1M" io_buffer="8M" batch="4"/> -->
+				<sequential write="no"  length="32M" size="1M" io_buffer="8M" batch="4"/>
+				<sequential write="yes" length="32M" size="1M" io_buffer="8M" batch="4"/>
+				<sequential write="no"  length="32M" size="1M" io_buffer="8M" batch="4"/>
 			</tests>
 		</config>
 		<route>
-			<service name="Block"> <child name="usb_block_drv"/> </service>
+			<service name="Block"> <child name="part_block" label="1"/> </service>
 			<any-service> <parent/> <any-child/> </any-service>
 		</route>
 	</start>
@@ -95,7 +108,7 @@ install_config {
 # Define USB host controller config
 #
 set fd [open [run_dir]/genode/usb_host_drv.config w]
-puts $fd { <config> <default-policy class="0x8"/> </config> }
+puts $fd { <config bios_handoff="no"> <default-policy class="0x8"/> </config> }
 close $fd
 
 build_boot_image [build_artifacts]
