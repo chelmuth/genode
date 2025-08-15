@@ -1,14 +1,14 @@
 LICENSE   := PublicDomain
-VERSION   := 3490200
+VERSION   := 3500400
 DOWNLOADS := sqlite.archive speedtest.file
 
 # don't forget to bump the year in the url!
 URL(sqlite) := https://sqlite.org/2025/sqlite-amalgamation-$(VERSION).zip
-SHA(sqlite) := 921fc725517a694df7df38a2a3dfede6684024b5788d9de464187c612afb5918
+SHA(sqlite) := 1d3049dd0f830a025a53105fc79fd2ab9431aea99e137809d064d8ee8356b032
 DIR(sqlite) := src/lib/sqlite
 
-URL(speedtest) := https://raw.githubusercontent.com/sqlite/sqlite/version-3.49.2/test/speedtest1.c
-SHA(speedtest) := ae0b359792df2339590cac985228875ebdabb73c2c45a2d6c4a79600fb19f8c7
+URL(speedtest) := https://raw.githubusercontent.com/sqlite/sqlite/version-3.50.4/test/speedtest1.c
+SHA(speedtest) := f495cd1c3f727ebf6270d967b43f11a14304053ae4532d6338dbfea65c1a5a78
 NAME(speedtest) := src/lib/sqlite/speedtest1.c
 
 UNZIP_OPT(sqlite) := -j

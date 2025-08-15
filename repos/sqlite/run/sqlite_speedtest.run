@@ -29,8 +29,8 @@ install_config {
 		<resource name="RAM" quantum="1M"/>
 		<provides> <service name="Timer"/> </provides>
 	</start>
-	<start name="test-sqlite_speedtest" caps="200">
-		<resource name="RAM" quantum="128M"/>
+	<start name="test-sqlite_speedtest" caps="240">
+		<resource name="RAM" quantum="512M"/>
 		<config>
 			<libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/rtc"/>
 			<vfs>
@@ -42,6 +42,7 @@ install_config {
 			</vfs>
 			<arg value="speedtest"/>
 			<arg value="--verify"/>
+			<arg value="--testset"/> <arg value="main"/>
 		</config>
 	</start>
 </config>
