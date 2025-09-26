@@ -1,7 +1,7 @@
 /*
  * \brief  Dummy definitions of Linux Kernel functions
  * \author Automatically generated file - do no edit
- * \date   2025-09-16
+ * \date   2025-09-26
  */
 
 #include <lx_emul.h>
@@ -627,30 +627,6 @@ enum reboot_mode reboot_mode;
 #include <linux/proc_fs.h>
 
 void remove_proc_entry(const char * name,struct proc_dir_entry * parent)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
-#include <linux/sched/rt.h>
-
-void rt_mutex_post_schedule(void)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
-#include <linux/sched/rt.h>
-
-void rt_mutex_pre_schedule(void)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
-#include <linux/sched/rt.h>
-
-void rt_mutex_schedule(void)
 {
 	lx_emul_trace_and_stop(__func__);
 }

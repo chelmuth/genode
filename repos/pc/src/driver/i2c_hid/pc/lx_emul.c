@@ -40,7 +40,7 @@ void cdev_init(struct cdev * cdev, const struct file_operations * fops) { }
 
 int task_work_add(struct task_struct * task,struct callback_head * work,enum task_work_notify_mode notify)
 {
-	printk("%s: task: %p work: %p notify: %u\n", __func__, task, work, notify);
+	printk("%s: task: %px work: %px notify: %u\n", __func__, task, work, notify);
 	return -1;
 }
 
@@ -87,4 +87,28 @@ struct clk_lookup *clkdev_create(struct clk *clk, const char *con_id, const char
 int pci_irq_vector(struct pci_dev * dev,unsigned int nr)
 {
 	return dev->irq;
+}
+
+
+#include <linux/sched/rt.h>
+
+void rt_mutex_pre_schedule(void)
+{
+	/* sched_submit_work(current); */
+}
+
+
+void rt_mutex_post_schedule(void)
+{
+	/* sched_update_worker(current); */
+}
+
+
+void rt_mutex_schedule(void)
+{
+	do {
+		preempt_disable();
+		schedule();
+		sched_preempt_enable_no_resched();
+	} while (need_resched());
 }
