@@ -533,7 +533,9 @@ class Genode::Child : protected Rpc_object<Parent>,
 					return to.cap(Cap_quota());
 				}
 
-				void wakeup() override { _service.wakeup(); }
+				void wakeup() override {
+			log(__FILE__, " ", __LINE__);
+					_service.wakeup(); }
 
 				bool operator == (Service const &other) const override
 				{

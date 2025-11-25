@@ -39,6 +39,7 @@ struct Formatted_phase
 		case State::UPGRADE_REQUESTED:      print(output, "UPGRADE_REQUESTED");      break;
 		case State::CLOSE_REQUESTED:        print(output, "CLOSE_REQUESTED");        break;
 		case State::CLOSED:                 print(output, "CLOSED");                 break;
+		case State::DESTROYED:              print(output, "!!!DESTROYED!!!");        break;
 		}
 	}
 };
@@ -106,6 +107,7 @@ void Session_state::generate_session_request(Generator &g) const
 	case AVAILABLE:
 	case CAP_HANDED_OUT:
 	case CLOSED:
+	case DESTROYED:
 		break;
 	}
 }

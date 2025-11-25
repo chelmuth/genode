@@ -91,7 +91,8 @@ class Genode::Session_state : public Parent::Client, public Parent::Server
 		             CAP_HANDED_OUT,
 		             UPGRADE_REQUESTED,
 		             CLOSE_REQUESTED,
-		             CLOSED };
+		             CLOSED,
+		             DESTROYED = 111 };
 
 		/**
 		 * If set, the server responds asynchronously to the session request.
@@ -144,6 +145,8 @@ class Genode::Session_state : public Parent::Client, public Parent::Server
 		{
 			if (id_at_parent.constructed())
 				error("dangling session in parent-side ID space: ", *this);
+
+			phase = DESTROYED;
 		}
 
 		Service       &service()       { return _service; }
@@ -201,6 +204,7 @@ class Genode::Session_state : public Parent::Client, public Parent::Server
 			case INSUFFICIENT_RAM_QUOTA:
 			case INSUFFICIENT_CAP_QUOTA:
 			case CLOSED:
+			case DESTROYED:
 				return false;
 
 			case AVAILABLE:
@@ -220,6 +224,7 @@ class Genode::Session_state : public Parent::Client, public Parent::Server
 			case INSUFFICIENT_RAM_QUOTA:
 			case INSUFFICIENT_CAP_QUOTA:
 			case CLOSED:
+			case DESTROYED:
 				return true;
 
 			case CREATE_REQUESTED:

@@ -280,6 +280,7 @@ class Genode::Local_service : public Service
 			case Session_state::AVAILABLE:
 			case Session_state::CAP_HANDED_OUT:
 			case Session_state::CLOSED:
+			case Session_state::DESTROYED:
 				break;
 			}
 			return Ok();
@@ -390,6 +391,7 @@ class Genode::Try_parent_service : public Service
 			case Session_state::AVAILABLE:
 			case Session_state::CAP_HANDED_OUT:
 			case Session_state::CLOSED:
+			case Session_state::DESTROYED:
 				break;
 			}
 			return result;
@@ -508,7 +510,9 @@ class Genode::Async_service : public Service
 			return &_server_id_space == &id_space;
 		}
 
-		void wakeup() override { _wakeup.wakeup_async_service(); }
+		void wakeup() override {
+			log(__FILE__, " ", __LINE__);
+			_wakeup.wakeup_async_service(); }
 };
 
 

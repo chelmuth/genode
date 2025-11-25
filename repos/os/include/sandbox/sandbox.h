@@ -203,7 +203,9 @@ class Genode::Sandbox::Local_service_base : public Service
 			return _async_service.initiate_request(session);
 		}
 
-		void wakeup() override { _async_service.wakeup(); }
+		void wakeup() override {
+			log(__FILE__, " ", __LINE__);
+			_async_service.wakeup(); }
 
 	protected:
 

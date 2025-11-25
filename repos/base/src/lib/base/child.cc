@@ -540,8 +540,10 @@ Child::Close_result Child::_close(Session_state &session)
 	}
 
 	_policy.session_state_changed();
+	error("*************** ", __LINE__, ": ", (int)session.phase, " - ", session);
 
 	session.service().wakeup();
+	error("*************** ", __LINE__, ": ", (int)session.phase, " - ", session);
 
 	return Close_result::PENDING;
 }
@@ -981,8 +983,10 @@ void Child::close_all_sessions()
 
 		Close_result const close_result = _close(session);
 
-		if (close_result == Close_result::PENDING)
+		if (close_result == Close_result::PENDING) {
+			error("*************** ", __LINE__, ": ", (int)session.phase, " - ", session);
 			session.discard_id_at_client();
+		}
 	};
 
 	while (_id_space.apply_any<Session_state>(close_fn));
