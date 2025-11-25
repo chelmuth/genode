@@ -10,6 +10,7 @@ assert {[platform_supported]}
 build {
 	core lib/ld init timer monitor lib/sandbox
 	test/monitor server/terminal_crosslink
+	test/log
 }
 
 create_boot_directory
@@ -58,8 +59,24 @@ install_config {
 				<policy label="test-monitor" stop="no" wx="yes" />
 			</monitor>
 
-			<start name="test-monitor" ram="32M">
-				<affinity xpos="1" width="1"/>
+			<start name="init" caps="200" ram="4M">
+				<config>
+					<parent-provides>
+						<service name="LOG"/>
+						<service name="PD"/>
+						<service name="CPU"/>
+						<service name="ROM"/>
+						<service name="RM"/>
+						<service name="Timer"/>
+						<service name="Terminal"/>
+					</parent-provides>
+					<default caps="100" ram="1M"/>
+					<default-route>
+						<any-service> <parent/> </any-service>
+					</default-route>
+
+					<start name="test-log"/>
+				</config>
 				<route>
 					<service name="PD">  <local/> </service>
 					<service name="CPU"> <local/> </service>

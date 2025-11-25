@@ -59,4 +59,6 @@ void Component::construct(Genode::Env &env)
 	log(Cstring(buf));
 
 	log("Test done.");
+
+	env.parent().exit(0);
 }
