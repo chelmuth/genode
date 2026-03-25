@@ -419,3 +419,14 @@ __sum16 csum_ipv6_magic(const struct in6_addr * saddr,const struct in6_addr * da
 #endif
 
 void * high_memory;
+
+
+#include <net/genetlink.h>
+
+struct genl_family netdev_nl_family;
+
+
+long strnlen_user(const char __user * str,long count)
+{
+	lx_emul_trace_and_stop(__func__);
+}
