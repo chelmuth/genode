@@ -3,6 +3,7 @@
 #
 # \param --power-on-amt-host       network address of target machine
 # \param --power-on-amt-password   AMT password for target machine
+# \param --power-on-amt-tls       Enable TLS for AMT connection
 #
 
 source [genode_dir]/tool/run/amt.inc
@@ -20,6 +21,14 @@ proc power_on_amt_password { } {
 
 proc power_on_amt_timeout { } {
 	return [cmd_arg_first --power-on-amt-timeout 5]
+}
+
+
+proc power_on_amt_tls_arg { } {
+	if {[have_cmd_switch --power-on-amt-tls]} {
+		return "--tls"
+	}
+	return ""
 }
 
 
@@ -116,11 +125,11 @@ proc amt_reset_wsman { } {
 # Executes a power on or power cycle depending on the current power state
 #
 proc amt_reset_meshcmd { } {
-	set power_state [exec meshcmd amtpower --reset --host [power_on_amt_host] --password [power_on_amt_password]]
+	set power_state [exec meshcmd amtpower [power_on_amt_tls_arg] --reset --host [power_on_amt_host] --password [power_on_amt_password]]
 	if { $power_state == "Current power state: Soft off" } {
-		exec meshcmd amtpower --powercycle --host [power_on_amt_host] --password [power_on_amt_password]
+		exec meshcmd amtpower [power_on_amt_tls_arg] --powercycle --host [power_on_amt_host] --password [power_on_amt_password]
 	} else {
-		exec meshcmd amtpower --poweron --host [power_on_amt_host] --password [power_on_amt_password]
+		exec meshcmd amtpower [power_on_amt_tls_arg] --poweron --host [power_on_amt_host] --password [power_on_amt_password]
 	}
 }
 

@@ -5,6 +5,7 @@
 # \param --log-amt-password   AMT password for target machine
 # \param --log-amt-filter     Sanitize output by piping it through a filter
 # \param --log-amt-skip-test  Skip AMT SOL availability test
+# \param --log-amt-tls        Enable TLS for AMT requests
 #
 
 source [genode_dir]/tool/run/log.inc
@@ -32,6 +33,12 @@ proc log_amt_skip_test { } {
 	return [have_cmd_switch --log-amt-skip-test]
 }
 
+proc log_amt_tls_arg { } {
+	if {[have_cmd_switch --log-amt-tls]} {
+		return "--tls"
+	}
+	return ""
+}
 
 ##
 # Log output of the test machine using Intel's AMT
@@ -75,7 +82,7 @@ proc run_log { wait_for_re timeout_value } {
 	# prepare command
 	#
 	if {[have_installed meshcmd] && ( $amt_tool == "meshcmd" )} {
-		set amt_cmd "meshcmd amtterm --host [log_amt_host] --password [log_amt_password]"
+		set amt_cmd "meshcmd amtterm [log_amt_tls_arg] --host [log_amt_host] --password [log_amt_password]"
 		set amt_log ".*Connected"
 	} else {
 		#
