@@ -112,6 +112,8 @@ config | verbose: yes
     | + pci | vendor_id: 0x8086 | device_id: 0x7778 | . Arrow Lake chipset
     | + device INT34C5  | type: acpi | . Tiger/Alder Lake
     | + device INTC1083 | type: acpi | . Meteor/Arrow Lake
+    | + device 15.1          | type: pci  | . Surface Go
+    | + device SURFACE_TOUCH | type: acpi | . Surface Go
     + policy | label: wifi      | info: yes | msix: no
     | + pci | class: WIFI
     + policy | label: nic       | info: yes

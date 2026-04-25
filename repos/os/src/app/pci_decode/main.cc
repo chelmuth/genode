@@ -770,6 +770,21 @@ void Main::parse_acpi_device_info(Node const &node, Generator &g)
 	});
 
 	/*
+	 * Surface GO Touchscreen IRQ
+	 */
+	g.node("device", [&]
+	{
+		g.attribute("name", "SURFACE_TOUCH");
+		g.attribute("type", "acpi");
+		g.node("irq", [&]
+		{
+			g.attribute("number", 31U);
+			g.attribute("mode", "level");
+			g.attribute("polarity", "low");
+		});
+	});
+
+	/*
 	 * Intel Meteorlake PCH Pinctrl/GPIO
 	 */
 	g.node("device", [&]

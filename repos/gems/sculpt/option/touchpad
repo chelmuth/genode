@@ -1,17 +1,19 @@
 option
 + child touchpad | pkg: pc_i2c_hid | priority: media
   + config
-    + i2c_slave  | irq: 266 | bus_addr: 44 | hid_addr: 32 | gpio_chip: INT34C5  | . Fujitsu U7411 (SYNAPTICS)
+    x i2c_slave  | irq: 266 | bus_addr: 44 | hid_addr: 32 | gpio_chip: INT34C5  | . Fujitsu U7411 (SYNAPTICS)
     x i2c_slave  | irq: 266 | bus_addr: 21 | hid_addr: 1  | gpio_chip: INT34C5  | . Fujitsu U7511 (ELAN)
     x i2c_slave  | irq: 174 | bus_addr: 44 | hid_addr: 32 | gpio_chip: INT34C5  | . Fujitsu U7412/U7413 (SYNAPTICS)
     x i2c_slave  | irq: 3   | bus_addr: 44 | hid_addr: 32 | gpio_chip: INT34C5  | . Framework Gen12/Gen13
     x i2c_slave  | irq: 352 | bus_addr: 44 | hid_addr: 32 | gpio_chip: INTC1083 | . Framework Core Ultra Series 1
     x i2c_slave  | irq: 128 | bus_addr: 44 | hid_addr: 32 | gpio_chip: INTC1083 | . HP ZBook Core Ultra Series 2
     x i2c_slave  | irq: 104 | bus_addr: 93 | hid_addr: 1                        | . StarLabs StarLite V
+    + i2c_slave  | irq:  31 | bus_addr: 16 | hid_addr: 1                        | . Surface Go
 
-    + i2c_master | bus_speed_hz: 400 | + fmcn | hcnt: 193 | lcnt: 313 | hold_time: 80 | . Tiger/Alder/Raptor Lake
+    x i2c_master | bus_speed_hz: 400 | + fmcn | hcnt: 193 | lcnt: 313 | hold_time: 80 | . Tiger/Alder/Raptor Lake
     x i2c_master | bus_speed_hz: 400 | + fmcn | hcnt: 115 | lcnt: 120 | hold_time: 35 | . Meteor/Arrow Lake
     x i2c_master | bus_speed_hz: 400 | + fmcn | hcnt: 106 | lcnt: 213 | hold_time: 80 | . StarLabs StarLite V
+    + i2c_master | bus_speed_hz: 400 | + fmcn | hcnt: 100 | lcnt: 170 | hold_time: 80 | . Surface Go
 
   + heartbeat | restart_after_skipped: 4
   + connect
