@@ -1864,19 +1864,11 @@ be prepared. The following command prepares all of them at once:
 
 ! <GENODE-DIR>/tool/ports/prepare_port \
 !      acpica bash coreutils curl dde_bsd dde_rump e2fsprogs-lib \
-!      expat freetype gdb gmp gnupg grub2 jitterentropy jpeg \
-!      libarchive libc libdrm libgcrypt libiconv libnl libpng \
-!      libssh libusb libuvc libyuv linux linux-firmware lwip mesa \
-!      ncurses nova openssl pcre qemu-usb qoost qt5 stb stdcxx tcl \
-!      ttf-bitstream-vera vim virtualbox6 wpa_supplicant x86emu \
-!      xz zlib
-
-To be able to compile components that are dependent on the Qt5-library, the
-corresponding toolchain needs to be installed in addition to the base Genode
-toolchain. You can build and install it by using the following commands:
-
-! <GENODE-DIR>/tool/tool_chain_qt5 build
-! <GENODE-DIR>/tool/tool_chain_qt5 install
+!      expat gdb gmp gnupg grub2 jitterentropy jpeg libarchive libc \
+!      libdrm libgcrypt libiconv libnl libpng libssh libusb libuvc \
+!      libyuv linux linux-firmware mesa ncurses nova openssl qemu-usb \
+!      stb stdcxx sticks_blue_backdrop tcl ttf-bitstream-vera vim \
+!      virtualbox6 wpa_supplicant x86emu xz zlib
 
 The ingredients of the boot image are defined by the _sculpt/default-pc.sculpt_
 file located in the _repos/gems/_ repository. The default set of software
@@ -1926,14 +1918,16 @@ _tool/depot/publish_current_ tool. For more information about working with the
 depot tool, refer to the package-management
 [https://genode.org/documentation/genode-foundations/25.05/development/Package_management.html - documentation].
 
-The launchers integrated in the boot image are defined in
+; TODO
+All options integrated in the boot image are defined in
 _gems/sculpt/default-pc.sculpt_ and the accompanied files at
-_gems/sculpt/launcher/_. Each launcher contains a node with a mandatory 'pkg'
+_gems/sculpt/option/_. Each option contains a node with a mandatory 'pkg'
 attribute. If the attribute value contains one or more '/' characters, it is
 assumed to be a complete pkg path of the form '<USER>/pkg/<NAME>/<VERSION>'.
 Otherwise, it is assumed to be just the pkg name and is replaced by the current
 version of the current depot user's pkg at system-integration time.
 
+; TODO
 The following article gives further inspiration and practical hints for
 customizing the Sculpt OS system image.
 
