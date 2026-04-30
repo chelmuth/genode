@@ -310,7 +310,7 @@ struct Fetchurl::Main
 			curl_easy_setopt(_curl, CURLOPT_PROXY, _fetch.proxy.string());
 		}
 
-		curl_easy_setopt(_curl, CURLOPT_USERAGENT, "fetchurl/" LIBCURL_VERSION);
+		curl_easy_setopt(_curl, CURLOPT_USERAGENT, "curl/" LIBCURL_VERSION);
 
 		if (_fetch.head)
 			curl_easy_setopt(_curl, CURLOPT_NOBODY, 1L);
