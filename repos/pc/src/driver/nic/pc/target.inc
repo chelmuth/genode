@@ -18,7 +18,6 @@ vpath %.c $(PRG_DIR)/../..
 vpath %.cc $(PRG_DIR)/../..
 
 SRC_C += generated_dummies.c
-vpath generated_dummies.c $(PRG_DIR)
 
 SRC_CC += genode_c_api/uplink.cc
 vpath genode_c_api/uplink.cc $(dir $(call select_from_repositories,src/lib/genode_c_api))

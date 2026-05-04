@@ -108,13 +108,6 @@ int add_uevent_var(struct kobj_uevent_env * env,const char * format,...)
 }
 
 
-extern unsigned long arch_scale_cpu_capacity(int cpu);
-unsigned long arch_scale_cpu_capacity(int cpu)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
 extern void arch_trigger_cpumask_backtrace(const cpumask_t * mask,int exclude_cpu);
 void arch_trigger_cpumask_backtrace(const cpumask_t * mask,int exclude_cpu)
 {
@@ -266,14 +259,6 @@ unsigned int cpumask_any_and_distribute(const struct cpumask * src1p,const struc
 #include <linux/sched/topology.h>
 
 bool cpus_share_cache(int this_cpu,int that_cpu)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
-#include <net/ip6_checksum.h>
-
-__sum16 csum_ipv6_magic(const struct in6_addr * saddr,const struct in6_addr * daddr,__u32 len,__u8 proto,__wsum sum)
 {
 	lx_emul_trace_and_stop(__func__);
 }
@@ -1083,13 +1068,6 @@ int task_work_add(struct task_struct * task,struct callback_head * work,enum tas
 #include <linux/task_work.h>
 
 struct callback_head * task_work_cancel_func(struct task_struct * task,task_work_func_t func)
-{
-	lx_emul_trace_and_stop(__func__);
-}
-
-
-extern void unregister_handler_proc(unsigned int irq,struct irqaction * action);
-void unregister_handler_proc(unsigned int irq,struct irqaction * action)
 {
 	lx_emul_trace_and_stop(__func__);
 }

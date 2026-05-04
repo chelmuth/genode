@@ -222,32 +222,6 @@ int pci_select_bars(struct pci_dev *dev, unsigned long flags)
 	return bars;
 }
 
-
-int pci_alloc_irq_vectors_affinity(struct pci_dev *dev, unsigned int min_vecs,
-                                   unsigned int max_vecs, unsigned int flags,
-                                   struct irq_affinity *aff_desc)
-{
-	if ((flags & PCI_IRQ_INTX) && min_vecs == 1 && dev->irq)
-		return 1;
-	return -ENOSPC;
-}
-
-
-int pci_alloc_irq_vectors(struct pci_dev *dev, unsigned int min_vecs,
-                          unsigned int max_vecs, unsigned int flags)
-{
-	return pci_alloc_irq_vectors_affinity(dev, min_vecs, max_vecs, flags, NULL);
-}
-
-
-int pci_irq_vector(struct pci_dev *dev, unsigned int nr)
-{
-	if (WARN_ON_ONCE(nr > 0))
-		return -EINVAL;
-	return dev->irq;
-}
-
-
 #include <linux/dma-mapping.h>
 
 void *dmam_alloc_attrs(struct device *dev, size_t size, dma_addr_t *dma_handle,

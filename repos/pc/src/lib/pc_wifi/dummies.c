@@ -364,35 +364,6 @@ void synchronize_rcu_expedited(void)
 }
 
 
-#include <linux/pci.h>
-
-int pci_enable_msi(struct pci_dev *dev)
-{
-	lx_emul_trace(__func__);
-	return -ENOSYS;
-}
-
-
-void pci_disable_msi(struct pci_dev *dev)
-{
-    lx_emul_trace(__func__);
-}
-
-
-int pci_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries,
-                          int minvec, int maxvec)
-{
-	lx_emul_trace(__func__);
-	return -ENOSYS;
-}
-
-
-void pci_disable_device(struct pci_dev * dev)
-{
-	lx_emul_trace(__func__);
-}
-
-
 #include <linux/leds.h>
 #include <../net/mac80211/ieee80211_i.h> /* struct ieee80211_local */
 

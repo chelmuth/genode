@@ -82,14 +82,6 @@ struct clk_lookup *clkdev_create(struct clk *clk, const char *con_id, const char
 }
 
 
-#include <linux/pci.h>
-
-int pci_irq_vector(struct pci_dev * dev,unsigned int nr)
-{
-	return dev->irq;
-}
-
-
 #include <linux/sched/rt.h>
 
 void rt_mutex_pre_schedule(void)

@@ -87,29 +87,6 @@ int pci_write_config_word(const struct pci_dev * dev,int where,u16 val)
 }
 
 
-int pci_alloc_irq_vectors_affinity(struct pci_dev *dev, unsigned int min_vecs,
-                                   unsigned int max_vecs, unsigned int flags,
-                                   struct irq_affinity *aff_desc)
-{
-	if ((flags & PCI_IRQ_INTX) && min_vecs == 1 && dev->irq)
-		return 1;
-	return -ENOSPC;
-}
-
-
-int pci_irq_vector(struct pci_dev *dev, unsigned int nr)
-{
-	if (WARN_ON_ONCE(nr > 0))
-		return -EINVAL;
-	return dev->irq;
-}
-
-
-void pci_free_irq_vectors(struct pci_dev *dev)
-{
-}
-
-
 #include <linux/uaccess.h>
 
 unsigned long _copy_from_user(void * to,const void __user * from,unsigned long n)
@@ -125,15 +102,4 @@ unsigned long _copy_to_user(void __user * to,const void * from,unsigned long n)
 {
 	memcpy(to, from, n);
 	return 0;
-}
-
-
-#include <linux/pci.h>
-
-int pci_alloc_irq_vectors(struct pci_dev * dev, unsigned int min_vecs,
-                          unsigned int max_vecs,unsigned int flags)
-{
-	if ((flags & PCI_IRQ_INTX) && min_vecs == 1 && dev->irq)
-		return 1;
-	return -ENOSPC;
 }

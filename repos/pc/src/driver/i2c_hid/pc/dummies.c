@@ -78,13 +78,6 @@ struct irq_domain *pci_host_bridge_acpi_msi_domain(struct pci_bus *bus)
 }
 
 
-int pci_alloc_irq_vectors(struct pci_dev * dev,unsigned int min_vecs,unsigned int max_vecs,unsigned int flags)
-{
-	lx_emul_trace(__func__);
-	return 0;
-}
-
-
 #include <linux/fs.h>
 
 int alloc_chrdev_region(dev_t * dev, unsigned baseminor, unsigned count, const char * name)

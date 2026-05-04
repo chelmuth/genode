@@ -126,37 +126,6 @@ int pci_write_config_dword(const struct pci_dev *dev, int where, u32 val)
 }
 
 
-int pci_alloc_irq_vectors_affinity(struct pci_dev *dev, unsigned int min_vecs,
-                                   unsigned int max_vecs, unsigned int flags,
-                                   struct irq_affinity *aff_desc)
-{
-	/* check for legacy IRQ */
-	if ((flags & PCI_IRQ_INTX) && min_vecs == 1 && dev->irq)
-		return 1;
-	return -ENOSPC;
-}
-
-
-int pci_alloc_irq_vectors(struct pci_dev *dev, unsigned int min_vecs,
-                          unsigned int max_vecs, unsigned int flags)
-{
-	return pci_alloc_irq_vectors_affinity(dev, min_vecs, max_vecs, flags, NULL);
-}
-
-
-int pci_irq_vector(struct pci_dev *dev, unsigned int nr)
-{
-	if (WARN_ON_ONCE(nr > 0))
-		return -EINVAL;
-	return dev->irq;
-}
-
-
-void pci_free_irq_vectors(struct pci_dev *dev)
-{
-}
-
-
 /*
  * dma mapping
  */

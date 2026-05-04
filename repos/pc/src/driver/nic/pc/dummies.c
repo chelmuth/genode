@@ -223,14 +223,6 @@ int pci_request_selected_regions_exclusive(struct pci_dev *dev, int, const char 
 
 #include <linux/pci.h>
 
-int pci_enable_msi(struct pci_dev *dev)
-{
-	lx_emul_trace(__func__);
-	return -ENOSYS;
-}
-
-#include <linux/pci.h>
-
 void pci_restore_state(struct pci_dev *dev)
 {
 	lx_emul_trace(__func__);
@@ -249,21 +241,6 @@ int pci_save_state(struct pci_dev *dev)
 void pci_disable_device(struct pci_dev *dev)
 {
 	lx_emul_trace(__func__);
-}
-
-#include <linux/pci.h>
-
-void pci_disable_msi(struct pci_dev *dev)
-{
-	lx_emul_trace(__func__);
-}
-
-#include <linux/pci.h>
-
-int pci_enable_msix_range(struct pci_dev *dev, struct msix_entry *entries, int minvec, int maxvec)
-{
-	lx_emul_trace(__func__);
-	return -ENOSYS;
 }
 
 #include <linux/pci.h>
@@ -416,3 +393,29 @@ int __rtnl_register_many(const struct rtnl_msg_handler *handlers, int n)
 {
 	return 0;
 }
+
+
+extern void unregister_handler_proc(unsigned int irq,struct irqaction * action);
+void unregister_handler_proc(unsigned int irq,struct irqaction * action)
+{
+	lx_emul_trace(__func__);
+}
+
+
+#ifdef CONFIG_X86_64
+extern unsigned long arch_scale_cpu_capacity(int cpu);
+unsigned long arch_scale_cpu_capacity(int cpu)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+
+
+#include <net/ip6_checksum.h>
+
+__sum16 csum_ipv6_magic(const struct in6_addr * saddr,const struct in6_addr * daddr,__u32 len,__u8 proto,__wsum sum)
+{
+	lx_emul_trace_and_stop(__func__);
+}
+#endif
+
+void * high_memory;
