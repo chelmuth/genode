@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 /* libc-internal includes */
+#include <internal/errno.h>
 #include <internal/types.h>
 
 using namespace Libc;
@@ -54,47 +55,35 @@ static ssize_t readv_writev_impl(Rw_func rw_func, int fd, const struct iovec *io
 
 	Mutex::Guard guard(rw_mutex);
 
-	char *v;
-	ssize_t bytes_transfered_total = 0;
-	size_t v_len = 0;
-	int i;
+	ssize_t bytes_transferred_total = 0;
+	size_t iov_len_total = 0;
 
-	if (iovcnt < 1 || iovcnt > IOV_MAX) {
-		errno = EINVAL;
-		return -1;
-	}
+	if (iovcnt < 1 || iovcnt > IOV_MAX)
+		return Errno(EINVAL);
 
-	for (i = 0; i < iovcnt; i++)
-		v_len += iov->iov_len;
+	for (int i = 0; i < iovcnt; i++)
+		iov_len_total += iov[i].iov_len;
 
-	if (v_len > SSIZE_MAX) {
-		errno = EINVAL;
-		return -1;
-	}
+	if (iov_len_total > SSIZE_MAX)
+		return Errno(EINVAL);
 
 	while (iovcnt > 0) {
-		v = static_cast<char *>(iov->iov_base);
-		v_len = iov->iov_len;
 
-		while (v_len > 0) {
-			ssize_t bytes_transfered = rw_func(fd, v, v_len);
+		ssize_t bytes_transferred = rw_func(fd, iov->iov_base, iov->iov_len);
 
-			if (bytes_transfered == -1)
-				return -1;
+		if (bytes_transferred == -1)
+			return -1;
 
-			if (bytes_transfered == 0)
-				return bytes_transfered_total;
+		bytes_transferred_total += bytes_transferred;
 
-			v_len -= bytes_transfered;
-			v += bytes_transfered;
-			bytes_transfered_total += bytes_transfered;
-		}
+		if (bytes_transferred < iov->iov_len)
+			return bytes_transferred_total;
 
 		iov++;
 		iovcnt--;
 	}
 
-	return bytes_transfered_total;
+	return bytes_transferred_total;
 }
 
 
