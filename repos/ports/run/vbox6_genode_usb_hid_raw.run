@@ -103,7 +103,7 @@ config | prio_levels: 4
     + policy | label_prefix: usb | info: yes
       + pci | class: USB
 
-+ start usb | ram: 16M | priority: -1
++ start usb | ram: 16M | caps: 200 | priority: -1
   + binary pc_usb_host
   + provides | + service Usb
   + config | bios_handoff: no
