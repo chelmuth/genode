@@ -197,6 +197,10 @@ void Irq_session_component::ack_irq()
 void Irq_session_component::sigh(Signal_context_capability cap)
 {
 	_irq_object.sigh(cap);
+
+	/* initial l4_irq_unmask (done by ack_irq) is required for MSI on kernel */
+	if (cap.valid() && _irq_object.msi())
+		ack_irq();
 }
 
 
