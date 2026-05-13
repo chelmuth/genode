@@ -2870,6 +2870,17 @@ void Sculpt::Main::_handle_runtime_state(Node const &state)
 		Power_features const orig_power_features = _power_features;
 		_power_features.poweroff = acpi_support;
 		_power_features.suspend  = acpi_support && !_usb_storage_acquired;
+
+		/* check whether S3 is supported */
+		if (_power_features.suspend) {
+			_acpi_sleep_states.with_node([&](auto const &node) {
+				node.with_optional_sub_node("s3", [&](auto const &s3) {
+					if (!s3.attribute_value("supported", false))
+						_power_features.suspend = false;
+				});
+			});
+		}
+
 		if (orig_power_features != _power_features)
 			_system_dialog.refresh();
 	}
