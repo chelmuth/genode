@@ -366,6 +366,12 @@ bus_t Main::parse_pci_function(Bdf        bdf,
 			 */
 			if (vendor_id == 0x168c || device_id == 0x0034)
 				msi = msi_x = false;
+
+			auto const class_code = cfg.read<Config::Class_code_rev_id::Class_code>();
+
+			/* prefer MSI-X over MSI for NVMe */
+			if (class_code == 0x010802 && msi_x)
+				msi = false;
 		}
 
 		/*
