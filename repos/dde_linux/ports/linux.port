@@ -28,6 +28,7 @@ PATCH_FILES := \
                i915_meteorlake.patch \
                i915_dsb.patch \
                i915_shmem_folio.patch \
+               i915_min_alignment.patch \
                audio_distinguish_irq.patch \
                audio_hda_bus_repsonse.patch \
                audio_hp_jack_event_sleep.patch \
