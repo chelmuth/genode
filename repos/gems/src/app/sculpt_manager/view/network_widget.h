@@ -53,11 +53,11 @@ struct Sculpt::Network_widget : Widget<Frame>
 	struct Target_selector : Widget<Hbox>
 	{
 		Hosted<Hbox, Toggle_button>
-			_local  { Id { "Disconected" } },
-			_nic    { Id { "Wired"       } },
-			_wifi   { Id { "Wifi"        } },
-			_usb    { Id { "USB"         } },
-			_mobile { Id { "Mobile data" } };
+			_local  { Id { "Disconnected" } },
+			_nic    { Id { "Wired"        } },
+			_wifi   { Id { "Wifi"         } },
+			_usb    { Id { "USB"          } },
+			_mobile { Id { "Mobile data"  } };
 
 		void view(Scope<Hbox> &s, Avail const avail, Enabled const enabled) const
 		{
