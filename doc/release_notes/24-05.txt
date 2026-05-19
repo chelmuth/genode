@@ -662,7 +662,7 @@ automatically, similar as done by our port of VirtualBox.
 
 Finally, a USB XHCI model powered by our qemu-usb library has been added to
 Seoul, which got developed during our recent
-[https://github.com/genodelabs/genode/issues/4989 - Hack'n'Hike] event.
+[https://codeberg.org/genodelabs/genode/issues/4989 - Hack'n'Hike] event.
 With this new model, USB devices can be passed through to the guest. It has
 been successfully tested with several USB storage, keyboard, and audio
 devices.

@@ -372,7 +372,7 @@ rather a refinement than a revision. The noteworthy additions and changes are:
 : <div class="visualClear"><!-- --></div>
 
 To examine the changes in detail, please refer to the book's
-[https://github.com/nfeske/genode-manual/commits/master - revision history].
+[https://codeberg.org/genodelabs/genode-manual/commits/main - revision history].
 
 
 New online version of the book

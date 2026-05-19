@@ -279,7 +279,7 @@ down to
   get stuck.
 
 These findings are documented at issue
-[https://github.com/genodelabs/genode/issues/3925 - 3925].
+[https://codeberg.org/genodelabs/genode/issues/3925 - 3925].
 
 
 Consistent Block Encrypter (CBE)
@@ -562,7 +562,7 @@ efficiency.
 With a recent Lenovo notebook, however, we faced the issue that either the fan
 would run for too long after some load and/or the performance of the CPUs
 regressed. Finding a well working sweet spot
-[https://github.com/genodelabs/genode/issues/3871 - seems hard].
+[https://codeberg.org/genodelabs/genode/issues/3871 - seems hard].
 This experience prompted us to investigate how the Intel HWP feature can be
 set and configured. After some experiments, we achieved to reduce the fan
 noise and received better performance by tweaking the Intel HWP settings.

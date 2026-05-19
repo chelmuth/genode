@@ -185,7 +185,7 @@ repository.
 
 :Goa tool:
 
-  [https://github.com/genodelabs/goa/]
+  [https://codeberg.org/genodelabs/goa/]
 
 
 Run-stage generalization

@@ -150,7 +150,7 @@ The community experience of Sculpt CE will ultimately depend on the
 participation of software providers. To become listed in the selection dialog
 mentioned above, you may consider including your public key and download
 location at the Genode repository at
-[https://github.com/genodelabs/genode/tree/master/depot - /depot/].
+[https://codeberg.org/genodelabs/genode/src/tag/19.02/depot - /depot/].
 
 For the announcement of packages, a software provider can publish so-called
 "index" files for a particular Sculpt version in the software provider's
@@ -225,7 +225,7 @@ This system is based on Genode and can be found here:
 
 :Genodians.org repository:
 
-  [https://github.com/genodelabs/genodians.org]
+  [https://codeberg.org/genodelabs/genodians.org]
 
 A few noteworthy technical points about the site:
 
@@ -233,7 +233,7 @@ A few noteworthy technical points about the site:
   is realized via the 'fetchurl', 'extract', and 'sequence' components.
 
 * The textual content uses the markup of the
-  [https://github.com/nfeske/gosh - GOSH]
+  [https://codeberg.org/genodelabs/gosh - GOSH]
   text processing tool, which is similar to
   [https://daringfireball.net/projects/markdown/ - Markdown].
 
@@ -452,7 +452,7 @@ To simplify the implementation and verification of block servers, the current
 release introduces a modern API that will eventually replace the original
 block-component API. The new API is called *block-request stream* and can be
 found at
-[https://github.com/genodelabs/genode/blob/master/repos/os/include/block/request_stream.h - os/include/block/request_stream.h].
+[https://codeberg.org/genodelabs/genode/src/tag/19.02/repos/os/include/block/request_stream.h - os/include/block/request_stream.h].
 It is designed with the following considerations:
 
 * It anticipates the asynchronous operation of block servers by default.
@@ -472,7 +472,7 @@ It is designed with the following considerations:
   (device DMA directly into the client's communication buffer).
 
 The use of the new API is illustrated by the artificial test at
-[https://github.com/genodelabs/genode/blob/master/repos/os/src/test/block_request_stream/main.cc - os/src/test/block_request_stream/].
+[https://codeberg.org/genodelabs/genode/src/tag/19.02/repos/os/src/test/block_request_stream/main.cc - os/src/test/block_request_stream/].
 We plan to successively migrate all existing block servers to this new API
 and will remove the traditional block-component API eventually.
 

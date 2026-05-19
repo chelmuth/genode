@@ -535,7 +535,7 @@ The latest state of this line of work is available at a dedicated repository:
 
 :Genode board support for Allwinner SoCs:
 
-  [https://github.com/nfeske/genode-allwinner]
+  [https://codeberg.org/genodelabs/genode-allwinner]
 
 
 RISC-V
@@ -585,7 +585,7 @@ the framework atop a separation kernel.
 
 Without adoption of the joint platform, neither of both teams can justify the
 ongoing effort needed for the continued maintenance of Genode on Muen. Hence,
-we [https://github.com/genodelabs/genode/issues/3995 - concluded] to remove
+we [https://codeberg.org/genodelabs/genode/issues/3995 - concluded] to remove
 Muen as an officially supported platform.
 
 

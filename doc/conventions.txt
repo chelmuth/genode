@@ -9,7 +9,7 @@
 Documentation and naming of files
 #################################
 
-We use the GOSH syntax [https://github.com/nfeske/gosh] for documentation and
+We use the GOSH syntax [https://codeberg.org/genodelabs/gosh] for documentation and
 README files.
 
 We encourage that each directory contains a file called 'README' that briefly

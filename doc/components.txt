@@ -17,7 +17,7 @@ and outlines the systematics behind them.
 The scope of this document is limited to the Genode main repository maintained
 by Genode Labs. Many additional components and device drivers can be found in
 the community-maintained
-[https://github.com/genodelabs/genode-world/ - Genode-World] repository.
+[https://codeberg.org/genodelabs/genode-world/ - Genode-World] repository.
 
 
 Categorization of components
@@ -73,7 +73,7 @@ a different SoC family such as NXP's i.MX, Allwinner, Xilinx Zynq, or RISC-V.
 
 :Repositories maintained by Genode Labs:
 
-  [https://github.com/orgs/genodelabs/repositories]
+  [https://codeberg.org/genodelabs]
 
 
 Platform devices

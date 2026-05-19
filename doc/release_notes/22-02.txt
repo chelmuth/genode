@@ -67,7 +67,7 @@ system image - defined by the sculpt.run script - by configuration fragments
 that can be easily mixed, matched, and extended. All customizable aspects of
 the Sculpt image can now be found at a new location - the _sculpt/_ directory -
 which can exist in any repository. The directory at
-[https://github.com/genodelabs/genode/tree/master/repos/gems/sculpt - repos/gems/sculpt/]
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/gems/sculpt - repos/gems/sculpt/]
 serves as reference and contains all fragments of the regular Sculpt OS.
 For detailed explanation of mechanisms and terms (e.g., launcher) used
 below please refer to the
@@ -276,7 +276,7 @@ started with repositories for the Allwinner A64 SoC, the Xilinx Zynq, and NXP
 i.MX-family of SoCs, as well as the RISC-V Qemu and MiG-V support. Initially
 those repositories were located at the storage of the developer in charge. Now,
 we've moved them centrally under the umbrella of the Genode Labs account at
-[https://github.com/genodelabs]. Thereby, they become easy to find, and the
+[https://codeberg.org/genodelabs]. Thereby, they become easy to find, and the
 responsibility of Genode Labs for the repositories becomes intuitively clear.
 
 
@@ -658,30 +658,30 @@ components have been removed:
 * An ancient (unused) version of the readline library. The 'bash' shell
   carries its own version.
 
-* [https://github.com/genodelabs/genode/issues/4418 - ROM prefetcher]
+* [https://codeberg.org/genodelabs/genode/issues/4418 - ROM prefetcher]
   that was originally used for reducing seek times of CD-ROMs.
 
-* [https://github.com/genodelabs/genode/issues/4405 - Outdated block components]
+* [https://codeberg.org/genodelabs/genode/issues/4405 - Outdated block components]
   such as http_block (lacking SSL support), block_cache (unused), test/block
   scenarios (superseded by block_tester and vfs_block).
 
-* Old [https://github.com/genodelabs/genode-world/issues/283 - OMAP4 and Exynos5]
+* Old [https://codeberg.org/genodelabs/genode-world/issues/283 - OMAP4 and Exynos5]
   platforms no longer covered by any automated tests.
 
-* Old [https://github.com/genodelabs/genode/issues/4400 - fs_log server]
+* Old [https://codeberg.org/genodelabs/genode/issues/4400 - fs_log server]
   substitutable by the combination of terminal_log and file_terminal.
 
 The following components were moved from the main Genode repository to the
 [https://codeberg.org/genodelabs/genode-world - Genode World] repository as they
 receive only casual maintenance and testing by Genode Labs.
 
-* [https://github.com/genodelabs/genode/issues/4412 - Seoul VMM]
+* [https://codeberg.org/genodelabs/genode/issues/4412 - Seoul VMM]
   emulating a 32-bit PC.
 
-* [https://github.com/genodelabs/genode/issues/4413 - ISO9660]
+* [https://codeberg.org/genodelabs/genode/issues/4413 - ISO9660]
   ROM server used only by the testbed of the Seoul VMM.
 
-* An old port of [https://github.com/genodelabs/genode/issues/4414 - Lua].
+* An old port of [https://codeberg.org/genodelabs/genode/issues/4414 - Lua].
 
 
 Device drivers

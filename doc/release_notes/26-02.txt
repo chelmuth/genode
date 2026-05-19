@@ -59,7 +59,7 @@ framework to the new HID format by default.
 The switch entails all run scripts, Sculpt OS, the Goa SDK, all automated
 tests, and all depot packages provided by Genode's main repository.
 It goes without saying that such a
-[https://github.com/genodelabs/genode/issues/5786 - transition] would have been
+[https://codeberg.org/genodelabs/genode/issues/5786 - transition] would have been
 unrealistic without adequate tooling. This is where our HID-processing tool at
 _tool/hid_ came into play, which we enhanced iteratively since October. The
 tool has not only become able to convert between XML and HID but to retain
@@ -103,7 +103,7 @@ therefore will not receive any updates. In the course of the migration, we have
 also changed the name of the default branches from "master" to "main".
 
 In order to adapt to these changes on your side, we advise you to switch to the
-current master branch in your clone of https://github.com/genodelabs/genode.git
+current master branch in your clone of https://codeberg.org/genodelabs/genode.git
 and follow the instructions that are printed by any build command. For Goa, you
 can trigger the migration with the following commands:
 
@@ -345,11 +345,11 @@ Linux
 =====
 
 For test-driving interactive system scenarios on Linux, Genode employs the
-[https://github.com/genodelabs/genode/tree/master/repos/os/src/driver/framebuffer/sdl - fb_sdl]
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/os/src/driver/framebuffer/sdl - fb_sdl]
 component as pseudo display and input driver. In
 [https://genode.org/documentation/release-notes/23.11#Linux - version 23.11],
 it received an update to [https://wiki.libsdl.org/SDL2 - SDL2]. The current
-release [https://github.com/genodelabs/genode/pull/5784 - adds] principal
+release [https://codeberg.org/genodelabs/genode/pulls/5784 - adds] principal
 support for [https://wiki.libsdl.org/SDL3 - SDL3].
 Whereas the time-tested version 2 is still used by default, version 3 can now
 be selected by setting the environment variable GENODE_FB_SDL_VERSION to 3

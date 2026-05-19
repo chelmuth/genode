@@ -22,7 +22,7 @@ namespace Genode {
 	 * kernel assertion. Since the kernel is abandoned, this issue will most
 	 * likely remain unfixed.
 	 *
-	 * See https://github.com/genodelabs/genode/issues/2659 for a discussion
+	 * See https://codeberg.org/genodelabs/genode/issues/2659 for a discussion
 	 * of a related problem.
 	 */
 	constexpr bool KERNEL_SUPPORTS_EAGER_CHILD_DESTRUCTION = true;

@@ -499,7 +499,7 @@ New community forum at Discourse | 2024-08-13
 
 The new forum complements the existing
 [http:/community/mailing-lists - mailing list] and
-[https://github.com/genodelabs/genode - issue tracker]
+[https://codeberg.org/genodelabs/genode - issue tracker]
 with a place for casual conversation among newcomers, seasoned users,
 and developers.
 
@@ -1934,7 +1934,7 @@ Genodians.org!
 
 As a side note, the blogging platform is based on the Genode OS framework and
 is of course open source
-([https://github.com/genodelabs/genodians.org - GitHub repository]).
+([https://codeberg.org/genodelabs/genodians.org - Codeberg repository]).
 
 [https://genodians.org - Visit Genodians.org...]
 
@@ -3628,7 +3628,7 @@ To accommodate such use cases, we have extended Genode's configuration
 concept with support for re-configuring components at runtime. The
 new feature has landed in the master branch just now:
 
-:[https://github.com/genodelabs/genode/commit/9a00ad7ae3ac8e4fd4867555db7671df34aac882 - Commit introducing dynamic re-configuration]:
+:[https://codeberg.org/genodelabs/genode/commit/9a00ad7ae3ac8e4fd4867555db7671df34aac882 - Commit introducing dynamic re-configuration]:
 
 In addition to alleviating the problems mentioned above, the new mechanism
 enables many new opportunities to use Genode's slave pattern in creative

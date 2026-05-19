@@ -247,7 +247,7 @@ the Chromium web engine source code and mostly built with the Ninja build
 system on officially supported platforms instead of qmake.
 
 We also wanted to make it easier for Genode users to build Qt applications, in
-particular by using the [https://github.com/nfeske/goa - goa] tool. It would
+particular by using the [https://codeberg.org/genodelabs/goa - goa] tool. It would
 be better to be able to actually process qmake project files with the qmake
 tool instead of interpreting them as GNU make files and aborting when a
 project file contains qmake-specific code not understood by GNU make.

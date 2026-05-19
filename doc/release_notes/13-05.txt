@@ -847,7 +847,7 @@ L4Linux on Fiasco.OC
 We improved the memory management of L4Linux on Genode in two ways.
 The first improvement is concerned about the upper limit of memory per Linux
 instance. The corresponding discussion can be found at
-[https://github.com/genodelabs/genode/issues/414 - issue #414].
+[https://codeberg.org/genodelabs/genode/issues/414 - issue #414].
 We changed our L4Re emulation library to match the semantics of the original
 L4Re more closely. Furthermore, we removed a heuristic in the L4Linux kernel,
 which assumed that all kernel-local addresses above 0x8000000 refer to device
@@ -876,7 +876,7 @@ when aligning the block to a 16 MiB boundary compared to the allocation
 of a larger block. Furthermore, slack memory can be used more efficiently
 because smaller gaps (such as a 20 MiB gap) remain to be usable for L4Linux.
 The discussion of this topic and the individual patch can be found at
-[https://github.com/genodelabs/genode/issues/695 - issue #695].
+[https://codeberg.org/genodelabs/genode/issues/695 - issue #695].
 
 Furthermore, the L4Linux block driver has been improved to support large
 partitions.

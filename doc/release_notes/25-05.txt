@@ -80,7 +80,7 @@ become widely popularized by the Rust programming language with its
 'Result<T,E>' type, which clearly shows that a world without exceptions is not
 only possible but highly desirable. Once we identified workable patterns for
 redesigning our formerly exception-heavy APIs, we ultimately
-[https://github.com/genodelabs/genode/issues/5245 - reached the conclusion]
+[https://codeberg.org/genodelabs/genode/issues/5245 - reached the conclusion]
 to relieve Genode from the burden of the C++ exception mechanism.
 
 What are these burdens specifically? They boil down to two problems that
@@ -116,7 +116,7 @@ Return values expressed via sum types
 =====================================
 
 The basic building block is the 'Attempt' utility provided by
-[https://github.com/genodelabs/genode/blob/master/repos/base/include/util/attempt.h - util/attempt.h].
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/base/include/util/attempt.h - util/attempt.h].
 By using a return value of type 'Attempt<T,E>', the returned value can either
 be a valid value of type 'T' or an error value of type 'E'. The name reflects
 its designated use as a carrier for return values. To illustrate its use, here
@@ -635,7 +635,7 @@ disable_sandbox 1' in a privileged configuration file or by setting the
 
 :Corresponding discussion on issue tracker:
 
-  [https://github.com/genodelabs/goa/issues/99]
+  [https://codeberg.org/genodelabs/goa/issues/99]
 
 
 Assistance for common error situations

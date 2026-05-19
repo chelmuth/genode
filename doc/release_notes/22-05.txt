@@ -253,7 +253,7 @@ The most noteworthy additions and changes are:
 : <div class="visualClear"><!-- --></div>
 
 To examine the changes in detail, please refer to the book's
-[https://github.com/nfeske/genode-manual/commits/master - revision history].
+[https://codeberg.org/genodelabs/genode-manual/commits/main - revision history].
 
 
 Base framework and OS-level infrastructure

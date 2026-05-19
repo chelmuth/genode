@@ -431,9 +431,9 @@ This line of thoughts prompted us to re-approach the tooling for Genode from
 the perspective of an application developer. The intermediate result is a new
 tool called Goa:
 
-:Goa project at GitHub:
+:Goa project at Codeberg:
 
-  [https://github.com/nfeske/goa]
+  [https://codeberg.org/genodelabs/goa]
 
 Unlike Genode's regular tools, Goa's work flow is project-centered. A project
 is a directory that may contain source code, data, instructions how to

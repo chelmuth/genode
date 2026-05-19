@@ -243,7 +243,7 @@ inline void operator delete (void *ptr, Genode::Allocator &a) {
  * function. The function explicitly calls the object destructor and
  * operator delete afterwards.
  *
- * For details see https://github.com/genodelabs/genode/issues/1030.
+ * For details see https://codeberg.org/genodelabs/genode/issues/1030.
  *
  * \param T        implicit object type
  *

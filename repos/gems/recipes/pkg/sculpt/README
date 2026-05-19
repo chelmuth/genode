@@ -1562,7 +1562,7 @@ For tweaking the configuration, it is useful to know the labels of the
 clients. One can obtain this information from the mixer's report at
 _/report/mixer/state_.
 You can find the mixer configuration described in more detail in its
-[https://github.com/genodelabs/genode/blob/master/repos/os/src/server/record_play_mixer/README - documentation].
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/os/src/server/record_play_mixer/README - documentation].
 
 Analogously to the mixer, the audio driver can be configured dynamically by
 tweaking the values in _/model/option/audio_. For example, you can find the
@@ -1671,7 +1671,7 @@ download at [https://genode.org].
 
 # Clone Genode's Git repository:
 
-  ! git clone https://github.com/genodelabs/genode.git
+  ! git clone https://codeberg.org/genodelabs/genode.git
   ! cd genode
   ! git checkout -b sculpt-26.04 sculpt-26.04
 
@@ -1972,6 +1972,6 @@ Crucial tools used during development
 :Qemu:
   [https://www.qemu.org]
 
-:GitHub issues:
-  [https://github.com]
+:Codeberg issues:
+  [https://codeberg.org]
 

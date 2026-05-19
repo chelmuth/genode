@@ -438,7 +438,7 @@ The directory structure of partition 4 should look as follows:
 ! /ram/overlay_win7.vdi
 
 Adjust the VDI UUIDs to match the ones of the Genode
-[https://github.com/genodelabs/genode/blob/master/repos/ports/run/vm_win7.vbox#L12 - repo/ports/run/vm_win7.vbox]
+[https://codeberg.org/genodelabs/genode/src/tag/16.08/repos/ports/run/vm_win7.vbox#L12 - repo/ports/run/vm_win7.vbox]
 file:
 
 ! vboxmanage internalcommands sethduuid win7.vdi 8e55fcfc-4c09-4173-9066-341968be4864
@@ -990,7 +990,7 @@ is intended as a source or package management primitive.
 
 :Fetchurl at the Genode-World repository:
 
-  [https://github.com/genodelabs/genode-world/tree/master/src/app/fetchurl]
+  [https://codeberg.org/genodelabs/genode-world/src/branch/master/src/app/fetchurl]
 
 As a warning, fetchurl sidesteps the verification of transport layer security
 and is expected to be used where content can be verified out-of-band.
@@ -1005,7 +1005,7 @@ progress.
 
 :Audio player at the Genode-World repository:
 
-  [https://github.com/genodelabs/genode-world/tree/master/src/app/audio_player]
+  [https://codeberg.org/genodelabs/genode-world/src/branch/master/src/app/audio_player]
 
 For more information on how to use and configure the audio player, please
 have a look at its README file at _repos/world/src/app/audio_player/_.
@@ -1034,7 +1034,7 @@ system. This scenario is described in detail in the README file of the port:
 
 :RISC-V front-end server at the Genode-world repository:
 
-  [https://github.com/genodelabs/genode-world/tree/master/src/app/fesrv]
+  [https://codeberg.org/genodelabs/genode-world/src/branch/master/src/app/fesrv]
 
 Thanks to Menno Valkema of [https://nlcsl.com/ - NLCSL] for contributing this
 line of work!

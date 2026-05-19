@@ -136,7 +136,7 @@ Packaging of bitstreams with Goa
 Custom hardware designs for the Zynq SoC are created with Xilinx Vivado.
 In order to simplify reproducing a bitstream from its sources and creating
 corresponding depot archives, we added Vivado as a supported build system to
-[https://github.com/nfeske/goa - Goa]. In particular, we leveraged the fact
+[https://codeberg.org/genodelabs/goa - Goa]. In particular, we leveraged the fact
 that a hardware project can be exported from Vivado as a tcl script that
 reproduces the project. With this approach, we only need to keep the custom
 source files and omit any generated glue code.
@@ -348,7 +348,7 @@ triggering the charging when a charger gets connected, controlling the
 brightness of the display, or powering down the device.
 
 The phone variant of Sculpt OS evolves in the
-[https://github.com/nfeske/genode-allwinner - genode-allwinner] repository,
+[https://codeberg.org/genodelabs/genode-allwinner - genode-allwinner] repository,
 specifically within the _sculpt/_ and _src/app/phone_manager/_ directories.
 It can be built via the following command:
 

@@ -82,7 +82,7 @@ rather than invoked can be securely identified by their inode number. This
 way, no client can forge any capability.
 
 With the hard part finally finished thanks to a
-[https://github.com/genodelabs/genode/pull/3581 - concerted effort] led by
+[https://codeberg.org/genodelabs/genode/pulls/3581 - concerted effort] led by
 Norman Feske, I could turn back to seccomp. This Linux kernel mechanism
 restricts the ability of a process to use syscalls. Thanks to the small
 interface required by Genode processes, the whitelist approach worked nicely.
@@ -385,7 +385,7 @@ The most noteworthy additions and changes are:
 : <div class="visualClear"><!-- --></div>
 
 To examine the changes in detail, please refer to the book's
-[https://github.com/nfeske/genode-manual/commits/master - revision history].
+[https://codeberg.org/genodelabs/genode-manual/commits/main - revision history].
 
 
 The great consolidation
@@ -562,7 +562,7 @@ Rust support removed
 ~~~~~~~~~~~~~~~~~~~~
 
 Support for the Rust programming language was added as a community
-[https://github.com/genodelabs/genode/pull/1899 - contribution] in 2016. It
+[https://codeberg.org/genodelabs/genode/pulls/1899 - contribution] in 2016. It
 included the ability to supplement Rust code to Genode components via Genode's
 build system, a few runtime libraries, and a small test case. However, the
 addition of Rust remained a one-off contribution with no consecutive
@@ -574,7 +574,7 @@ build of the Rust tool chain.
 
 The current release removes Rust to lift our maintenance burden. To
 accommodate Rust developers in the future, we may consider supporting Rust on
-Genode via the [https://github.com/nfeske/goa - Goa] tool, and facilitating
+Genode via the [https://codeberg.org/genodelabs/goa - Goa] tool, and facilitating
 regular tools and work flows like cargo.
 
 
@@ -865,7 +865,7 @@ The 'Allocator_guard' was an
 [https://genode.org/documentation/release-notes/11.02#Comprehensive_accounting_of_core_resources - early]
 take on a utility for tracking and constraining the consumption of memory
 within a component. However, we later
-[https://github.com/genodelabs/genode/issues/1039 - got aware] of several
+[https://codeberg.org/genodelabs/genode/issues/1039 - got aware] of several
 limitations of the taken approach. In short, the 'Allocator_guard' tried
 to attack the resource-accounting problem at the wrong level of abstraction.
 In Genode

@@ -73,7 +73,7 @@ notifications and to disregard blocking RPC between components, we found
 ourselves designing components as state machines rather than procedural
 programs. To promote this programming style, we introduced the so-called
 server API (_os/server.h_). See
-[https://github.com/genodelabs/genode/blob/master/repos/os/src/server/nic_loopback/main.cc - NIC loopback server]
+[https://codeberg.org/genodelabs/genode/src/tag/16.05/repos/os/src/server/nic_loopback/main.cc - NIC loopback server]
 for a canonical example of such a component.
 
 We found that this new style greatly increased the robustness and flexibility
@@ -208,7 +208,7 @@ The changes between the last year's edition and the current revision are:
 : <div class="visualClear"><!-- --></div>
 
 To see the changes in detail, please refer to the book's
-[https://github.com/nfeske/genode-manual/commits/master - revision history].
+[https://codeberg.org/genodelabs/genode-manual/commits/main - revision history].
 
 As another useful resource to get acquainted with the new API,
 please also consider the

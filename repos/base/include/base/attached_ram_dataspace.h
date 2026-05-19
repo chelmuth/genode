@@ -81,7 +81,7 @@ class Genode::Attached_ram_dataspace
 			 * On some platforms, namely Fiasco.OC on ARMv7, the handling
 			 * of page faults interferes with the caching attributes used
 			 * for uncached DMA memory. See issue #452 for more details
-			 * (https://github.com/genodelabs/genode/issues/452). As a
+			 * (https://codeberg.org/genodelabs/genode/issues/452). As a
 			 * work-around for this issues, we eagerly map the whole
 			 * dataspace before writing actual content to it.
 			 */

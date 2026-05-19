@@ -483,7 +483,7 @@ Libraries and applications
 ##########################
 
 As a stepping stone in the
-[https://github.com/genodelabs/genode/issues/1399 - forthcoming community effort]
+[https://codeberg.org/genodelabs/genode/issues/1399 - forthcoming community effort]
 to bring the Nix package manager to Genode, ports of libbz2 and sqlite have
 been added to the _repos/libports/_ repository.
 

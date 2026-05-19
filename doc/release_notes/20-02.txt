@@ -317,7 +317,7 @@ To accommodate such scenarios where a domain-specific management component is
 tightly coupled with a dynamic subsystem, we extracted the child-management
 functionality from the init component into a new library called "sandbox". The
 library API is located at
-[https://github.com/genodelabs/genode/blob/master/repos/os/include/os/sandbox.h - os/include/os/sandbox.h].
+[https://codeberg.org/genodelabs/genode/src/tag/20.02/repos/os/include/os/sandbox.h - os/include/os/sandbox.h].
 
 In addition to the hosting of components, the sandbox API also allows for the
 interaction with the sandboxed children by providing locally implemented
@@ -810,5 +810,5 @@ playground - not for productive use - the work flow is not entirely automated.
 In particular, one needs to prepare a suitable
 [https://github.com/jklmnn/linux/commits/genode - Linux kernel] manually.
 If you are interested in the topic, please refer to the background information
-given in the [https://github.com/genodelabs/genode/pull/2829 - issue tracker].
+given in the [https://codeberg.org/genodelabs/genode/pulls/2829 - issue tracker].
 

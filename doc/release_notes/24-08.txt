@@ -209,7 +209,7 @@ for Wifi devices found in Thinkpad T430 notebooks.
 
 During this release cycle, we analyzed a noticeable network throughput drop
 resp. CPU load increase when using the
-[https://github.com/genodelabs/genode/issues/5151 - PC Ethernet driver].
+[https://codeberg.org/genodelabs/genode/issues/5151 - PC Ethernet driver].
 We eventually traced the effect to runtime overhead originating from our DDE
 memory allocator. The positive impact of a simple allocation-cache
 implementation confirmed our suspicion veritable. Hence, we replaced our
@@ -397,7 +397,7 @@ which the router forwards port 9999 of the _uplink_ domain. This is intended
 for making the testbed's debug monitor available as a remote GDB target. Note
 that these changes will become effective with the next Sculpt release in
 October. In the meantime, you may cherry-pick the
-[https://github.com/genodelabs/genode/commit/aeb42b0983143e6fe0a01f7f5316612709da1a9d - corresponding commit].
+[https://codeberg.org/genodelabs/genode/commit/86848d2 - corresponding commit].
 
 Along with debugging support, Goa also received a '--with-backtrace' switch and
 a 'backtrace' command. The former instructs the tool to preserve frame-pointer

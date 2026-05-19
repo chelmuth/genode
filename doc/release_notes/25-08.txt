@@ -123,11 +123,11 @@ issue tracker.
 
 :Issue #5117 (base-hw: scheduling fairness and latency optimization):
 
-  [https://github.com/genodelabs/genode/issues/5117]
+  [https://codeberg.org/genodelabs/genode/issues/5117]
 
 :Issue #5604 (scheduling benchmarks):
 
-  [https://github.com/genodelabs/genode/issues/5604]
+  [https://codeberg.org/genodelabs/genode/issues/5604]
 
 
 Consideration of a lean alternative to XML

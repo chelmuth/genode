@@ -20,7 +20,7 @@ code base or authoring additional documentation, you are more than welcome.
 For getting a rough overview of the current topics the Genode developers are
 pondering over, please have a look at the issue tracker:
 
-:[https://github.com/genodelabs/genode/issues - Issue tracker]:
+:[https://codeberg.org/genodelabs/genode/issues - Issue tracker]:
 
 You will see that the issues cover a large spectre ranging from minor fixes,
 over new features, to architectural changes. To pick the topic that suits
@@ -47,13 +47,13 @@ Clone the repository
 The complete source code for both the Genode OS Framework and its documentation
 is managed via the project's public Git repository:
 
-:[https://github.com/genodelabs - Genode Repository at GitHub]:
+:[https://codeberg.org/genodelabs - Genode Repository at Codeberg]:
 
 Also, most of the content of the genode.org website can be found in the form
 of plain text file within the repository.
 
 If you intend to contribute changes to the mainline development, we
-recommend you to fork the Genode repository on GitHub. This will make it
+recommend you to fork the Genode repository on Codeberg. This will make it
 easy for everyone to track your activities, comment on your work.
 
 
@@ -65,7 +65,7 @@ issue in the issue tracker. This will be the place where we will discuss
 your ongoing work. If there is no issue for your topic, please
 create one. Once there exists the issue with a short description about
 what your line of work is about, create a new topic branch based on the
-'genodelabs/master' branch. For example,
+'genodelabs/main' branch. For example,
 
 ! git checkout -b issue76
 
@@ -102,10 +102,10 @@ Writing a commit message
 * If the patch refers to an existing issue, add a reference to the
   corresponding issue. If not, please consider opening an issue first. In the
   case the patch is supposed to close an existing issue, add this information
-  using GitHub's conventions, e.g., by stating "fix #45" in your commit
-  message, the issue will be closed automatically, by stating "ref #45', the
-  commit will be displayed in the stream of discussion of the corresponding
-  issue.
+  using Codeberg's conventions, e.g., by stating "fix genodelabs/genode#45"
+  in your commit message, the issue will be closed automatically, by stating
+  "genodelabs/genode#45', the commit will be displayed in the stream of
+  discussion of the corresponding issue.
 
 * After a blank line, add a description of the patch. For writing the
   description, keep the following questions in mind:
@@ -161,11 +161,11 @@ to *licensing@genode-labs.com*.
 Incorporating your work into the mainline source tree
 #####################################################
 
-Our goal with the 'genodelabs/master' branch is to keep the history as linear
+Our goal with the 'genodelabs/main' branch is to keep the history as linear
 as possible to make it easy for users of the framework to track the
 development.
 To help us with accomplishing this goal, please make sure that your patch
-applies cleanly to 'genodelabs/master'.
+applies cleanly to 'genodelabs/main'.
 
 For the continuous work on your private topic branch, please feel free to
 commit as you like. For example, your commit sequence could look like:
@@ -175,7 +175,7 @@ commit as you like. For example, your commit sequence could look like:
 ! "Fixed spelling in comment"
 
 If your history contains intermediate steps that are not meaningful to have in
-'genodelabs/master', you may decide to clean up your history via 'git rebase -i'.
+'genodelabs/main', you may decide to clean up your history via 'git rebase -i'.
 Ideally, each revision should represent a consistent state of your work that
 should (at least) build without errors. The refined history will then end up in
 the form of just a few commits. For the example above, all three commits should

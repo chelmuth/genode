@@ -51,7 +51,7 @@ in time, we felt that this far-reaching change should better not be rushed
 into the release. It will be merged shortly after, and settle into the upcoming
 Sculpt OS version 24.04 just fine. The second topic not covered is SMS support
 for the PinePhone, which is a topic actively
-[https://github.com/genodelabs/genode/issues/5127 - worked on] but with no
+[https://codeberg.org/genodelabs/genode/issues/5127 - worked on] but with no
 user-visible effect until its integration in Sculpt OS in April.
 
 

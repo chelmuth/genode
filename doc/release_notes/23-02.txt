@@ -234,7 +234,7 @@ the packet buffer of the NIC session - the VFS optimization almost eliminated
 the variance of the I/O throughput among the different kernels and generally
 improved the performance. On kernels that suffered most from the eager context
 switching, netperf
-[https://github.com/genodelabs/genode/issues/4697#issuecomment-1342542399 - shows a 10x]
+[https://codeberg.org/genodelabs/genode/issues/4697#issuecomment-15345233 - shows a 10x]
 improvement. But even on kernels with more balanced scheduling, the effect is
 impressive.
 
@@ -792,7 +792,7 @@ Build system and tools
 Building and packaging CMake-based shared libraries (via Goa)
 =============================================================
 
-The [https://github.com/nfeske/goa - Goa] tool streamlines the work of
+The [https://codeberg.org/genodelabs/goa - Goa] tool streamlines the work of
 cross-developing, testing, and publishing Genode application software
 using commodity build tools like CMake. The tool is particularly suited for
 porting existing 3rd-party software to Sculpt OS.
@@ -812,7 +812,7 @@ to Goa, the tool is able to build and publish both the library and the API as
 depot archives - ready to use by Genode applications linking to the library.
 The way how all those little pieces work together is best illustrated by the
 accompanied
-[https://github.com/nfeske/goa/tree/master/examples/cmake_library - example].
+[https://codeberg.org/genodelabs/goa/src/main/examples/cmake_library - example].
 For further details, please consult Goa's builtin documentation via 'goa help'
 (overview of Goa's sub commands and files) and 'goa help api' (specifics of
 the _api_ declaration file).

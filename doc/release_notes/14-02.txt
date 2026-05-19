@@ -280,7 +280,7 @@ Throughout Genode, we maintain a programming style that largely avoids dynamic
 memory allocations. For the most part, higher-level objects aggregate
 lower-level objects as class members. For example, the nitpicker GUI server
 is actually a compound of such aggregations (see
-[https://github.com/genodelabs/genode/blob/master/os/src/server/nitpicker/main.cc#L803 - Nitpicker::Main]).
+[https://codeberg.org/genodelabs/genode/src/tag/14.02/os/src/server/nitpicker/main.cc#L803 - Nitpicker::Main]).
 This functional programming style leads to robust programs but it poses a
 problem for programs that are expected to adopt their behaviour at runtime.
 For the example of nitpicker, the graphics back end of the GUI server takes

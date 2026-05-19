@@ -51,7 +51,7 @@
 # when encountering a 'build' step, the build.conf is included a second time,
 # with the content taken from the environment variable. We need to reset the
 # 'REPOSITORIES' variable to prevent extending this variable twice.
-# (see https://github.com/genodelabs/genode/issues/3731)
+# (see https://codeberg.org/genodelabs/genode/issues/3731)
 #
 REPOSITORIES :=
 

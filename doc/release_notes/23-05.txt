@@ -101,7 +101,7 @@ commands:
 
 :Goa tool:
 
-  [https://github.com/genodelabs/goa/]
+  [https://codeberg.org/genodelabs/goa/]
 
 
 Using Goa for bringing apps based on the Ubuntu-Touch-UI toolkit to Genode

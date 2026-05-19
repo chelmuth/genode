@@ -548,6 +548,6 @@ Vim syntax highlighting
 
 :preliminary version of a hid.vim syntax file:
 
-  [https://github.com/genodelabs/genode/tree/master/tool/vim]
+  [https://codeberg.org/genodelabs/genode/src/branch/main/tool/vim]
 
 

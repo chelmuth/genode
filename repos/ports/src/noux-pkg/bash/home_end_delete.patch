@@ -2,8 +2,8 @@ This patch adjust the default encoding for the home, end, and delete keys to
 match the 'screen' terminal as used by Genode. It is related to the following
 issues:
 
-  https://github.com/genodelabs/genode/issues/2705 (home, end)
-  https://github.com/genodelabs/genode/issues/4058 (delete)
+  https://codeberg.org/genodelabs/genode/issues/2705 (home, end)
+  https://codeberg.org/genodelabs/genode/issues/4058 (delete)
 
 --- a/lib/readline/readline.c
 +++ b/lib/readline/readline.c

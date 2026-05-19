@@ -248,7 +248,7 @@ efficient and rapid developments are unmatched for many system developers.
 It thereby plays a very important role in Genode development.
 
 We have longed for using Qemu natively on Genode for quite a while now - as
-documented by this [https://github.com/genodelabs/genode/issues/116 - GitHub issue],
+documented by this [https://codeberg.org/genodelabs/genode/issues/116 - GitHub issue],
 which dates back to 2012. Actually, in 2019 there was already an attempt (see
 the issue) to get Qemu up and running, which - well - succeeded to the degree
 that it compiled and linked. At that time the build system of Qemu was way too
@@ -703,7 +703,7 @@ Over the years and with the number of run scripts growing, those preconditions
 have become complex and many. Moreover, run scripts backing out because of
 an unsatisfied precondition are not easy to distinguish from successful run
 scripts when executed in an automated fashion. Thanks to the welcome
-[https://github.com/genodelabs/genode/issues/5432 - initiative] of Roman Iten
+[https://codeberg.org/genodelabs/genode/issues/5432 - initiative] of Roman Iten
 of [https://gapfruit.com - Gapfruit], the precondition checks for executing
 run scripts have now become largely streamlined and much simpler.
 

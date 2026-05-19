@@ -48,7 +48,7 @@ with Genode. For installing a Genode-based desktop OS, one has to compile and
 configure all components from source, there is no package management, there
 are no wizards that guide you, and there are no GUI dialogs for configuring
 the system. However, all the pieces for creating a system that is practically
-usable are [https://github.com/genodelabs/genode/issues/1552 - available], and
+usable are [https://codeberg.org/genodelabs/genode/issues/1552 - available], and
 putting them together is a lot of fun!
 
 

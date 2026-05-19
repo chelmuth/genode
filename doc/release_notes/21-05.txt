@@ -282,7 +282,7 @@ The most noteworthy additions and changes are:
 : <div class="visualClear"><!-- --></div>
 
 To examine the changes in detail, please refer to the book's
-[https://github.com/nfeske/genode-manual/commits/master - revision history].
+[https://codeberg.org/genodelabs/genode-manual/commits/main - revision history].
 
 
 Base framework and OS-level infrastructure
@@ -297,7 +297,7 @@ VFS-access utilities
 Low-complexity native Genode components do not depend on a C runtime. To allow
 such components to still enjoy the power and flexibility of the Genode's VFS
 infrastructure, we provide an evolving front-end API
-[https://github.com/genodelabs/genode/blob/master/repos/os/include/os/vfs.h - os/vfs.h]
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/os/include/os/vfs.h - os/vfs.h]
 first introduced in version
 [https://genode.org/documentation/release-notes/19.11#Virtual_file-system_infrastructure - 19.11].
 
@@ -641,7 +641,7 @@ The code of this line of work is available at a dedicated repository:
 
 :Genode board support for Allwinner SoCs:
 
-  [https://github.com/nfeske/genode-allwinner]
+  [https://codeberg.org/genodelabs/genode-allwinner]
 
 
 RISC-V
@@ -659,7 +659,7 @@ With the interrupt controller in place, we implemented a driver for the
 [https://hensoldt-cyber.com/mig-v - MiG-V] board. The driver component runs on
 Qemu (with OpenCores enabled) as well as on the MiG-V board itself. Our RISC-V
 board specific line of work can now be found within a separate
-[https://github.com/ssumpf/genode-riscv - repository].
+[https://codeberg.org/genodelabs/genode-riscv - repository].
 
 With driver support in place, the final step for full RISC-V support in Genode
 is to extend our C library for this architecture.

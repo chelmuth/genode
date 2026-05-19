@@ -635,7 +635,7 @@ user data. This can reduce resource consumption.
 
 The VM we came up with is provided as package for Sculpt by Martin Stein
 (depot user 'mstein'). You'll possibly need to manually add Martin's
-[https://github.com/genodelabs/genode/tree/master/depot/mstein - depot key and download location]
+[https://codeberg.org/genodelabs/genode/src/tag/19.08/depot/mstein - depot key and download location]
 to your Sculpt depot directory. After enabling this user, the captive portal
 VM can be found in the Sculpt menu under "Depot -> mstein -> Virtual
 Machines -> vbox5-nova-captive-portal".

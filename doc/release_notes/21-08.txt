@@ -163,11 +163,11 @@ SoCs, namely i.MX8MQ and Allwinner A64.
 
 :Genode support for i.MX8MQ SoC:
 
-  [https://github.com/skalk/genode-imx8mq]
+  [https://codeberg.org/genodelabs/genode-imx8mq]
 
 :Genode support for Allwinner A64 SoC:
 
-  [https://github.com/nfeske/genode-allwinner]
+  [https://codeberg.org/genodelabs/genode-allwinner]
 
 The most pivotal methodological change is the way how we deal with the
 Linux-internal API now. In our previous work, we used to mimic the content of
@@ -504,7 +504,7 @@ run script in Qemu:
 Sandbox API
 ===========
 
-When using [https://github.com/nfeske/goa - Goa], we noticed that using the os
+When using [https://codeberg.org/genodelabs/goa - Goa], we noticed that using the os
 API caused binaries to be always linked against 'sandbox.lib.so' because its
 symbols were part of the api archive as well. We therefore decided to separate
 the sandbox API from the os API by moving the header files to

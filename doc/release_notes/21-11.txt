@@ -117,7 +117,7 @@ scripts, and configurations.
 
 With this exploratory phase completed, we plan to move the SoC-specific
 repositories - that currently reside at each maintainer's GitHub account -
-under the banner of [https://github.com/genodelabs - genodelabs] during the
+under the banner of [https://codeberg.org/genodelabs - genodelabs] during the
 next release cycle.
 
 
@@ -315,7 +315,7 @@ pin driver's job is the safeguarding of GPIO pins.
 
 To ease the implementation of such pin drivers, the new session interfaces are
 accompanied by a set of new utilities in
-[https://github.com/genodelabs/genode/blob/staging/repos/os/include/os/pin_driver.h -  os/pin_driver.h].
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/os/include/os/pin_driver.h -  os/pin_driver.h].
 The use of these utilities is best illustrated by the
 [https://github.com/nfeske/genode-allwinner/tree/master/src/drivers/pin/a64 - pin driver for the A64 SoC].
 

@@ -31,9 +31,9 @@ manually compiled:
 
 :Pre-compiled:
   Download the tool chain for
-  [https://github.com/genodelabs/genode/releases/download/25.05/genode-toolchain-25.05-debian-12.10.tar.xz - Debian 12.10]
+  [https://codeberg.org/genodelabs/genode/releases/download/25.05/genode-toolchain-25.05-debian-12.10.tar.xz - Debian 12.10]
   or
-  [https://github.com/genodelabs/genode/releases/download/25.05/genode-toolchain-25.05-ubuntu-24.04.tar.xz - Ubuntu 24.04].
+  [https://codeberg.org/genodelabs/genode/releases/download/25.05/genode-toolchain-25.05-ubuntu-24.04.tar.xz - Ubuntu 24.04].
 
   ! SHA256 245d553c85934589fe3d2d892ce7b3555ad548ece0d000e04c57076d00826850 (Debian)
   ! SHA256 6cab8e5f4490399a296a73b01695d5fb055a40f6ac04d61a3f7a7344003eb739 (Ubuntu)

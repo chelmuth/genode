@@ -198,7 +198,7 @@ a driver creating one capture session per monitor becomes able to display the
 larger panorama spanning the connected displays. The assignment of capture
 clients to different parts of the panorama follows Genode's established
 label-based policy-selection approach as explained in the
-[https://github.com/genodelabs/genode/blob/master/repos/os/src/server/nitpicker/README - documentation]
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/os/src/server/nitpicker/README - documentation]
 of the nitpicker GUI server.
 
 Special care has been taken to ensure that the pointer is always visible. It
@@ -214,7 +214,7 @@ listed within a '<merge>' node as a single encompassing capture session at the
 GUI server. The mirroring of the picture is done by the hardware. Each
 connector declared outside the '<merge>' node is handled as a discrete capture
 session labeled after the corresponding connector. The driver's
-[https://github.com/genodelabs/genode/blob/master/repos/pc/src/driver/framebuffer/intel/pc/README - documentation]
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/pc/src/driver/framebuffer/intel/pc/README - documentation]
 describes the configuration in detail.
 
 
@@ -520,7 +520,7 @@ updated every 30 seconds while connected to a network.
 !</wifi_config>
 
 For more information please consult the driver's
-[https://github.com/genodelabs/genode/blob/master/repos/dde_linux/src/driver/wifi/README - documentation]
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/dde_linux/src/driver/wifi/README - documentation]
 that now features a best-practices section explaining how the driver should be
 operated at best, and highlights the difference between a managed (as used in
 Sculpt OS) and a user-generated configuration.

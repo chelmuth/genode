@@ -393,7 +393,7 @@ can be triggered at any time by touching the left border of the touch screen.
   Morph browser with other components (right).
 
 This flavor of Sculpt OS evolves in the
-[https://github.com/nfeske/genode-allwinner - genode-allwinner] repository,
+[https://codeberg.org/genodelabs/genode-allwinner - genode-allwinner] repository,
 specifically within the _sculpt/_ and _src/app/phone_manager/_ directories.
 The latter asserts the role of Sculpt's _gems/src/app/sculpt_manager_.
 We invite seasoned developers - especially those who are following the
@@ -566,7 +566,7 @@ To implement mobile data connectivity on the PinePhone
 (EHCI) for the Allwinner A64 SoC to Genode by porting the corresponding
 host-controller driver from Linux using our DDE approach. Since our existing
 USB-over-Ethernet
-[https://github.com/genodelabs/genode/tree/master/repos/dde_linux/src/drivers/usb_net - driver]
+[https://codeberg.org/genodelabs/genode/src/tag/22.08/repos/dde_linux/src/drivers/usb_net - driver]
 on Genode lacked support for the Ethernet Control Model, which is provided by
 the modem, we added support for ECM as well.
 

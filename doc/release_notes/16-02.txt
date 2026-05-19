@@ -50,7 +50,7 @@ in Section [seL4 version 2.1].
 
 According to the [https://genode.org/about/road-map - road map], we originally planned to
 revise the framework API in this release. Even though this topic is
-[https://github.com/genodelabs/genode/issues/1832 - very actively pursued], we
+[https://codeberg.org/genodelabs/genode/issues/1832 - very actively pursued], we
 decided to not rush it. We find it important to provide a smooth migration path
 from the old API to the new one. Determining the best path is actually trickier
 than revising the API, though. To let our decisions settle a bit, we postpone
@@ -262,7 +262,7 @@ Steps to test Genode on RISC-V
 
   ! # download Genode
   ! cd ../../
-  ! git clone https://github.com/genodelabs/genode.git
+  ! git clone https://codeberg.org/genodelabs/genode.git
   !
   ! # build the Genode tool chain
   ! cd genode
@@ -430,7 +430,7 @@ is the designated place for hosting ported applications, libraries, and games.
 
 To use it, you first need to obtain a clone of Genode:
 
-! git clone https://github.com/genodelabs/genode.git genode
+! git clone https://codeberg.org/genodelabs/genode.git genode
 
 Now, clone the _genode-world.git_ repository to _genode/repos/world:_
 
@@ -450,7 +450,7 @@ In contrast to the components found in the mainline Genode repository, the
 components within the _world_ repository are not subjected to the regular
 quality-assurance measures of Genode Labs. Hence, problems are to be expected.
 If you encounter bugs, build problems, or stability issues, please report them
-to the [https://github.com/genodelabs/genode-world/issues - issue tracker] or
+to the [https://codeberg.org/genodelabs/genode-world/issues - issue tracker] or
 the [https://genode.org/community/mailing-lists - mailing list].
 
 

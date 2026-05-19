@@ -22,7 +22,7 @@ namespace Genode {
 	 * stuck at the CPU-session destruction, which is unexpected. By setting
 	 * the constant below to 'false', we work around the problem.
 	 *
-	 * See https://github.com/genodelabs/genode/issues/2659
+	 * See https://codeberg.org/genodelabs/genode/issues/2659
 	 */
 	constexpr bool KERNEL_SUPPORTS_EAGER_CHILD_DESTRUCTION = true;
 }
