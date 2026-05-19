@@ -153,6 +153,11 @@ class Platform::Device_component : public Rpc_object<Device_interface,
 			return _irq.cap();
 		}
 
+		Alloc_msi_result alloc_msi(Signal_context_capability, bool) {
+			return Alloc_error::DENIED; }
+
+		void free_msi(Msi_handle) { }
+
 		Io_mem_session_capability io_mem(unsigned idx, Range &range)
 		{
 			range.start = 0;
@@ -291,9 +296,32 @@ class Platform::Session_component : public Rpc_object<Session>,
 				}
 
 				g.node("device", [&]() {
-					copy_attributes(g, dev);
+						/*
+						 * Only copy name and type and omit msi/msi_x attributes
+						 * to force usage of GSI in intel_fb.
+						 */
+						dev.for_each_attribute([&] (Node::Attribute const &attr) {
+							if (attr.name == "name" || attr.name == "type") {
+								using Value = String<64>;
+								Value value { Cstring(attr.value.start, attr.value.num_bytes) };
+								g.attribute(attr.name.string(), value);
+							}
+						});
+
+					/*
+					 * Generate an artifical irq node for systems that might
+					 * only announce msi (noticed with an Arrow Lake machine).
+					 */
+					dev.with_sub_node("irq",
+						[&] (Node const &node) { copy_node(g, node); },
+						[&] { g.node("irq", [&]() { g.attribute("number", 42u); }); });
 
 					dev.for_each_sub_node([&] (Node const &node) {
+
+						/* handled above */
+						if (node.has_type("irq"))
+							return;
+
 						if (!node.has_type("io_mem")) {
 							copy_node(g, node);
 							return;
