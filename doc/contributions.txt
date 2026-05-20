@@ -97,15 +97,7 @@ Writing a commit message
 * Use the first line to summarize your commit using not more than 50 characters.
   This line will be displayed by various tools. So it should express the basic
   topic and eventually refer to an issue. For example:
-  ! Add sanity checks in 'tool/tool_chain', fix #62
-
-* If the patch refers to an existing issue, add a reference to the
-  corresponding issue. If not, please consider opening an issue first. In the
-  case the patch is supposed to close an existing issue, add this information
-  using Codeberg's conventions, e.g., by stating "fix genodelabs/genode#45"
-  in your commit message, the issue will be closed automatically, by stating
-  "genodelabs/genode#45', the commit will be displayed in the stream of
-  discussion of the corresponding issue.
+  ! tool: add sanity checks in tool/tool_chain
 
 * After a blank line, add a description of the patch. For writing the
   description, keep the following questions in mind:
@@ -117,12 +109,22 @@ Writing a commit message
   The description should use a line with of about 75 characters. It may consist
   of multiple paragraphs separated by blank lines.
 
+* If the patch refers to an existing issue, add a reference to the
+  corresponding issue by stating "Issue genodelabs/genode#N" in the commit
+  message where 'N' is the issue number. This will make the commit visible in
+  the stream of discussion of the corresponding issue. Should the patch be
+  unrelated to any existing issue, consider opening a new issue first.
+  Whenever the patch is supposed to close an existing issue, add this information
+  by stating "Fixes genodelabs/genode#N" in your commit message. This
+  will close the issue automatically as soon as the commit enters the main
+  branch.
+
 * Proof-read your commit message for spelling or grammatical errors.
 
 * Reconsider the documentation related to your patch: If the commit message
-  contains important information not present in the form of source-code
-  comments, this information should better placed into the code or the
-  accompanied documentation (e.g., in the form of a README file).
+  contains important information not present in the source-code, this
+  information should better placed into the code or the accompanied
+  documentation (e.g., in the form of a README file).
 
 
 Genode Contributors Agreement
