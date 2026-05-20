@@ -72,6 +72,8 @@ schema deploy
     + node | category: target
   + node record
     + node | category: target
+  + node dma         | + attr name | type: any | default:
+    + node | category: target
   + node platform    | + attr name | type: any | default:
     + node | category: target
   + node pin_state   | + attr name | type: any | default:
