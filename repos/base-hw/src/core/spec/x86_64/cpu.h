@@ -158,7 +158,7 @@ class Board::Cpu : public Hw::X86_64_cpu
 
 		struct Mmu_context
 		{
-			addr_t cr3;
+			Cr3::access_t cr3;
 
 			Mmu_context(addr_t page_table_base, addr_t id);
 		};
@@ -175,10 +175,10 @@ class Board::Cpu : public Hw::X86_64_cpu
 
 		static void single_step(Context &regs, bool on);
 
-		/**
-		 * Invalidate the whole TLB
-		 */
-		static void invalidate_tlb() { Cr3::write(Cr3::read()); }
+		static bool pcid_avail();
+
+		static void invalidate_tlb(Mmu_context &mmu_context,
+		                           addr_t, size_t, bool);
 
 		static void clear_memory_region(addr_t const addr,
 		                                size_t const size,

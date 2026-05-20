@@ -15,11 +15,11 @@
 #include <kernel/pd.h>
 
 
-bool Kernel::Pd::invalidate_tlb(Cpu &cpu, addr_t, size_t)
+bool Kernel::Pd::invalidate_tlb(Cpu &cpu, addr_t addr, size_t size)
 {
 	/* on the current CPU invalidate the TLB */
 	if (cpu.id() == Cpu::executing_id()) {
-		Cpu::invalidate_tlb();
+		Cpu::invalidate_tlb(mmu_regs, addr, size, !_core_data.id);
 		return false;
 	}
 

@@ -67,12 +67,12 @@ struct Hw::X86_64_cpu
 	/**
 	 * Control register 3: Page-Directory base register
 	 *
-	 * See Intel SDM Vol. 3A, section 2.5.
+	 * See Intel SDM Vol. 3A, section 2.5 and section 5.
 	 */
 	X86_64_CR_REGISTER(Cr3, cr3,
-		struct Pwt : Bitfield<3,1> { };    /* Page-level write-through    */
-		struct Pcd : Bitfield<4,1> { };    /* Page-level cache disable    */
-		struct Pdb : Bitfield<12, 36> { }; /* Page-directory base address */
+		struct Pcid : Bitfield<0,  12> { }; /* Process-context ID */
+		struct Pdb  : Bitfield<12, 36> { }; /* Page-directory base address */
+		struct Tlb_ignore : Bitfield<63, 1> { }; /* if PCID is enabled */
 	);
 
 	X86_64_CR_REGISTER(Cr4, cr4,
@@ -93,7 +93,7 @@ struct Hw::X86_64_cpu
 		struct Vmxe       : Bitfield<13, 1> { }; /* VMX Enable */
 		struct Smxe       : Bitfield<14, 1> { }; /* SMX Enable */
 		struct Fsgsbase   : Bitfield<16, 1> { }; /* FSGSBASE-Enable */
-		struct Pcide      : Bitfield<17, 1> { }; /* PCIDE Enable */
+		struct Pcide      : Bitfield<17, 1> { }; /* PCID Enable */
 		struct Osxsave    : Bitfield<18, 1> { }; /* XSAVE and Processor Extended
 		                                            States-Enable */
 		struct Smep       : Bitfield<20, 1> { }; /* SMEP Enable */
@@ -330,6 +330,7 @@ struct Hw::X86_64_cpu
 
 	X86_64_CPUID_REGISTER(Cpuid_1_ecx, 1, ecx,
 		struct Vmx          : Bitfield< 5, 1> { };
+		struct Pcid         : Bitfield<17, 1> { };
 		struct X2apic       : Bitfield<21, 1> { };
 		struct Tsc_deadline : Bitfield<24, 1> { };
 	);

@@ -383,6 +383,18 @@ Bootstrap::Platform::Cpu_id Bootstrap::Platform::enable_mmu()
 
 	Cpu::Cr3::write(Cpu::Cr3::Pdb::masked((addr_t)core_pd->table_base));
 
+	Cpu::Cr4::access_t cr4 = Cpu::Cr4::read();
+
+	/* enable global pages */
+	Cpu::Cr4::Pge::set(cr4, 1);
+
+	/* enable PCID if available */
+	Cpu::Cpuid_1_ecx::access_t cpu_id1_ecx = Cpu::Cpuid_1_ecx::read();
+	if (Cpu::Cpuid_1_ecx::Pcid::get(cpu_id1_ecx))
+		Cpu::Cr4::Pcide::set(cr4, 1);
+
+	Cpu::Cr4::write(cr4);
+
 	return cpu_id;
 }
 

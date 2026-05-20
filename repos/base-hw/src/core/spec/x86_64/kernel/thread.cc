@@ -27,13 +27,7 @@ using namespace Kernel;
 
 void Core_thread::Tlb_invalidation::execute(Cpu &cpu)
 {
-	/*
-	 * Invalidate cpu-local TLB by setting core/kernels
-	 * page-table active. As a side-effect the former
-	 * page-table gets unused, in case the TLB invalidation
-	 * is done during a pd destruction.
-	 */
-	cpu.switch_to(caller._pd.mmu_regs);
+	cpu.invalidate_tlb(pd.mmu_regs, addr, size, !pd.id());
 
 	/*
 	 * if size is equal to whole user space, the whole Pd gets

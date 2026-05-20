@@ -114,6 +114,8 @@ class Kernel::Pd
 		 ** Accessors **
 		 ***************/
 
+		addr_t id() { return _core_data.id; }
+
 		Object              &kernel_object()       { return _kernel_object; }
 		Capid_allocator     &capid_alloc()         { return _capid_alloc;   }
 		Object_identity_reference_tree &cap_tree() { return _cap_tree;      }

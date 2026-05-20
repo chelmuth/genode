@@ -66,8 +66,12 @@ Cpu::Context::Context(bool core)
 }
 
 
-Cpu::Mmu_context::Mmu_context(addr_t table, addr_t)
-: cr3(Cr3::Pdb::masked(table)) { }
+Cpu::Mmu_context::Mmu_context(addr_t table, addr_t id)
+:
+	cr3(Cr3::Pdb::masked(table))
+{
+	if (pcid_avail()) Cr3::Pcid::set(cr3, id);
+}
 
 
 void Cpu::Tss::init()
@@ -137,7 +141,9 @@ bool Cpu::active(Mmu_context &mmu_context)
 
 void Cpu::switch_to(Mmu_context &mmu_context)
 {
-	Cr3::write(mmu_context.cr3);
+	Cr3::access_t cr3 = mmu_context.cr3;
+	if (pcid_avail()) Cr3::Tlb_ignore::set(cr3, 1);
+	Cr3::write(cr3);
 }
 
 
@@ -167,4 +173,45 @@ void Cpu::single_step(Context &regs, bool on)
 		regs.eflags |= Context::Eflags::EFLAGS_TF;
 	else
 		regs.eflags &= ~Context::Eflags::EFLAGS_TF;
+}
+
+
+bool Cpu::pcid_avail()
+{
+	static bool avail = Cpuid_1_ecx::Pcid::get(Cpuid_1_ecx::read());
+	return avail;
+}
+
+
+void Cpu::invalidate_tlb(Mmu_context &mmu_context, addr_t addr, size_t size, bool core)
+{
+	/* non global entries get deleted by CR3 re-loading */
+	if (!core) {
+		if (pcid_avail()) {
+			Cr3::access_t cr3 = Cr3::read();
+			Cr3::write(mmu_context.cr3);
+			if (pcid_avail()) Cr3::Tlb_ignore::set(cr3, 1);
+			Cr3::write(cr3);
+		} else {
+			Cr3::write(Cr3::read());
+		}
+		return;
+	}
+
+	/*
+	 * if the size of the virtual region is too big,
+	 * calling invlpg for each page-entry gets too expensive,
+	 * just flush everything then.
+	 */
+	if (size > 32 * PAGE_SIZE) {
+		Cr4::access_t cr4 = Cr4::read();
+		Cr4::Pge::set(cr4, 0);
+		Cr4::write(cr4);
+		Cr4::Pge::set(cr4, 1);
+		Cr4::write(cr4);
+		return;
+	}
+
+	for (addr_t page = addr; page < (addr+size); page += PAGE_SIZE)
+		asm volatile ("invlpg (%0)" :: "r" (page) : "memory");
 }
