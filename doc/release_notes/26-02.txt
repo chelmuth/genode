@@ -123,7 +123,7 @@ a guideline:
 ! git clone --bare https://github.com/<user>/<repo> bare_clone
 ! cd bare_clone
 ! git branch -m master main
-! git remote set-url origin ssh://git@codeberg.com/<user>/<repo>
+! git remote set-url origin ssh://git@codeberg.org/<user>/<repo>
 ! git push --mirror
 
 Codeberg uses Forgejo and has a very similar UI compared to GitHub. However,
