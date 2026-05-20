@@ -129,25 +129,52 @@ class Genode::Node : Noncopyable
 
 		Node(Const_byte_range_ptr const &bytes);
 
+		/**
+		 * Constructor
+		 *
+		 * \noapi
+		 *
+		 * This constructor will eventually be removed because it is not safe.
+		 * The caller must ensure that 's' outlives the constructed 'Node'.
+		 */
 		template <size_t N>
 		Node(String<N> const &s)
 		: Node(Const_byte_range_ptr(s.string(), max(s.length(), 1ul) - 1ul)) { }
 
 		/**
 		 * Construct a copy of the node with the content located in 'dst'
+		 *
+		 * The caller must ensure that the buffer 'dst' outlives the
+		 * constructed 'Node'.
 		 */
 		Node(Node const &other, Byte_range_ptr const &dst);
 
+		/**
+		 * Call 'fn' with the 'Node const &' of each sub node of the given 'type'
+		 */
 		void for_each_sub_node(char const *type, auto const &fn) const
 		{
 			_for_each_sub_node(type, With_node::Fn { fn });
 		}
 
+		/**
+		 * Call 'fn' with the 'Node const &' of each sub node
+		 */
 		void for_each_sub_node(auto const &fn) const
 		{
 			_for_each_sub_node(With_node::Fn { fn });
 		}
 
+		/**
+		 * Call 'fn' with the 'Node const &' of the first sub node of the given 'type'
+		 *
+		 * \param fn          functor called with the matching node as argument
+		 * \param missing_fn  functor called if no such node exists
+		 *
+		 * In contrast to 'for_each_sub_node', this method allows for returning
+		 * a value. The type of the return value is inferred from the return
+		 * type of 'missing_fn'.
+		 */
 		auto with_sub_node(char const *type, auto const &fn, auto const &missing_fn) const
 		-> decltype(missing_fn())
 		{
@@ -157,6 +184,12 @@ class Genode::Node : Noncopyable
 					[&]                        { return missing_fn(); }); });
 		}
 
+		/**
+		 * Call 'fn' with the 'Node const &' of the Nth sub node
+		 *
+		 * \param fn          functor called with the matching node as argument
+		 * \param missing_fn  functor called if no such node exists
+		 */
 		auto with_sub_node(unsigned n, auto const &fn, auto const &missing_fn) const
 		-> decltype(missing_fn())
 		{
@@ -166,18 +199,38 @@ class Genode::Node : Noncopyable
 					[&]                        { return missing_fn(); }); });
 		}
 
+		/**
+		 * Return the number of the node's immediate sub nodes
+		 */
 		unsigned num_sub_nodes() const;
 
+		/**
+		 * Call 'fn' with the 'Node const &' of the first sub node of the given 'type'
+		 *
+		 * If no node of the given 'type' exists, this method has no effect.
+		 */
 		void with_optional_sub_node(char const *type, auto const &fn) const
 		{
 			_with_optional_sub_node(type, With_node::Fn { fn });
 		}
 
+		/**
+		 * Call 'fn' with the 'Attribute const &' of each attribute
+		 */
 		void for_each_attribute(auto const &fn) const
 		{
 			_for_each_attribute(With_attribute::Fn { fn });
 		}
 
+		/**
+		 * Return the value of the attribute named 'attr' as type 'T'
+		 *
+		 * \param default_value  value returned if 'attr' is missing or if its
+		 *                       value cannot be parsed into an object of
+		 *                       type 'T'.
+		 *
+		 * The return type is inferred from the type of the default value.
+		 */
 		template <typename T>
 		T attribute_value(char const *attr, T const default_value) const
 		{
@@ -195,10 +248,25 @@ class Genode::Node : Noncopyable
 
 		bool has_attribute(char const *attr) const;
 
+		/**
+		 * Return the size of the underlying text in bytes
+		 *
+		 * This method is solely intended for the dimensioning of dynamic
+		 * memory allocations that depend on the node content.
+		 */
 		size_t num_bytes() const;
 
+		/**
+		 * Return true if the node differs from 'other'
+		 */
 		bool differs_from(Node const &other) const;
 
+		/**
+		 * Call 'fn' for each line of quoted content present in the node
+		 *
+		 * Note that in most cases, the 'Quoted_content' utility is preferable
+		 * to this method for capturing quoted content.
+		 */
 		void for_each_quoted_line(auto const &fn) const
 		{
 			_for_each_quoted_line(With_quoted_line::Fn { fn });
