@@ -140,6 +140,22 @@ struct Genode::Registry : private Registry_base
 			fn(obj);
 		}
 	}
+
+	/**
+	 * Discern whether the registry is empty or populated.
+	 *
+	 * Be aware that the validity of the emptiness property
+	 * is assured within the scope of the given lambdas only.
+	 */
+	auto if_empty(auto const &empty_fn,
+	              auto const &non_empty_fn) const
+	{
+		Mutex::Guard guard(_mutex);
+
+		if (_elements.first())
+			return non_empty_fn();
+		return empty_fn();
+	}
 };
 
 
