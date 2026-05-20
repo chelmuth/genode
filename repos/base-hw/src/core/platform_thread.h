@@ -92,7 +92,7 @@ class Core::Platform_thread : Noncopyable
 
 			~Utcb()
 			{
-				_local_rm.detach(core_addr);
+				if (ds.ok()) _local_rm.detach(core_addr);
 			}
 
 			Ram_dataspace_capability ds_cap() const
