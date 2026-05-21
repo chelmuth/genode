@@ -14,12 +14,11 @@ platform as a ROM called 'platform_info'. For example, if the ACPI RSDT and
 XSDT physical pointer are reported by the used kernel and/or bootloader, core
 provides this information in the ROM as follows.
 
-!<platform_info>
-! <acpi revision="2" rsdt="0x1fe93074" xsdt="0x1fe930e8"/>
-! <boot>
-!   <framebuffer phys="0x7300000" width="1024" height="768" bpp="32"/>
-! </boot>
-!</platform_info>
+! platform_info
+! + acpi | revision: 2 | rsdt: 0x1fe93074 | xsdt: 0x1fe930e8
+! + boot
+!   + framebuffer | phys: 0x7300000 | width: 1024 | height: 768 | bpp: 32
+! -
 
 If the graphics device is initialised and can be directly used by a
 framebuffer driver, core provides the physical pointer to the framebuffer, the
