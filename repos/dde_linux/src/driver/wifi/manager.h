@@ -1615,11 +1615,19 @@ struct Wifi::Manager : Wifi::Rfkill_notification_handler
 
 	Timer::Connection _timer;
 
+	Signal_handler<Wifi::Manager> _scan_timeout_handler;
+
 	Timer::One_shot_timeout<Wifi::Manager> _scan_timeout {
-		_timer, *this, &Wifi::Manager::_handle_scan_timeout };
+		_timer, *this, &Wifi::Manager::_flag_scan_timeout };
+
+	void _flag_scan_timeout(Genode::Duration) { _scan_timeout_handler.local_submit(); }
+
+	Signal_handler<Wifi::Manager> _quality_timeout_handler;
 
 	Timer::One_shot_timeout<Wifi::Manager> _quality_timeout {
-		_timer, *this, &Wifi::Manager::_handle_quality_timeout };
+		_timer, *this, &Wifi::Manager::_flag_quality_timeout };
+
+	void _flag_quality_timeout(Genode::Duration) { _quality_timeout_handler.local_submit(); }
 
 	enum class Timer_type : uint8_t { SCAN, SIGNAL_POLL };
 
@@ -1678,7 +1686,7 @@ struct Wifi::Manager : Wifi::Rfkill_notification_handler
 		_arm_poll_timer();
 	}
 
-	void _handle_scan_timeout(Genode::Duration)
+	void _handle_scan_timeout()
 	{
 		if (_join.rfkilled) {
 			if (_config.verbose)
@@ -1703,7 +1711,7 @@ struct Wifi::Manager : Wifi::Rfkill_notification_handler
 		_dispatch_action_if_needed();
 	}
 
-	void _handle_quality_timeout(Genode::Duration)
+	void _handle_quality_timeout()
 	{
 		if (_join.rfkilled) {
 			if (_config.verbose)
@@ -2181,7 +2189,9 @@ struct Wifi::Manager : Wifi::Rfkill_notification_handler
 		_rfkill_handler(env.ep(), *this, &Wifi::Manager::_handle_rfkill),
 		_config_rom(env, "wifi_config"),
 		_config_sigh(env.ep(), *this, &Wifi::Manager::_handle_config_update),
-		_timer(env)
+		_timer(env),
+		_scan_timeout_handler(env.ep(), *this, &Wifi::Manager::_handle_scan_timeout),
+		_quality_timeout_handler(env.ep(), *this, &Wifi::Manager::_handle_quality_timeout)
 	{
 		_config_rom.sigh(_config_sigh);
 
@@ -2213,7 +2223,7 @@ struct Wifi::Manager : Wifi::Rfkill_notification_handler
 		_handle_rfkill();
 
 		/* kick-off initial scanning */
-		_handle_scan_timeout(Duration(Microseconds(0)));
+		_handle_scan_timeout();
 	}
 
 	/**
