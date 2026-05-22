@@ -1207,6 +1207,14 @@ static void sound_dispatch(struct sound_card *card, struct snd_card *c)
 			update_mixer(card);
 
 			mixer_report_controls(card->mixer);
+
+			/*
+			 * Restart sound_capture loop for sure by adding explicit event.
+			 * The driver synchronizes playback based upon the capture event,
+			 * as already documented by a comment below.
+			 */
+			if (_event(events, EVENT_JACK_PLUGGED))
+				sound_events_add(card, EVENT_PCM_CAPTURE);
 		}
 
 		if (_event(events, EVENT_MIXER)) {
