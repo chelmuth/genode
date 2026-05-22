@@ -2,7 +2,9 @@ The rom_logger component requests a ROM session and writes the content of the
 ROM dataspace to the LOG. It responds to configuration and ROM-module updates.
 
 The name of the ROM module must be specified via the 'rom' attribute of the
-components '<config>' node. For example: '<config rom="pointer"/>'.
+components 'config' node. For example:
+
+! + config | rom: pointer
 
 The output format may be also be specified via a 'format' attribute. The options are
 'text'and 'hexdump', with the former as a default.

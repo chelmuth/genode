@@ -9,21 +9,25 @@ Each active device on each AHCI port will be represented by a Genode
 block session. The server must be configured via a policy, that states
 which client can access a certain device:
 
-
-!<start name="ahci" ram="10M">
-!  <provides><service name="Block" /></provides> }
-!  <route>
-!    <any-service> <parent /> <any-child /> </any-service>
-!  </route>
-!  <config atapi="no">
-!    <!-- use model and serial number -->
-!    <policy label_prefix="test-ahci" model="QEMU HARDDISK" serial="QM00005" writeable="yes" />
-!    <!-- use controller port number -->
-!    <policy label_prefix="bench" device="1" writeable="yes" />
-!    <!-- read-only access -->
-!    <policy label_prefix="boot_fs" device="2"/>
-!  </config>
-!</start>
+! config
+! + start ahci | ram: 10M
+!   + provides | + service Block
+!   + route
+!   | + any-service
+!   |   + parent
+!   |   + any-child
+!   + config | atapi: no
+!     + policy | label_prefix: test-ahci | model:      QEMU HARDDISK
+!     |                                    serial:    QM00005
+!     |                                    writeable: yes
+!     | . use model and serial number
+!     |
+!     + policy | label_prefix: bench | device: 1 | writeable: yes
+!     |
+!     | . use controller port number
+!     |
+!     + policy | label_prefix: boot_fs | device: 2 | . read-only access
+! -
 
 In the example above, a session request labeled with "test-ahci" gains access to
 a device with certain model and serial numbers, "bench" gains access to
@@ -34,14 +38,14 @@ setting the config attribute "atapi" to "yes".
 The ahci driver supports the reporting of active ports, which can be enabled
 via configuration sub-node like follows.
 
-!<report ports="yes"/>
+! + report | ports: yes
 
 The report structure is depicted by the following example.
 
-! <ports>
-!   <port num="0" type="ATA" block_count="32768" block_size="512"
-!     model="QEMU HARDDISK" serial="QM00005"/>
-!   <port num="1" type="ATAPI"/>
-!   <port num="2" type="ATA" block_count="32768" block_size="512"
-!     model="QEMU HARDDISK" serial="QM00009"/>
-! </ports>
+! ports
+! + port | num: 0 | type: ATA | block_count: 32768 | block_size: 512
+!                               model: QEMU HARDDISK | serial: QM00005
+! + port | num: 1 | type: ATAPI
+! + port | num: 2 | type: ATA | block_count: 32768 | block_size: 512
+!                               model: QEMU HARDDISK | serial: QM00009
+! -

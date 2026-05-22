@@ -12,21 +12,19 @@ Configuration
 The mixer gets its configuration via a ROM module called 'mixer.config'.
 The following configuration snippet illustrates its structure:
 
-! <config>
-!   <default out_volume="75" volume="25" muted="false"/>
-!   <channel_list>
-!     <channel type="input"  label="client" number="0" volume="75"  muted="true"/>
-!     <channel type="input"  label="client" number="1" volume="15"  muted="true"/>
-!     <channel type="output" label="master" number="0" volume="100" muted="false"/>
-!     <channel type="output" label="master" number="1" volume="100" muted="false"/>
-!   </channel_list>
-! </config>
+! + config
+!   + default | out_volume: 75 | volume: 25 | muted: false
+!   + channel_list
+!     + channel | type: input  | label: client | number: 0 | volume: 75  | muted: true
+!     + channel | type: input  | label: client | number: 1 | volume: 15  | muted: true
+!     + channel | type: output | label: master | number: 0 | volume: 100 | muted: false
+!     + channel | type: output | label: master | number: 1 | volume: 100 | muted: false
 
-The '<default>' node is used to set up the initial settings for new clients.
+The 'default' node is used to set up the initial settings for new clients.
 According to this configuration every new client will start with a volume
 level set to 25 and is not muted. The initial output volume level is set
-to 75 (the volume level ranges from 0 to 100). The '<channel_list>' node
-contains all (pre-)configured channels. Each '<channel>' node has several
+to 75 (the volume level ranges from 0 to 100). The 'channel_list' node
+contains all (pre-)configured channels. Each 'channel' node has several
 mandatory attributes: 'type' specifies its type and is either 'input'
 or 'output', the 'label' attribute contains the label of a client for an input
 node and the label 'master' for an output node, 'number' specifies the channel
@@ -39,17 +37,17 @@ Channel list report
 ===================
 
 The mixer reports all available channels in its 'channel_list' report.
-The report contains a `<channel_list>' node that is similar to the one
+The report contains a 'channel_list' node that is similar to the one
 used in the 'mixer.config':
 
-! <channel_list>
-!   <channel type="input" label="client0" name="left"  number="0" active="1" volume="100" muted="false"/>
-!   <channel type="input" label="client0" name="right" number="1" active="1" volume="100" muted="false"/>
-!   <channel type="input" label="client1" name="left"  number="0" active="0" volume="25"  muted="false"/>
-!   <channel type="input" label="client1" name="right" number="1" active="0" volume="25"  muted="false"/>
-!   <channel type="output" label="master" name="left"  number="0" active="1" volume="100" muted="false"/>
-!   <channel type="output" label="master" name="right" number="1" active="1" volume="100" muted="false"/>
-! </channel_list>
+! channel_list
+! + channel left  | type: input  | label: client0 | number: 0 | active: 1 | volume: 100 | muted: false
+! + channel right | type: input  | label: client0 | number: 1 | active: 1 | volume: 100 | muted: false
+! + channel left  | type: input  | label: client1 | number: 0 | active: 0 | volume: 25  | muted: false
+! + channel right | type: input  | label: client1 | number: 1 | active: 0 | volume: 25  | muted: false
+! + channel left  | type: output | label: master  | number: 0 | active: 1 | volume: 100 | muted: false
+! + channel right | type: output | label: master  | number: 1 | active: 1 | volume: 100 | muted: false
+! -
 
 Each channel node features all mandatory attributes as well as a few optional
 ones. The 'name' attribute contains the name of the channel. It is the

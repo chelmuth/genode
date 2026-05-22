@@ -26,27 +26,38 @@ now includes the partition's offset and number of blocks covered by it to
 the block-device driver component.
 
 In order to route a client to the right partition, the multiplexer parses its
-configuration section looking for 'policy' tags.
+configuration section looking for 'policy' nodes.
 
-XML Syntax:
-! <policy label="<program name>" partition="<partition number>"  writeable="<boolean>"/>
+! + policy
+!          label:     <program name>
+!          partition: <partition number>
+!          writeable: <boolean>
 
 part_block supports partition reporting, which can be enabled via the
 'report' node in its configuration. See below for an example. The report
 looks like follows (for MBR resp. GPT).
 
-! <partitions type="mbr">
-!   <partition number="1" type="12" start="2048" length="2048"/>
-!   <partition number="2" type="15" start="4096" length="16384"/>
-!   <partition number="5" type="12" start="6144" length="4096"/>
-!   <partition number="6" type="12" start="12288" length="8192"/>
-! </partitions>
-! <partitions type="gpt">
-!   <partition number="1" name="one" type="ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"
-!     guid="5f4061cc-8d4a-4e6f-ad15-10b881b79aee" start="2048" length="2048"/>
-!   <partition number="2" name="two" type="ebd0a0a2-b9e5-4433-87c0-68b6b72699c7"
-!     guid="87199a83-d0f4-4a01-b9e3-6516a8579d61" start="4096" length="16351"/>
-! </partitions>
+! partitions | type: mbr
+! + partition | number: 1 | type: 12 | start: 2048  | length: 2048
+! + partition | number: 2 | type: 15 | start: 4096  | length: 16384
+! + partition | number: 5 | type: 12 | start: 6144  | length: 4096
+! + partition | number: 6 | type: 12 | start: 12288 | length: 8192
+! -
+
+! partitions | type: gpt
+! + partition one
+!             number: 1
+!             type:   ebd0a0a2-b9e5-4433-87c0-68b6b72699c7
+!             guid:   5f4061cc-8d4a-4e6f-ad15-10b881b79aee
+!             start:  2048
+!             length: 2048
+! + partition two
+!             number: 2
+!             type:   ebd0a0a2-b9e5-4433-87c0-68b6b72699c7
+!             guid:   87199a83-d0f4-4a01-b9e3-6516a8579d61
+!             start:  4096
+!             length: 16351
+! -
 
 Clients have read-only access to partitions unless overriden by a 'writeable'
 policy attribute.
@@ -55,37 +66,37 @@ Usage
 -----
 
 Configuration snippet with two clients and an (hypothetical) IDE driver:
-!<start name="ata_driver" ram="1M">
-!  <provides><service name="Block"/></provides>
-!  <config ata="yes" />
-!</start>
+
+! + start ata_driver | ram: 1M
+!   + provides | + service Block
+!   + config | ata: yes
+! + start part_block | ram: 10M
+!   + provides | + service Block
+!   + route
+!   | .
+!   | . route part_block to the ata_driver
+!   | .
+!   | + any-service
+!   |   + child ata_driver
+!   |   + parent
+!   |   + any-child
+!   + config
+!     + report | partitions: yes
+!     + policy | label_prefix: test-part1 | partition: 6 | writeable: yes
+!     + policy | label_prefix: test-part2 | partition: 1 | writeable: yes
 !
-!<start name="part_block" ram="10M">
-!  <provides><service name="Block" /></provides>
+! + start test-part1 | ram: 10M
+!   + binary test-part
+!   + route
+!     + any-service
+!       + child part_block
+!       + parent
+!       + any-child
 !
-!  <!-- route part_block to the ata_driver -->
-!  <route>
-!    <any-service><child name="ata_driver"/> <parent/><any-child/></any-service>
-!  </route>
-!
-!  <config>
-!    <report partitions="yes"/>
-!    <policy label_prefix="test-part1" partition="6" writeable="yes"/>
-!    <policy label_prefix="test-part2" partition="1" writeable="yes"/>
-!  </config>
-!</start>
-!
-!<!-- part_block clients -->
-!<start name="test-part1" ram="10M">
-!  <binary name="test-part"/>
-!  <route>
-!    <any-service> <child name="part_block" /> <parent/> <any-child/> </any-service>
-!  </route>
-!</start>
-!
-!<start name="test-part2" ram="10M">
-!  <binary name="test-part"/>
-!  <route>
-!    <any-service> <child name="part_block" /> <parent/> <any-child/> </any-service>
-!  </route>
-!</start>
+! + start test-part2 | ram: 10M
+!   + binary test-part
+!   + route
+!     + any-service
+!       + child part_block
+!       + parent
+!       + any-child

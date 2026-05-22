@@ -13,36 +13,44 @@ bulk-only interface it finds.
 
 The following configuration snippets demonstrates how to use the driver:
 
-!<start name="usb_block" ram="4M">
-!  <provides> <service name="Block"/> </provides>
-!  <config report="yes" writeable="yes" interface="0"
-!          alt_setting="0" lun="0" reset_device="no" verbose_scsi="no"/>
-!  <route>
-!   <service name="Usb"> <child name="usb"/> </service>
-!   <any-service> <parent/> <any-child/> </any-service>
-!  </route>
-!</start>
+! + start usb_block | ram: 4M
+!   + provides | + service Block
+!   + config
+!   |        report:       yes
+!   |        writeable:    yes
+!   |        interface:    0
+!   |        alt_setting:  0
+!   |        lun:          0
+!   |        reset_device: no
+!   |        verbose_scsi: no
+!   + route
+!     + service Usb | + child usb
+!     + any-service
+!       + parent
+!       + any-child
 
 A policy matching the block-driver instance has to be configured at the USB
 host controller driver.
 
-!<start name="usb" ram="12M">
-!  <provides><service name="Usb"/></provides>
-!  <config>
-!    <policy label="usb_block -> ">
-!      <device vendor_id="0x13fe" product_id="0x5200"/>
-!      <device name="usb-1-2"/>
-!    </policy>
-!  </config>
-!</start>
+! + start usb | ram: 12M
+!   + provides | + service Usb
+!   + config
+!     + policy | label: usb_block -> 
+!       + device | vendor_id: 0x13fe | product_id: 0x5200
+!       + device usb-1-2
 
 The 'report' attribute instructs the driver to generate a 'devices' report
 that contains meta information about the USB device it is accessing and
 hence the Block session it is providing.
 
-!<devices>
-!  <device vendor="QEMU" product="QEMU USB HARDDRIVE" block_size="512" block_count="8192" writeable="no"/>
-!</devices>
+! devices
+! + device
+!          vendor:      QEMU
+!          product:     QEMU USB HARDDRIVE
+!          block_size:  512
+!          block_count: 8192
+!          writeable:   no
+! -
 
 The report contains a 'device' node that includes the device's vendor name and
 the product description as well as its block size and the number of blocks.

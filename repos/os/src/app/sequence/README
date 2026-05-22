@@ -1,39 +1,34 @@
 This directory contains a simple utility to serialize the execution of
-multiple components. It is configured with '<start>' XML nodes much like
+multiple components. It is configured with 'start' nodes much like
 _init_. However, this component relies on its parent to manage all routing
 and resources, with the exception of a 'config' ROM. No services are
 propagated from children to the parent.
 
 A sample configuration to start a consumer after a producer has exited:
 
-! <start name="sequence" caps="100" ram="128M">
-!   <route>
-!     <any-service> <parent/> <any-child/> </any-service>
-!   </route>
-!   <config>
-!     <start name="producer">
-!       <config>
+! + start sequence | caps: 100 | ram: 128M
+!   + route
+!   | + any-service
+!   |   + parent
+!   |   + any-child
+!   + config
+!     + start producer
+!     | + config
+!     |   ...
+!     + start consumer
+!       + config
 !         ...
-!       </config>
-!     </start>
-!     <start name="consumer">
-!       <config>
-!         ...
-!       </config>
-!     </start>
-!   </config>
-! </start>
 
-There are a few optional '<config>' attributes that control the way the
+There are a few optional 'config' attributes that control the way the
 component operates:
 
-* 'repeat' will instruct the component to repeat the sequence again
-  starting from the first '<start>' node when it has reached the end.
-  The default is 'false'.
+:'repeat': instructs the component to repeat the sequence again
+  starting from the first 'start' node when it has reached the end.
+  The default is 'no'.
 
-* 'keep_going' will instruct the component to start the next child
-  in case the previous one exited with an error. The default is 'false'.
+:'keep_going': instructs the component to start the next child
+  in case the previous one exited with an error. The default is 'no'.
 
-* 'restart' instructs the component to start from the top of the
+:'restart': instructs the component to start from the top of the
   sequence. It is only evaluted when 'keep_going' is enabled. The
-  default is 'false'.
+  default is 'no'.

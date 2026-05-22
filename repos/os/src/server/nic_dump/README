@@ -10,17 +10,18 @@ Basics
 this is an example configuration of the component showing all attributes with
 their default values (except config.uplink and config.downlink):
 
-! <config uplink="uplink"
-!         downlink="downlink"
-!         time="no"
-!         default="default"
-!         eth="default"
-!         arp="default"
-!         ipv4="default"
-!         dhcp="default"
-!         udp="default"
-!         icmp="default"
-!         tcp="default" />
+! + config
+!          uplink:   uplink
+!          downlink: downlink
+!          time:     no
+!          default:  default
+!          eth:      default
+!          arp:      default
+!          ipv4:     default
+!          dhcp:     default
+!          udp:      default
+!          icmp:     default
+!          tcp:      default
 
 The values of the 'uplink' and 'downlink' attributes are used as log labels
 for the two NIC peers. These labels are only relevant for the readability of

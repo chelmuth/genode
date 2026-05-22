@@ -16,13 +16,11 @@ Configuration
 
 The following config illustrates how the driver is configured:
 
-!<start name="nvme">
-!  <resource name="ram" quantum="24M"/>
-!  <provides><service name="Block"/></provides>
-!  <config max_hmb_size="16M">
-!    <policy label_prefix="client1" writeable="yes"/>
-!  </config>
-!</start>
+! + start nvme
+!   + resource ram | quantum: 24M
+!   + provides | + service Block
+!   + config | max_hmb_size: 16M
+!     + policy | label_prefix: client1 | writeable: yes
 
 The 'max_hmb_size' attribute instructs the driver to setup the
 host-memory-buffer with at most 16 MiB of DMA-capable memory if such a
@@ -38,10 +36,10 @@ Report
 The driver supports reporting of active name spaces, which can be enabled
 via the configuration 'report' sub-node:
 
-!<report namespace="yes"/>
+! + report | namespace: yes
 
 The report structure is depicted by the following example:
 
-!<controller model="QEMU NVMe Ctrl" serial="FNRD">
-! <namespace id="0" block_count="32768" block_size="512"/>
-!</controller>
+! controller | model: QEMU NVMe Ctrl | serial: FNRD
+! + namespace | id: 0 | block_count: 32768 |block_size: 512
+! -

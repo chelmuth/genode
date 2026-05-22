@@ -8,45 +8,44 @@ Configuration
 ~~~~~~~~~~~~~
 
 This is an example configuration of the component which shows the default
-value for each attribute except 'config.dst_ip' and 'config.interface':
+value for each attribute (except for 'dst_ip' and 'interface'):
 
-! <config interface="10.0.0.72/24"
-!         dst_ip="10.0.0.24"
-!         dst_port="50000"
-!         protocol="icmp"
-!         period_sec="5"
-!         verbose="no"
-!         report="yes"
-!         count="5" />
+! + config
+!          interface:  10.0.0.72/24
+!          dst_ip:     10.0.0.24
+!          dst_port:   50000
+!          protocol:   icmp
+!          period_sec: 5
+!          verbose:    no
+!          report:     yes
+!          count:      5
 
-This is a short description of the tags and attributes:
-
-:config.interface:
+:'interface':
   Optional. IP address and subnet of the component. If not set, the component
   requests and maintains the IP configuration via DHCP.
 
-:config.gateway:
+:'gateway':
   Optional. IP address of the gateway of the IP subnet.
 
-:config.dst_ip:
+:'dst_ip':
   Mandatory. IP address of the target host.
 
-:config.period_sec:
+:'period_sec':
   Optional. Length of send interval in seconds.
 
-:config.verbose:
+:'verbose':
   Optional. Toggles wether the component shall log debugging information.
 
-:config.report:
+:'report':
   Optional. Toggles wether the component shall report results.
 
-:config.count:
+:'count':
   Optional. After how many successful pings the component exits successfully.
 
-:config.dst_port:
+:'dst_port':
   Optional. Destination port resp. ICMP query ID to use.
 
-:config.protocol:
+:'protocol':
   Optional. Protocol to ping with. Can be one of 'icmp', 'udp'.
 
 
@@ -57,19 +56,43 @@ If config attribute 'report' is set, the component generates a report named
 "last_received" that looks like this if the expected reply was received:
 
 :ICMP:
-! <result id="8" type="reply" bytes="64" from="10.0.2.2" ttl="64" time_ms="3.434" icmp_seq="2"/>
+
+  ! result
+  !        id:       8
+  !        type:     reply
+  !        bytes:    64
+  !        from:     10.0.2.2
+  !        ttl:      64
+  !        time_ms:  3.434
+  !        icmp_seq: 2
 
 :UDP:
-! <result id="8" type="reply" bytes="64" from="10.0.2.2" ttl="64" time_ms="3.434"/>
+
+  ! result
+  !        id:      8
+  !        type:    reply
+  !        bytes:   64
+  !        from:    10.0.2.2
+  !        ttl:     64
+  !        time_ms: 3.434
 
 When an ICMP error "destination unreachable" was received instead, the report
 looks like this:
 
 :ICMP:
-! <result id="10" type="destination_unreachable" from="10.0.1.79" icmp_seq="12"/>
+
+  ! result
+  !        id:       10
+  !        type:     destination_unreachable
+  !        from:     10.0.1.79
+  !        icmp_seq: 12
 
 :UDP:
-! <result id="10" type="destination_unreachable" from="10.0.1.79"/>
+
+  ! result
+  !        id:   10
+  !        type: destination_unreachable
+  !        from: 10.0.1.79
 
 The id attribute in the report is incremented with each result.
 

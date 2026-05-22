@@ -7,30 +7,30 @@ _/dev/.tap0/info_.
 This file may by used to query the configured parameters and has the following
 structure:
 
-! <tap name="tap0" mac_addr="..."/>
+! + tap tap0 | mac_addr: ...
 
 Each parameter can also be accessed via its own file. The following list
 presents all files:
 
-  * :mac_addr (rw): The MAC address of the device (immutable when in Nic mode).
-  * :name (ro):     The name of the device.
+:mac_addr (rw): The MAC address of the device (immutable when in Nic mode).
+:name (ro):     The name of the device.
 
 When mounting the tap file system, the following optional attributes may
 be provided:
 
-  * :label:  Sets the session label of the Uplink/Nic session. If not provided,
-             an empty label is used.
-  * :mac:    Sets the default mac address.
-  * :mode:   If set to 'uplink_client', the plugin uses an Uplink session.
-             Otherwise, it will open a Nic session.
+:label: Sets the session label of the Uplink/Nic session.
+  If not provided, an empty label is used.
+
+:mac: Sets the default mac address.
+
+:mode: If set to 'uplink_client', the plugin uses an Uplink session.
+  Otherwise, it will open a Nic session.
 
 The following config snippet illustrates its configuration:
 
-! <vfs>
-!   <dir name="dev">
-!     <tap name="tap0" mac="..." mode="..." label="..."/>
-!   </dir>
-! </vfs>
+! + vfs
+!   + dir dev
+!     + tap tap0 | mac: ... | mode: ... | label: ...
 
 Note, that the plugin emulates the tap device and its I/O control operations
 as expected by FreeBSD's libc. On Linux, the tap devices are created by

@@ -16,14 +16,16 @@ Configuration
 
 The following config illustrates how the driver is configured:
 
-!<start name="virtio_nic">
-!  <resource name="ram" quantum="640K"/>
-!  <provides><service name="Nic"/></provides>
-!  <config rx_queue_size="16" rx_buffer_size="2020"
-!          tx_queue_size="16" tx_buffer_size="2020"
-!          mac="aa:bb:cc:dd:ee:ff"
-!          verbose="false" />
-!</start>
+! + start virtio_nic
+!   + resource ram | quantum: 640K
+!   + provides | + service Nic
+!   + config
+!            rx_queue_size:  16
+!            rx_buffer_size: 2020
+!            tx_queue_size:  16
+!            tx_buffer_size: 2020
+!            mac:            aa:bb:cc:dd:ee:ff
+!            verbose:        no
 
 The rx_queue_size and tx_queue_size parameters define the maximum number
 buffers the transmit and receive virtio queues can hold. The buffers

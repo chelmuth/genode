@@ -4,62 +4,65 @@ This component transforms input events originating from multiple sources.
 Configuration
 -------------
 
-An event-filter configuration consists of two parts, a declaration of
-input sources ("Input" connections) that the component should request,
-and the definition of a filter chain. Each input source is defined via
-an '<input>' node with the name of the input source as 'name' attribute and
-the session label as 'label' attribute. The latter can be used to route
-several input sources to different components, i.e, input device drivers.
+An event-filter configuration consists of two parts, a declaration of policies
+for input sources (event clients) that supply events to the event filter, and
+the definition of a filter chain.
+By defining 'policy' nodes, different event clients can be categorized into
+distinct 'input' sources, which can be injected into the filter chain.
 
-The filter chain is defined via one '<output>' node. It contains exactly
+! + policy | label: ps2      | input: ps2
+! + policy | label: usb_hid  | input: usb
+! + policy | label: touchpad | input: touchpad
+
+The filter chain is defined via one 'output' node. It contains exactly
 one of the following filters:
 
-:<input name="..."/>:
+:'input <name>':
 
-  Refers to the input source with the matching 'name'.
+  Refers to the input source with the matching '<name>'.
 
-:<remap>:
+:'remap':
 
   Applies low-level key remapping to the events produced by another filter
   that is embedded as a child node.
 
-  It may contain any number of '<key>' nodes. Each of those key nodes has
+  It may contain any number of 'key' nodes. Each of those key nodes has
   the key name as 'name' attribute, may feature an optional 'to' attribute
   with the name of the key that should be reported instead of 'name'.
 
-  It may also contain any number of '<ignore-key>' nodes to completely mute
+  It may also contain any number of 'ignore-key' nodes to completely mute
   certain keys. Each of those nodes has the key name as 'name' attribute.
   This rule is applied before remapping.
 
-  A '<remap>' node may contain '<include>' nodes, which include further
-  content into the '<remap>' node. The included ROM must have a '<remap>'
+  A 'remap' node may contain 'include' nodes, which include further
+  content into the 'remap' node. The included ROM must have a 'remap'
   top-level node.
 
-:<log>:
+:'log':
 
   Logs debug information about input events to the component's 'Log'
   session. Per default, only key presses and releases are logged. The
   optional 'motion' attribute (boolean) enables logging of motion and touch
   events too. An optional 'prefix' attribute can be provided in order to
-  distinguish multiple '<log>' filters. The given prefix is placed at the
+  distinguish multiple 'log' filters. The given prefix is placed at the
   beginning of each log message.
 
-:<merge>:
+:'merge':
 
   Merges the results of any number of filters that appear as child nodes.
 
-:<chargen>:
+:'chargen':
 
   Supplements the input-event stream of another filter with artificial
   'CHARACTER' events by applying character mapping rules. The originating
   filter is defined as a child node.
 
-:<button-scroll>:
+:'button-scroll':
 
   Turns relative motion events into wheel events while a special button
   (i.e., the middle mouse button) is pressed. The button and rate of generated
-  wheel events can be configured per axis via the sub nodes '<vertical>' and
-  '<horizontal>'. The button of each axis can be specified via the 'button'
+  wheel events can be configured per axis via the sub nodes 'vertical' and
+  'horizontal'. The button of each axis can be specified via the 'button'
   attribute. By default, "BTN_MIDDLE" is used. The rate of generated wheel
   events can be defined by the 'speed_percent' attribute. A value of "100"
   uses relative motion vectors directly as wheel motion vectors. In practice,
@@ -71,7 +74,7 @@ one of the following filters:
   such that pointer movements are inhibited while the wheel emulation is
   active. All other events are passed along unmodified.
 
-:<accelerate>:
+:'accelerate':
 
   Applies acceleration to relative motion values. The 'max' attribute
   defines the maximum value added to the incoming motion values. The
@@ -81,85 +84,82 @@ one of the following filters:
   "0" corresponds to a linear function whereas the maximum value "255" applies
   a curved function. The default value is "127".
 
-:<touch-click>:
+:'touch-click':
 
   Augments touch events with artificial absolute motion and mouse click/clack
   events as understood by regular GUI applications that are not aware of
   touch input. The original touch events are preserved, enabling touch-aware
   applications to interpet touch gestures.
 
-:<touch-key>:
+:'touch-key':
 
   Triggers an artificial key tap (a press event followed by a release event)
   when touching a preconfigured area on a touch screen. The filter node can
-  host any number of '<tap>' sub nodes. Each sub node must define a
+  host any number of 'tap' sub nodes. Each sub node must define a
   rectangular area - using the attributes 'xpos', 'ypos', 'width', and
   'height' - and the name of the tapped key as 'key' attribute.
 
-  A '<touch-key>' node may contain '<include>' nodes, which include further
-  content into the '<touch-key>' node. The included ROM must have a
-  '<touch-key>' top-level node.
+  A 'touch-key' node may contain 'include' nodes, which include further
+  content into the 'touch-key' node. The included ROM must have a
+  'touch-key' top-level node.
 
-:<touch-gesture>:
+:'touch-gesture':
 
   Triggers artificial key sequences or key combos when (multi-)touch gestures
   are detected. Gesture detection is configured by the following primitives
   expressed as sub-nodes (with specified default attributes).
 
-  :<hold fingers="1" delay_ms="1000" width="30" height="30">:
+  ! + hold | fingers: 1 | delay_ms: 1000 | width: 30 | height: 30
 
-    Triggers when the specified number of fingers touch and hold for at least
-    'delay_ms' milliseconds. All fingers must reside in a specified area defined
-    by the 'width' and 'height' attributes around the first touch event.
-    When this gesture has been triggered, it translates touch events into
-    relative motion events. This can be used for dragging or scrolling.
+  It triggers when the specified number of fingers touch and hold for at least
+  'delay_ms' milliseconds. All fingers must reside in a specified area defined
+  by the 'width' and 'height' attributes around the first touch event.
+  When this gesture has been triggered, it translates touch events into
+  relative motion events. This can be used for dragging or scrolling.
 
-  :<swipe fingers="1" duration_ms="1000" distance="100" direction="any">:
+  ! + swipe | fingers: 1 | duration_ms: 1000 | distance: 100 | direction: any
 
-    Triggers when the specified number of fingers move for at least 'distance'
-    in the specified 'direction' and within 'duration_ms' milliseconds.
-    Supported values for the 'direction' attribute are: "up", "down", "left",
-    "right". The rect in which the gesture is valid can be restricted by
-    providing the 'xpos', 'ypos', 'width' and 'height' attributes.
+  It triggers when the specified number of fingers move for at least 'distance'
+  in the specified 'direction' and within 'duration_ms' milliseconds.
+  Supported values for the 'direction' attribute are: 'up', 'down', 'left',
+  'right'. The rect in which the gesture is valid can be restricted by
+  providing the 'xpos', 'ypos', 'width' and 'height' attributes.
 
-  :<include rom="...">:
+  ! + include | rom: ...
 
-    The '<include>' node includes further content into the '<touch-gesture>'
-    node. The included ROM must have an '<touch-gesture>' top-level node.
+  The 'include' node includes further content into the 'touch-gesture' node.
+  The included ROM must have a 'touch-gesture' top-level node.
 
-  Key sequences are specified as '<key>' sub-nodes to the gesture
-  primitives. Key combos are specified by nesting the '<key>' sub-nodes. The
+  Key sequences are specified as 'key' sub-nodes to the gesture
+  primitives. Key combos are specified by nesting the 'key' sub-nodes. The
   'name' attribute specifies the name of the pressed key. An optional 'hold'
   attribute can be used for postponing the key release event until the touch
   release. This is useful for dragging gestures; for example:
 
-  ! <hold>
-  !   <key name="KEY_SCREEN" hold="yes">
-  !     <key name="BTN_MIDDLE" hold="yes"/>
-  !   </key>
-  ! </hold>
+  ! + hold
+  !   + key KEY_SCREEN | hold: yes
+  !     + key BTN_MIDDLE | hold: yes
 
-
-:<transform>:
+:'transform':
 
   Transforms touch and absolute-motion event coordinates by a sequence of
   the following primitives expressed as sub-nodes.
 
-  :<translate>:
+  :'translate':
 
     Moves coordinates by 'x' and 'y' attributes.
 
-  :<scale>:
+  :'scale':
 
     Scales horizontal and vertical axis by 'x' and 'y' attributes.
 
-  :<rotate>:
+  :'rotate':
 
     Rotates clockwise (around origin (0,0) by 90, 180, or 270 degrees in
     attribute 'angle'. For example with rotate set to 90 degrees, point
     (0,5) is reported as (-5,0).
 
-  :<reorient>:
+  :'reorient':
 
     Rotates clockwise (like 'rotate') but also translates results for
     desired target 'width' and 'height' attributes effectively moving the
@@ -167,41 +167,43 @@ one of the following filters:
     example, corrects coordinates for a FullHD touchscreen rotated 90
     degrees clockwise from landscape to portrait orientation.
 
-    ! <reorient angle="90" width="1080" height="1920"/>
+    ! + reorient | angle: 90 | width: 1080 | height: 1920
 
     Thus, point (20,10) in the upper-left corner is reported as (1069, 20)
     in the upper-right corner. For counter-clockwise 90 degree
     reorientation, 'angle' must be set to 270.
 
-  :<hflip>/<vflip>:
+  :'hflip', 'vflip':
 
     Flip coordinates horizontally/vertically and translate into
     'width'/'height'.
 
-  :<include rom="...">:
-    The '<include>' node includes further content into the '<transform>' node.
-    The included ROM must have an '<transform>' top-level node.
+  :'include':
 
-:<report>:
+    The 'include' node includes the content of the ROM module specified as
+    'rom' attribute into the 'transform' node.
+    The included ROM must have a 'transform' top-level node.
+
+:'report':
 
   Reports the configured list of key combinations as distinct shortcut
   reports that are labeled by the 'name' attribute. The key events are
   preserved for further processing (resp. not filtered out).
 
-  ! <report>
-  !   <shortcut name="screenshot">
-  !     <key name="KEY_LEFTMETA"/> <key name="KEY_S"/>
-  !   </shortcut>
-  !   <shortcut name="screenlock">
-  !     <key name="KEY_LEFTMETA"/> <key name="KEY_L"/>
-  !   </shortcut>
-  ! </report>
+  ! + report
+  !   + shortcut screenshot
+  !     + key KEY_LEFTMETA
+  !     + key KEY_S
+  !   + shortcut screenlock
+  !     + key KEY_LEFTMETA
+  !     + key KEY_L
 
-  The shortcut node permits the declaration of keys that when pressed
+  The shortcut node allows for the declaration of keys that when pressed
   simultaneously update the shortcut report. The report provides the
   shortcut 'name' and a unique 'serial' number as attributes like follows.
 
-  ! <shortcut name="screenshot" serial="7"/>
+  ! shortcut screenshot | serial: 7
+  ! -
 
   Users must record the last observed serial number for comparison on later
   report updates. The first serial number and future changes of its value
@@ -211,39 +213,37 @@ one of the following filters:
 Character generator rules
 -------------------------
 
-The character-generator ('<chargen>') rules are defined via the following
+The character-generator ('chargen') rules are defined via the following
 sub nodes:
 
-:<mod1>/<mod2>/<mod3>/<mod4>:
+:'mod1', 'mod2', 'mod3', 'mod4':
 
   Defines which physical keys are interpreted as modifier keys. Usually,
-  '<mod1>' corresponds to shift, '<mod2>' to control, '<mod3>' to altgr
-  (on German keyboards), and '<mod4>' to Caps Lock. Each modifier node
-  may host any number of '<key>' nodes with their corresponding 'name'
-  attribute. For example:
+  'mod1' corresponds to shift, 'mod2' to control, 'mod3' to altgr
+  (on German keyboards), and 'mod4' to caps lock. Each modifier node
+  may host any number of named 'key' nodes. For example:
 
-  ! <mod1>
-  !   <key name="KEY_LEFTSHIFT"/> <key name="KEY_RIGHTSHIFT"/>
-  ! </mod1>
-  ! <mod4>
-  !   <rom name="capslock"/>
-  ! </mod4>
+  ! + mod1
+  !   + key KEY_LEFTSHIFT
+  !   + key KEY_RIGHTSHIFT
+  ! + mod4
+  !   + rom capslock
 
-  The '<rom>' node incorporates the content of the ROM module of the
+  The 'rom' node incorporates the content of the ROM module of the
   specified name into the modifier state. If the ROM module contains a
-  top-level node with the attribute 'enabled' set to "yes", the modifier
+  top-level node with the attribute 'enabled' set to 'yes', the modifier
   is enabled. This is useful for handling a system-global capslock state.
 
-:<map mod1="..." mod2="..." mod3="..." mod4="...">:
+:'map':
 
-  A '<map>' node contains a list of keys that emit a specified character when
-  pressed. Any number of '<map>' nodes can be present. For each map node, the
+  A 'map' node contains a list of keys that emit a specified character when
+  pressed. Any number of 'map' nodes can be present. For each map node, the
   attributes 'mod1' to 'mod4' denote the condition, under which it is
   considered. Each 'mod' attribute has three possible values. If the attribute
   is not present, the state of the modifier does not matter. If set to 'yes',
   the modifier must be active. If set to 'no', the modifier must not be active.
 
-  Each '<map>' may contain any number of '<key>' subnodes. Each '<key>'
+  Each 'map' may contain any number of 'key' sub nodes. Each 'key'
   must have the key name as 'name' attribute. The to-be-emitted character
   is defined by the attributes 'ascii', 'char', 'code', or 'b0/b1/b2/b3'.
 
@@ -252,14 +252,16 @@ sub nodes:
   :'code': defines the Unicode codepoint as integer value
   :'b0'/'b1'/'b2'/'b3': define the individual bytes of an UTF-8 character
 
-:<sequence first="..." second="..." third="..." fourth="..." code="..."/>:
+:'sequence':
 
   A sequence node permits the definition of dead-key/composing
-  character sequences. With such sequences the character is not
-  generated instantly on key press but only after the sequence is
-  completed. If an unfinished sequence can't be completed due to an
-  unmatched character, the sequence is aborted and no character is
-  generated. Sequences of up to four characters are supported.
+  character sequences. Sequences of up to four characters are supported.
+  A sequence is defined via the attributes 'first', 'second', 'third',
+  and fourth'. With such sequences, the character is not generated instantly
+  on key press but only after the sequence is completed. The character to be
+  emitted upon the completion of the sequence is specified as 'code'
+  attribute. If an unfinished sequence can't be completed due to an unmatched
+  character, the sequence is aborted and no character is generated.
 
   For example, the French AZERTY keyboard layout [1] has a dead key
   for Circumflex Accent "^" right of the P key (which is bracket left
@@ -270,35 +272,36 @@ sub nodes:
 
   [1] https://docs.microsoft.com/en-us/globalization/keyboards/kbdfr.html
 
-  Dead keys can be defined in the <key> nodes of any <map> by using
+  Dead keys can be defined in the 'key' nodes of any 'map' by using
   codepoints not used for direct output, for example, Combining
   Diacritical Marks beginning at U+0300. The French Circumflex example
   can be configured like follows.
 
-  ! <mod1>
-  !   <key name="KEY_LEFTSHIFT"/> <key name="KEY_RIGHTSHIFT"/>
-  ! </mod1>
-  ! <map>
-  !   <key name="KEY_Q"         code="0x0061"/> <!-- a -->
-  !   <key name="KEY_LEFTBRACE" code="0x0302"/> <!-- dead_circumflex -->
-  ! </map>
-  ! <map mod1="true">
-  !   <key name="KEY_Q"         code="0x0041"/> <!-- A -->
-  ! </map>
-  ! <sequence first="0x0302" second="0x0061" code="0x00e2"/> <!-- â -->
-  ! <sequence first="0x0302" second="0x0041" code="0x00c2"/> <!-- Â -->
+  ! + mod1
+  !   + key KEY_LEFTSHIFT
+  !   + key KEY_RIGHTSHIFT
+  ! + map
+  !   + key KEY_Q         | code: 0x0061 | . a
+  !   + key KEY_LEFTBRACE | code: 0x0302 | . dead_circumflex
+  ! + map | mod1: true
+  !   + key KEY_Q         | code: 0x0041 | . A
+  !
+  ! + sequence | first: 0x0302 | second: 0x0061 | code: 0x00e2 | . â
+  ! + sequence | first: 0x0302 | second: 0x0041 | code: 0x00c2 | . Â
 
-:<repeat delay_ms="500" rate_ms="250">:
+:'repeat':
 
-  The '<repeat>' node defines the character-repeat delay and rate that
+  The 'repeat' node defines the character-repeat delay and rate that
   triggers the periodic emission of the last produced character while
-  the corresponding key is held.
+  the corresponding key is held. The parameters are specfied in milliseconds
+  via the optional 'delay_ms' and 'rate_ms' attributes. The default delay
+  is 500 ms. The default rate is 250 ms.
 
-:<include rom="...">:
+:'include':
 
-  The '<include>' node includes further content into the '<chargen>' node
-  and thereby allows the easy reuse of common rules. The included ROM must
-  have an '<chargen>' top-level node.
+  The 'include' node includes the content of the ROM module specified as 'rom'
+  attribute into the 'chargen' node and thereby allows the easy reuse of
+  common rules. The included ROM must have an 'chargen' top-level node.
 
 
 Additional features
@@ -310,7 +313,7 @@ input sources are in their idle state - that is, no key is pressed. This
 ensures the consistency of the generated key events (for each press event there
 must be a corresponding release event), on which clients of the event filter
 may depend. However, this deferred reconfiguration can be overridden by setting
-the 'force' attribute of the '<config>' node to 'yes'. If forced, the new
+the 'force' attribute of the 'config' node to 'yes'. If forced, the new
 configuration is applied immediately.
 
 

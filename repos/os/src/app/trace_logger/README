@@ -13,70 +13,66 @@ This is an example configuration of the 'trace_logger' component which shows
 the default value for each attribute except the policy.thread and
 policy.label:
 
-! <config verbose="no"
-!         priority="no"
-!         sc_time="no"
-!         session_ram="10M"
-!         session_arg_buffer="4K"
-!         period_sec="5"
-!         default_policy="null"
-!         default_buffer="4K">
-!
-!    <policy label="init -> timer" />
-!    <policy label_suffix=" -> ram_fs" />
-!    <policy label_prefix="init -> encryption -> "
-!            thread="worker"
-!            buffer="4K"
-!            policy="null" />
-! </config>
+! + config
+!   |      verbose:            no
+!   |      priority:           no
+!   |      sc_time:            no
+!   |      session_ram:        10M
+!   |      session_arg_buffer: 4K
+!   |      period_sec:         5
+!   |      default_policy:     null
+!   |      default_buffer:     4K
+!   |
+!   + policy | label: init -> timer
+!   + policy | label_suffix: -> ram_fs
+!   + policy
+!            label_prefix: init -> encryption ->
+!            thread:       worker
+!            buffer:       4K
+!            policy:       null
 
+The 'config' attributes are:
 
-This is a short description of the tags and attributes:
-
-:config.verbose:
+:verbose:
   Optional. Toggles whether the trace_logger shall log debugging information.
   If enabled, even inactive trace subjects appear in the log.
 
-:config.priority:
+:priority:
   Optionally log thread priority.
 
-:config.sc_time:
+:sc_time:
   Optionally log scheduling-context execution time in addition to the
   thread-context. This may be relevant on kernel platforms that do not
   schedule threads on their own CPU share only but implement some kind of
   donation scheme, for example, NOVA.
 
-:config.session_ram:
+:session_ram:
   Optional. Amount of RAM donated to the trace session.
 
-:config.session_arg_buffer:
+:session_arg_buffer:
   Optional. Size of the trace sessions argument buffer.
 
-:config.period_sec:
+:period_sec:
   Optional. Length of processing/export interval in seconds.
 
-:config.default_policy:
+:default_policy:
   Optional. Name of tracing policy for subjects without individual config.
 
-:config.default_buffer:
+:default_buffer:
   Optional. Size of tracing buffer for subjects without individual config.
 
-:config.policy:
-  Subject selector. For matching subjects, tracing is enabled and the defined
-  individual configuration is applied.
+The 'policy' sub nodes select policies according to the labels of the tracing
+subjects using the 'label', 'label_prefix', and 'label_suffix' attributes.
+The label-matching attributes are mutually exclusive. Whenever a policy
+matches, tracing is enabled according to the 'policy' attributes.
 
-:config.policy.label:
-:config.policy.label_prefix:
-:config.policy.label_suffix:
-  Mutually exclusive. Filters subjects according to their session label.
-
-:config.policy.thread:
+:thread:
   Optional. Filters subjects according to their exact thread name.
 
-:config.policy.buffer:
+:buffer:
   Optional. Size of tracing buffer used for matching subjects.
 
-:config.policy.policy:
+:policy:
   Optional. Name of tracing policy used for matching subjects.
 
 

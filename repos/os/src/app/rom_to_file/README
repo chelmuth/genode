@@ -3,10 +3,9 @@ ROM dataspace to a File_system. It responds to configuration and ROM-module
 updates.
 
 The name of the ROM module must be specified via the 'rom' attribute of the
-components '<config>' node
+components 'config' node
 
-! <config rom="pointer">
-!   <vfs> <fs/> </vfs>
-! </config>
+! + config | rom: pointer
+!   + vfs | + fs
 
 See run/rom_to_file.run for an example.

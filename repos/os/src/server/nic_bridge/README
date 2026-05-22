@@ -10,19 +10,17 @@ corresponding MAC address.
 By adding a 'mac' attribute to the 'nic_bridge' config node: one can define the
 first MAC address from which the NIC bridge will allocate MACs for its clients.
 For example:
-! <config mac="02:02:02:02:02:00"/>
+! + config | mac: 02:02:02:02:02:00
 Note that the least relevant byte will be ignored. NIC bridge will use it for
 enumerating its clients, starting from 0.
 
-A fixed MAC can be configured per client of the NIC bridge using the '<policy>'
+A fixed MAC can be configured per client of the NIC bridge using the 'policy'
 tag. For example:
 
-!<start name="nic_bridge">
-!  ...
-!  <config>
-!    <policy label_prefix="lighttpd" mac="02:02:02:01:23:45"/>
-!  </config>
-!</start>
+! + start nic_bridge
+!   ...
+!   + config
+!     + policy | label_prefix: lighttpd | mac: 02:02:02:01:23:45
 
 Note that the fixed MAC addresses must not fall in the range that is used for
 runtime MAC allocation.
@@ -33,23 +31,20 @@ virtual NICs is useful. For example, when using the NIC bridge to create a
 virtual network between the lighttpd web server and the Arora web browser, both
 running as Genode processes without real network connectivity.
 
-The static IP can be configured per client of the NIC bridge using a '<policy>'
+The static IP can be configured per client of the NIC bridge using a 'policy'
 node of the configuration. Of course, the client needs to configure its TCP/IP
 stack to use the assigned IP address. As an example, the following policy assigns
 a static address to a client with the session label "lighttpd".
 
-!<start name="nic_bridge">
-!  ...
-!  <config>
-!    <policy label_prefix="lighttpd" ip_addr="10.0.2.55"/>
-!  </config>
-!</start>
-
+! + start nic_bridge
+!   ...
+!   + config
+!     + policy | label_prefix: lighttpd | ip_addr: 10.0.2.55
 
 The verbosity mode of the NIC bridge can be toggled with the verbose attribute
 (default value shown):
 
-! <config verbose="no" />
+! + config | verbose: no
 
 If enabled, the NIC bridge logs sent and received packets as well as the
 lifetime of interfaces connected to the bridge.

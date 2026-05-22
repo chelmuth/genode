@@ -2,12 +2,13 @@ The PS/2 driver makes PS/2 mouse and keyboard input available as an input
 session. It accepts the following configuration attributes. The default
 values are shown as attribute values.
 
-! <config verbose_keyboard="no"
-!         verbose_mouse="no"
-!         verbose_scancodes="no"
-!         capslock_led="no"
-!         numlock_led="no"
-!         scrlock_led="no"/>
+! + config
+!          verbose_keyboard:  no
+!          verbose_mouse:     no
+!          verbose_scancodes: no
+!          capslock_led:      no
+!          numlock_led:       no
+!          scrlock_led:       no
 
 The 'capslock_led', 'numlock_led', and 'scrlock_led' attributes can have the
 values "no" (LED is turned off), "yes" (LED is turned on), or "rom". In the

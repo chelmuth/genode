@@ -12,19 +12,17 @@ to the monitor's local PD and CPU services instead of the routing those
 sessions to the parent. For example, the following start node selects the
 'test-log' component to be monitored.
 
-! <start name="first-test-log" ram="2M">
-!   <binary name="test-log"/>
-!   <route>
-!     <service name="PD">  <local/> </service>
-!     <service name="CPU"> <local/> </service>
-!     <any-service> <parent/> </any-service>
-!   </route>
-! </start>
+! + start first-test-log | ram: 2M
+!   + binary test-log
+!   + route
+!     + service PD  | + local
+!     + service CPU | + local
+!     + any-service | + parent
 
 In case a monitored component uses VM sessions (e.g. VirtualBox), the VM
-service has to be routed to '<local/>' too.
+service has to be routed to 'local' too.
 
-If monitor's configuration features a <monitor> sub node, the monitor creates
+If monitor's configuration features a 'monitor' sub node, the monitor creates
 a terminal session that offers access to the monitored components via the GDB
 protocol. Each component appears as a distinct GDB inferior. The following
 GDB commands are useful:
@@ -41,12 +39,15 @@ GDB commands are useful:
 * Show 10 words of the component's memory at virtual address 0x100000:
   ! x/10x 0x100000
 
-The <monitor> configuration can host optional <policy> nodes referring to
+The 'monitor' node can host optional 'policy' sub nodes referring to
 inferiors by their respective labels. For example:
 
-! <monitor max_response="2K">
-!  <policy label="first-test-log" wait="no" stop="yes" wx="no"/>
-! </monitor>
+! + monitor | max_response: 2K
+!   + policy
+!            label: first-test-log
+!            wait:  no
+!            stop:  yes
+!            wx:    no
 
 By setting the 'wait' attribute to "yes", the execution of the inferior is
 delayed until the monitor receives the GDB command for continuing execution.
@@ -66,7 +67,7 @@ The enabling of the 'wx' attribute prompts the monitor to map the executable
 code of the monitored component as writeable memory, allowing the patching of
 text segment by GDB, which is needed for using breakpoints.
 
-The "max_response" attribute of the <monitor> node specifies the
+The "max_response" attribute of the 'monitor' node specifies the
 maximum payload size of a GDB command response packet. The default value
 is 2048 bytes. It can be increased for higher memory dump throughput, provided
 that the terminal session component has the capacity to receive the configured

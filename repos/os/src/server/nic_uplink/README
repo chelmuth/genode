@@ -18,7 +18,7 @@ session is equal to the existence of an Uplink session.
 
 This is an exemplary configuration of the component:
 
-! <config verbose="no"/>
+! + config | verbose: no
 
 The verbose flag is optional, disabled by default, and toggles whether the
 component provides diagnostic output on its LOG session. The diagnostic output

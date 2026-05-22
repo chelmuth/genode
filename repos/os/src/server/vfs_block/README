@@ -9,24 +9,19 @@ Configuration
 The following configuration snippet illustrates how to set up the
 component:
 
-! <start name="vfs_block" ram="3M">
-!    <provides> <service name="Block"/> </provides>
-!      <config>
-!
-!        <vfs>
-!          <fs buffer_size="2M" label="backend -> /"/>
-!        </vfs>
-!
-!        <policy label_prefix="client"
-!                file="/vfs_block.img" block_size="512" writeable="yes"
-!                maximum_transfer_size="1M"/>
-!      </config>
-!      <route>
-!        <service name="File_system" label_prefix="backend ->">
-!          <child name="fs_provider"/> </service>
-!        <any-service> <parent/> </any-service>
-!      </route>
-! </start>
+! + start vfs_block | ram: 3M
+!   + provides | + service Block
+!   + config
+!   | + vfs | + fs | buffer_size: 2M | label: backend -> /
+!   | + policy
+!   |          label_prefix:          client
+!   |          file:                  /vfs_block.img
+!   |          block_size:            512
+!   |          writeable:             yes
+!   |          maximum_transfer_size: 1M
+!   + route
+!     + service File_system | label_prefix: backend -> | + child fs_provider
+!     + any-service                                    | + parent
 
 With this configuration the component will give the component 'client' access
 to the file '/vfs_block.img' specified by the 'file' attribute. This file
@@ -51,20 +46,12 @@ will nonetheless fail. The default value is 'no'.
 The component can also be configured to provide access to read-only
 files like ISO images:
 
-! <start name="vfs_block" ram="2M">
-!    <provides> <service name="Block"/> </provides>
-!      <config>
-!
-!        <vfs>
-!          <rom name="genode.iso"/>
-!        </vfs>
-!
-!        <default-policy file="/genode.iso" block_size="2048"/>
-!      </config>
-!      <route>
-!        <any-service> <parent/> </any-service>
-!      </route>
-! </start>
+! + start vfs_block | ram: 2M
+!   + provides | + service Block
+!   + config
+!     + vfs | + rom genode.iso
+!     + default-policy | file: /genode.iso | block_size: 2048
+!   + route | + any-service | + parent
 
 In this configuration the 'genode.iso' ROM module is provided by the
 parent of the 'vfs_block' component.

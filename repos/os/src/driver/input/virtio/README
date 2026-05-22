@@ -9,4 +9,4 @@ values for this setting are: keyboard, mouse, tablet, any (default).
 For example, to make sure specific instance of this driver attaches only
 to VirtIO keyboard device it can be configured as:
 
-! <config match_product="keyboard" />
+! config | match_product: keyboard

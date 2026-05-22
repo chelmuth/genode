@@ -16,20 +16,17 @@ the platform driver README for more details.
 Usage
 -----
 
-!<start name="acpi" ram="4M"/>
-!
-!<start name="report_rom" ram="2M">
-!  <provides>
-!    <service name="ROM" />
-!    <service name="Report" />
-!  </provides>
-!  <config>
-!    <policy label="platform -> acpi" report="acpi -> acpi"/>
-!  </config>
-!</start>
-!
-!<start name="platform">
-!  ...
+! + start acpi | ram: 4M
+
+! + start report_rom | ram: 2M
+!   + provides
+!   | + service ROM
+!   | + service Report
+!   + config
+!     + policy | label: platform -> acpi | report: acpi -> acpi
+
+! + start platform
+!   ...
 
 Config
 ------
@@ -38,4 +35,4 @@ This server also reports available DMA remapping units (IOMMU) as specified in
 the 'DMAR' table. In order to disable the IOMMU, you may provide the following
 config:
 
-! <config ignore_drhd="yes"/>
+! + config | ignore_drhd: yes

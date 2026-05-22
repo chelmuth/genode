@@ -11,14 +11,12 @@ policy must be defined.
 
 The following configuration illustates the way of how to express policy.
 
-! <config>
-!   <!-- constrain sessions according to their labels -->
-!   <policy label="noux -> root" root="/" />
-!   <policy label="noux -> home" root="/home/user" writeable="yes" />
-!   <policy label="noux -> tmp"  root="/tmp"       writeable="yes" />
-! </config>
+! + config
+!   + policy | label: noux -> root | root: /
+!   + policy | label: noux -> home | root: /home/user | writeable: yes
+!   + policy | label: noux -> tmp  | root: /tmp       | writeable: yes
 
-Session-specific access-control policy is expressed via one or more '<policy>'
+Session-specific access-control policy is expressed via one or more 'policy'
 nodes. At session-creation time, each policy node is matched against the label
 of the new session. If the label of a policy node matches, the defined policy
 is applied. If multiple policies match, the one with the longest 'label'

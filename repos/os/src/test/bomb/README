@@ -12,9 +12,12 @@ restarts the creation of children afterwards.
 Configuration
 -------------
 
-! ...
-! <config rounds="1" generations="1" children="2" sleep="2000" demand="1048576"/>
-! ...
+! + config
+!          rounds:      1
+!          generations: 1
+!          children:    2
+!          sleep:       2000
+!          demand:      1048576
 
 rounds:      solely used by master bomb - number of start/kill rounds
 generations: maximum generations of children, i.e. tree depth, to create
@@ -23,5 +26,5 @@ sleep:       time in ms to wait between creation and killing of children by
              bomb-master
 demand:      amount of RAM in bytes which are required to spawn a new child
 
-The xml attributes are all optional. If the XML attributes are not set,
+The xml attributes are all optional. If the attributes are not set,
 the values given in the example config are used as default by the bomb-master.

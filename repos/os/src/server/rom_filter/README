@@ -12,51 +12,52 @@ The configuration consists of two parts. The first part is the declaration of
 input values that are taken into the account. The input values are obtained
 from ROM modules that contain XML-formatted data.
 
-Each input value is represented by an '<input>' node with a unique 'name'
+Each input value is represented by an 'input' node with a unique 'name'
 attribute. The 'rom' attribute specifies the ROM module to take the input
 from. If not specified, the 'name' is used as the ROM name. The type of the
 top-level XML node can be specified via the 'node' attribute. If not present,
 the top-level XML node is expected to correspond to the 'name' attribute.
 The optional 'default' attribute defines the input value used whenever the
-ROM module lacks the structure or attribute expected by the '<input>'.
+ROM module lacks the structure or attribute expected by the 'input'.
 
-The '<input>' node may contain a hierarchy of '<node type="type">' nodes that
-denote a path within the XML input. If specified, the optional attributes
-'attribute' and 'value' constrain the selection of the input depending of the
-presence and the value of the specified attribute.
+The 'input' node may contain a hierarchy of 'node' nodes where each is
+equipped with a 'type' attribute. The nested 'node' nodes denote a path within
+the HID input. If specified, the optional attributes 'attribute' and 'value'
+constrain the selection of the input depending of the presence and the value
+of the specified attribute.
 
-The second part of the configuration defines the output via an '<output>' node.
+The second part of the configuration defines the output via an 'output' node.
 The type of the top-level XML node must be specified via the 'node' attribute.
-The '<output>' node can contain the following sub nodes:
+The 'output' node can contain the following sub nodes:
 
-:'<inline>':
+:'inline':
   Contains content to be written to the output.
 
-:'<if>':
+:'if':
   Produces output depending on a condition (see below). If the condition
-  is satisfied, the '<then>' sub node is evaluated. Otherwise, the '<else>'
+  is satisfied, the 'then' sub node is evaluated. Otherwise, the 'else'
   sub node is evaluated. Each of those sub nodes can contain the same
-  nodes as the '<output>' node.
+  nodes as the 'output' node.
 
-:'<input>':
+:'input':
   Copies the content of the input specified by the 'name' attribute to the
   output node. If the optional attribute 'skip_toplevel' is set and evaluates
   to true, the top-level XML node from the input will not be copied.
 
-:'<attribute>':
+:'attribute':
   Adds an attribute with the specified 'name' and 'value'. If the node
   has an 'input' attribute, the content of the specified input is taken
   as attribute value.
 
-:'<node>':
-  Adds a sub node with the specified 'type'. The content of <node> is evaluated
+:'node':
+  Adds a sub node with the specified 'type'. The content of 'node' is evaluated
   to generate the content of the added sub node.
 
 
 Conditions
 ----------
 
-The '<has_value>' condition compares an input value (specified as 'input'
+The 'has_value' condition compares an input value (specified as 'input'
 attribute) with a predefined value (specified as 'value' attribute). The
 condition is satisfied if both values are equal.
 

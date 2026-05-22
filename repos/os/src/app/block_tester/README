@@ -1,6 +1,3 @@
-Brief
-=====
-
 This component implements various Block session tests. All block number values
 are specified in terms of the underlying Block session, i.e., the start block
 1024 will be at byte offset 512KiB on a 512B sector session whereas it will be
@@ -20,77 +17,77 @@ The following list contains all available tests:
 
 * 'replay' executes a previously recorded Block session operation sequence.
 
-    Each request is specified by a 'request' node which has the following
-    attributes:
+  Each request is specified by a 'request' node which has the following
+  attributes:
 
-    - The 'lba' attribute specifies the logical block address where
-      the request will start and is mandatory
+  * The 'lba' attribute specifies the logical block address where
+    the request will start and is mandatory
 
-    - The 'count' attribute specifies the number of blocks that are processed
-      in the request and is mandatory.
+  * The 'count' attribute specifies the number of blocks that are processed
+    in the request and is mandatory.
 
-    - The 'type' attribute specifies the kind of the request, valid values
-      are 'read' and 'write' and is mandatory.
+  * The 'type' attribute specifies the kind of the request, valid values
+    are 'read' and 'write' and is mandatory.
 
- * 'sequential' reads or writes a given amount of bytes sequentially.
+* 'sequential' reads or writes a given amount of bytes sequentially.
 
-   - The 'start' attribute specifies the logical block address where the test
-     begins, if it is missing the first block is used.
+  * The 'start' attribute specifies the logical block address where the test
+    begins, if it is missing the first block is used.
 
-   - The 'length' attribute specifies how many bytes are processed,
-     if it is missing the whole underlying Block session starting on the given
-     start block is used.
+  * The 'length' attribute specifies how many bytes are processed,
+    if it is missing the whole underlying Block session starting on the given
+    start block is used.
 
-   - The 'size' attribute specifies the size of a request, if it is missing
-     the block size of the underlying Block session is used.
+  * The 'size' attribute specifies the size of a request, if it is missing
+    the block size of the underlying Block session is used.
 
-   - The 'write' attribute specifies whether the tests writes or reads, if
-     it is missing it defaults to reading.
+  * The 'write' attribute specifies whether the tests writes or reads, if
+    it is missing it defaults to reading.
 
- * 'ping_pong' reads or writes Blocks from the beginning and the end of the
-    specified part of the Block session in an alternating fashion
+* 'ping_pong' reads or writes Blocks from the beginning and the end of the
+  specified part of the Block session in an alternating fashion
 
-   - The 'start' attribute specifies the logical block address where the test
-     begins, if it is missing the first block is used.
+  * The 'start' attribute specifies the logical block address where the test
+    begins, if it is missing the first block is used.
 
-   - The 'length' attribute specifies how many bytes are processed,
-     if it is missing the whole underlying Block session starting on the given
-     start block is used.
+  * The 'length' attribute specifies how many bytes are processed,
+    if it is missing the whole underlying Block session starting on the given
+    start block is used.
 
-   - The 'write' attribute specifies whether the tests writes or reads, if
-     it is missing it defaults to reading.
+  * The 'write' attribute specifies whether the tests writes or reads, if
+    it is missing it defaults to reading.
 
- * 'random' reads or writes random Blocks in a deterministic order that depends
-   on the seed value of the PRNG (currently xoroshiro128+ is used).
+* 'random' reads or writes random Blocks in a deterministic order that depends
+  on the seed value of the PRNG (currently xoroshiro128+ is used).
 
-   - The 'length' attribute specifies how much bytes are processed by the
-     random test, if is missing the total length of the underlying block
-     session are used.
+  * The 'length' attribute specifies how much bytes are processed by the
+    random test, if is missing the total length of the underlying block
+    session are used.
 
-   - The 'size' attribute specifies the size of a request, if it is missing
-     the block size of the underlying Block session is used.
+  * The 'size' attribute specifies the size of a request, if it is missing
+    the block size of the underlying Block session is used.
 
-   - The 'write' or 'read' attribute denote how the access is done. If both
-     attributes are specified the type of operation also depends on the PRNG.
-     If the lowest bit is set it will be a 'write' and otherwise a 'read' access.
+  * The 'write' or 'read' attribute denote how the access is done. If both
+    attributes are specified the type of operation also depends on the PRNG.
+    If the lowest bit is set it will be a 'write' and otherwise a 'read' access.
 
 In addition to the test specific attributes, there are generic attributes,
 which are supported by every test:
 
-  - If the 'verbose' attribute is specified, the test will print each
-    request to the LOG session before it will be executed.
+* If the 'verbose' attribute is specified, the test will print each
+  request to the LOG session before it will be executed.
 
-  - The 'copy' attribute specifies whether the content should be copied
-    in memory, which a typical client would do. The default is "yes".
-    If set to "no", the payload data remains untouched, exposing the raw
-    I/O and protocol overhead.
+* The 'copy' attribute specifies whether the content should be copied
+  in memory, which a typical client would do. The default is "yes".
+  If set to "no", the payload data remains untouched, exposing the raw
+  I/O and protocol overhead.
 
-  - The 'batch' attribute specifies how many block-operation jobs are
-    issued at once. The default value is 1, which corresponds to a
-    sequential mode of operation.
+* The 'batch' attribute specifies how many block-operation jobs are
+  issued at once. The default value is 1, which corresponds to a
+  sequential mode of operation.
 
-  - The 'io_buffer' attribute defines the size of the I/O communication
-    buffer for the block session. The default value is "4M".
+* The 'io_buffer' attribute defines the size of the I/O communication
+  buffer for the block session. The default value is "4M".
 
 Note: all tests use a fixed sized scratch buffer of 1 (replay 4) MiB, plan the
 quota and request size accordingly.
@@ -104,42 +101,51 @@ Configuration
 
 The following config snippet illustrates the use of the component:
 
-! <config stop_on_error="yes" calculate="yes" log="yes" "report="no">
-!   <tests>
-!     <!-- read first 1GiB with request size = block size -->
-!     <sequential length="1G"/>
-!
-!     <!-- read 512MiB starting at block 1024 with request size = 64KiB -->
-!     <sequential start="1024" length="512M" size="64K"/>
-!
-!     <!-- read the last 16KiB in 512B chunks on a 512b sector session -->
-!     <sequential start="-131072" size="512"/>
-!
-!     <!-- write 1200MiB in 8KiB requests -->
-!     <sequential write="yes" length="1200M" size="8K"/>
-!
-!     <!-- replay the beginning Ext2 mount operations -->
-!     <replay>
-!       <request type="read"  block_number="2" count="1"/>
-!       <request type="write" block_number="2" count="1"/>
-!     </replay>
-!
-!     <!-- read the whole session in 64KiB chunks jumping back and forth -->
-!     <ping_pong size="64K"/>
-!
-!     <!-- write 16GiB in 16KiB chunks starting at byte offset 4GiB on a 4K session -->
-!     <ping_pong start="1048576" length="16G" size="16K"/>
-!
-!     <!-- read 32768 random 16KiB chunks -->
-!     <random count="32768" size="16K" seed="0xdeadbeef"/>
-!
-!     <!-- write 6144 random chunks in underlying block size -->
-!     <random write="yes" count="6144" seed="0xc0ffee"/>
-!
-!     <!-- read/write 123456 random 4KiB chunks -->
-!     <random read="yes" write="yes" count="6144" size="4K" seed="42"/>
-!   </tests>
-! </config>
+! config | stop_on_error: yes | calculate: yes | log: yes | report: no
+! + tests
+!   + sequential | length: 1G
+!   | .
+!   | . read first 1GiB with request size = block size
+!   | .
+!   + sequential | start: 1024 | length: 512M | size: 64K
+!   | .
+!   | . read 512MiB starting at block 1024 with request size = 64KiB
+!   | .
+!   + sequential | start: -131072 | size: 512
+!   | .
+!   | . read the last 16KiB in 512B chunks on a 512b sector session
+!   | .
+!   + sequential | write: yes | length: 1200M | size: 8K
+!   | .
+!   | . write 1200MiB in 8KiB requests
+!   | .
+!   + replay
+!   | .
+!   | . replay the beginning Ext2 mount operations
+!   | .
+!   | + request | type: read  | block_number: 2 | count: 1
+!   | + request | type: write | block_number: 2 | count: 1
+!   |
+!   + ping_pong | size: 64K
+!   | .
+!   | . read the whole session in 64KiB chunks jumping back and forth
+!   | .
+!   + ping_pong | start: 1048576 | length: 16G | size: 16K
+!   | .
+!   | . write 16GiB in 16KiB chunks starting at byte offset 4GiB on a 4K session
+!   | .
+!   + random | count: 32768 | size: 16K | seed: 0xdeadbeef
+!   | .
+!   | . read 32768 random 16KiB chunks
+!   | .
+!   + random | write: yes | count: 6144 | seed: 0xc0ffee
+!   | .
+!   | . write 6144 random chunks in underlying block size
+!   | .
+!   + random | read: yes | write: yes | count: 6144 | size: 4K | seed: 42
+!     .
+!     . read/write 123456 random 4KiB chunks
+! -
 
 
 Result output
@@ -155,18 +161,18 @@ LOG
 The LOG output provides one line for every test that is composed of 'key:value'
 tuples where the keys are as follows:
 
-  * bcount     total count of blocks
-  * bsize      block size in bytes
-  * bytes      total amount of bytes of all operations
-  * duration   total duration time in milliseconds
-  * iops       total number of I/O operatins
-  * mibs       total throughput of the test in MiB/s
-  * result     result of the test, either 0 (ok) or 1 (failed)
-  * rx         number of blocks read
-  * size       size of one request in bytes
-  * test       name of the test
-  * triggered  number of handled I/O signals
-  * tx:        number of blocks written
+:bcount:    total count of blocks
+:bsize:     block size in bytes
+:bytes:     total amount of bytes of all operations
+:duration:  total duration time in milliseconds
+:iops:      total number of I/O operatins
+:mibs:      total throughput of the test in MiB/s
+:result:    result of the test, either 0 (ok) or 1 (failed)
+:rx:        number of blocks read
+:size:      size of one request in bytes
+:test:      name of the test
+:triggered: number of handled I/O signals
+:tx:        number of blocks written
 
 The following examplary output illustrates the structure:
 
@@ -180,18 +186,37 @@ The Report output contains a node for every test and is updated continuosly
 during execution, i.e., new results are appended to the Report. The structure
 of the report mirrors the LOG output and is as follows:
 
-! <results>
-!   <result test="sequential" rx="1048576" tx="0" bytes="536870912" size="65536" duration="302" mibs="1695.364" iops="27125.828" result="0"/>
-!   <result test="random" rx="0" tx="3167616" bytes="1621819392" size="65536" bsize="512" duration="11921" mibs="129.744" iops="2075.916" result="1"/>
-! <results>
+! results
+! + result
+!          test:     sequential
+!          rx:       1048576
+!          tx:       0
+!          bytes:    536870912
+!          size:     65536
+!          duration: 302
+!          mibs:     1695.364
+!          iops:     27125.828
+!          result:   0
+! + result
+!          test:     random
+!          rx:       0
+!          tx:       3167616
+!          bytes:    1621819392
+!          size:     65536
+!          bsize:    512
+!          duration: 11921
+!          mibs:     129.744
+!          iops:     2075.916
+!          result:   1
+! -
 
 
-TODO
-====
-
-- move boilerplate code to Test_base (_block etc.)
-- check all range/overlap checks (_start, _end etc.)
-- fix report=yes (add Report support)
-- add req min/max/avg time
-- make daemon like, i.e., react upon config changes and execute tests
-  dynamically
+; TODO
+; ====
+;
+; * move boilerplate code to Test_base (_block etc.)
+; * check all range/overlap checks (_start, _end etc.)
+; * fix report=yes (add Report support)
+; * add req min/max/avg time
+; * make daemon like, i.e., react upon config changes and execute tests
+;   dynamically

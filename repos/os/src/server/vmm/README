@@ -8,13 +8,14 @@ that is derived from the configuration of the VMM.
 
 The following configuration attributes are evaluated:
 
-! <config kernel_rom="linux"
-!         initrd_rom="initrd"
-!         ram_size="512M"
-!         cpu_count="1"
-!         cpu_type="arm,cortex-a53"
-!         gic_version="3"
-!         bootargs="console=hvc0"/>
+! + config
+!          kernel_rom:  linux
+!          initrd_rom:  initrd
+!          ram_size:    512M
+!          cpu_count:   1
+!          cpu_type:    arm,cortex-a53
+!          gic_version: 3
+!          bootargs:    console=hvc0
 
 Configuration attributes explained in more detail:
 
@@ -59,11 +60,10 @@ Virtio devices
 In addition to the general configuration attributes, one can define several Virtio
 devices per VM. This is done by configuration sub-nodes, like:
 
-! <config ram_size="128M" cpu_count="1" ... >
-!
-!   <virtio_device name="hvc0" type="console"/>
+! + config | ram_size: 128M | cpu_count: 1 ...
 !   ...
-! </config>
+!   + virtio_device hvc0 | type: console
+!   ...
 
 For each virtio_device node the following attributes need to be set:
 

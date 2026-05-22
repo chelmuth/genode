@@ -11,16 +11,20 @@ defaults to tap0 and can be set up as follows.
 The used TAP device can be changed in the component configuration like
 follows.
 
-! <config tap="tap1"/>
+! + config | tap: tap1
 
 The virtual NIC's MAC address defaults to 02-00-00-00-00-01 and can be
 changed via
 
-! <config mac="12:23:34:45:56:67"/>
+! + config | mac: 12:23:34:45:56:67
 
 The driver optionally reports the following information under the
-label "devices" if requested in the config as depicted.
+label 'devices' if requested in the config as depicted.
 
-! <config> <report mac_address="true"/> </config>
+! + config
+!   + report | mac_address: yes
 
-! <devices> <nic label="tap0" mac_address="02:00:00:00:00:01"/> </devices>
+The report has the following form.
+
+! devices
+! + nic | label: tap0 | mac_address: 02:00:00:00:00:01
