@@ -1060,22 +1060,34 @@ Libc::Vfs_plugin::_ioctl_tio(File_descriptor *fd, unsigned long request, char *a
 
 	} else if (request == TIOCGETA) {
 
-		::termios *termios = (::termios *)argp;
+		monitor().monitor([&] {
+			_with_info(*fd, [&] (Node const &info) {
+				if (info.type() == "terminal") {
 
-		termios->c_iflag = 0;
-		termios->c_oflag = 0;
-		termios->c_cflag = 0;
-		/*
-		 * Set 'ECHO' flag, needed by libreadline. Otherwise, echoing
-		 * user input doesn't work in bash.
-		 */
-		termios->c_lflag = ECHO;
-		::memset(termios->c_cc, _POSIX_VDISABLE, sizeof(termios->c_cc));
-		termios->c_ispeed = 0;
-		termios->c_ospeed = 0;
+					::termios *termios = (::termios *)argp;
 
-		handled = true;
-	
+					termios->c_iflag = 0;
+					termios->c_oflag = 0;
+					termios->c_cflag = 0;
+					/*
+					 * Set 'ECHO' flag, needed by libreadline. Otherwise, echoing
+					 * user input doesn't work in bash.
+					 */
+					termios->c_lflag = ECHO;
+					::memset(termios->c_cc, _POSIX_VDISABLE, sizeof(termios->c_cc));
+					termios->c_ispeed = 0;
+					termios->c_ospeed = 0;
+
+					handled = true;
+				}
+			});
+
+			return Fn::COMPLETE;
+		});
+
+		if (!handled)
+			return { true, ENOTTY };
+
 	} else if (request == TIOCSETA) {
 
 		/*

@@ -14,9 +14,6 @@ FILTER_OUT_C += \
 # the following is a wrapper over rusage, which we cannot provide
 FILTER_OUT_C += clock.c
 
-# we implement this ourselves
-FILTER_OUT_C += isatty.c
-
 # compatibility with older FreeBSD is not a concern
 FILTER_OUT_C += $(notdir $(wildcard $(LIBC_GEN_DIR)/*-compat11.c))
 
