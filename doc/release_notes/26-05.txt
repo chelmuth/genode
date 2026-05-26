@@ -1,0 +1,833 @@
+
+
+              ===============================================
+              Release notes for the Genode OS Framework 26.05
+              ===============================================
+
+                               Genode Labs
+
+
+
+The work on the May release has been dominated by topics on account of the
+[https://genode.org/news/sculpt-os-release-26.04 - just published] Sculpt OS
+version 26.04. Besides featuring profound driver improvements across Wifi,
+ACPI, I2C HID, SOF audio, and graphics, it turns the most innovative aspects
+of Sculpt OS into building blocks for the easy reuse in other incarnations of
+Genode-based systems
+(Section [Sculpt OS reshaped into re-usable building blocks]).
+In the same vein, the Goa SDK has been updated to match the latest Sculpt OS
+version while accumulating plenty of detail improvements (Section [Goa SDK]).
+
+On the project's organizational level, we are happy to report the successful
+migration of all code repositories and issue discussions from GitHub to
+[https://codeberg.org - Codeberg] (Section [Completed migration from GitHub to Codeberg]).
+This change along with the recent switch of the framework's
+[https://genode.org/documentation/release-notes/26.02#Human-inclined_data__HID__format_by_default - configuration format]
+prompted us to revisit the Genode books (Section [New revisions of the Genode books]).
+
+Further highlights of the release are the new touch-awareness of the window
+manager (Section [Touch-based window management]) making Sculpt OS usable on
+tablets, the addition of Linux user-space networking based on libslirp, the
+update of Qt to version 6.8.3, and a largely revised LTE modem stack
+(Section [LTE modem stack]).
+
+
+New revisions of the Genode books
+#################################
+
+With the change of the framework's configuration syntax from XML to
+[https://genode.org/documentation/hid - HID], the move of the project from
+GitHub to Codeberg, and the variety of improvements accumulated over the past
+four releases, we extended our scheduled documentation update to cover all
+three Genode books.
+
+: <div class="visualClear"><!-- --></div>
+: <p>
+:  <div style="clear: both; float: left; margin-right:20px;">
+:   <a class="internal-link" href="https://genode.org/documentation/genode-foundations-26-05.pdf">
+:    <img class="image-inline" src="https://genode.org/documentation/genode-foundations-title.png">
+:   </a>
+:   <a class="internal-link" href="https://genode.org/documentation/genode-applications-26-04.pdf">
+:    <img class="image-inline" src="https://genode.org/documentation/genode-applications-title.png">
+:   </a>
+:   <a class="internal-link" href="https://genode.org/documentation/genode-platforms-26-05.pdf">
+:    <img class="image-inline" src="https://genode.org/documentation/genode-platforms-title.png">
+:   </a>
+:  </div>
+: </p>
+
+Whereas the "Foundations" book covers Genode's architecture and reference
+material, the "Applications" book focuses on the development and porting of
+applications for Genode and Sculpt OS in particular, and the "Platforms" book
+goes into detail about how the framework interacts with the underlying
+hardware.
+
+: <div class="visualClear"><!-- --></div>
+
+By the way, the books are open source. Should you desire to trace the changes
+in detail, you may follow their
+[https://codeberg.org/genodelabs/genode-manual/commits/branch/main - commit history].
+
+
+Completed migration from GitHub to Codeberg
+###########################################
+
+Finally, we have also migrated the main (genode.git) repository from GitHub to
+Codeberg. From now on, you will find all genodelabs repositories on Codeberg.
+
+:Genode Labs at Codeberg:
+
+  [https://codeberg.org/genodelabs]
+
+Since the archived genodelabs repositories on GitHub will no longer receive
+updates, you need to adapt your existing clones. The following commands serve
+as a guideline for adapting your clone of the genode.git repository:
+
+! git branch -m master main
+! git branch --unset-upstream main
+! git remote set-url origin https://codeberg.org/genodelabs/genode.git
+! git branch -rd origin/master
+
+Please also consult the
+[https://genode.org/documentation/release-notes/26.02#Migration_from_GitHub_to_Codeberg - release notes 26.02]
+for further details on our migration to Codeberg.
+
+
+Touch-based window management
+#############################
+
+Genode's support for touchscreens as input devices has mainly been driven by our
+efforts for bringing Sculpt OS to the PinePhone. Due to the lack of window
+management on the PinePhone, it was sufficient to only add
+[https://genode.org/documentation/release-notes/22.02#Sculpt_OS_meets_the_PinePhone - native touch-event support for Sculpt's administrative UI].
+On tablets and convertible laptops, which can run the PC-flavored Sculpt, we still
+needed crutches in form of an
+[https://genode.org/documentation/release-notes/21.11#Event_filter_for_converting_touch_to_pointer_input - event filter for converting touch to pointer input].
+The recently emerged interest of our community in running Sculpt OS on such
+devices motivated us to get rid of these crutches.
+
+As a reminder, Genode's
+[https://genode.org/documentation/release-notes/14.08#New_GUI_architecture - GUI stack]
+is composed of several components such as the nitpicker GUI server, the
+window manager, the window layouter, and the decorator. The drawback of this
+composition is that hover information is processed on a separate path and must
+therefore be correlated with the corresponding click/clack events. For the
+pointer, this has not been much of a problem because hover information is
+continuously updated on pointer movement and always up-to-date. For touch
+input, however, hover information needs to be updated on each new touch
+sequence. Any component evaluating pointer/touch events and hover information
+needs to wait for both to be up-to-date.
+
+For Sculpt's administrative UI, we already solved this synchronization issue
+by interspersing the event stream with sequence numbers and by reflecting
+those numbers in the hover reports. We thus also applied this approach to the
+remaining components.
+
+In the scope of this work, we also refined the convention of how touchscreen
+drivers create their event stream. Previously, those drivers generated 'Touch'
+events for every new or modified contact point as well as a 'Touch_release'
+event once the contact point vanished. This made detection of touch-based
+"clicks" a bit cumbersome as every component needed to keep track of whether a
+'Touch' event is the first after a 'Touch_release' event. In order to eliminate
+this bookkeeping, we now added artificial press/release events of 'BTN_TOUCH'
+to the drivers' event streams.
+
+As a result, you are now able to fully enjoy Sculpt OS on supported
+tablets/convertibles such as the Star Labs StarLite V or the ThinkPad X380 Yoga.
+
+The video below shows Sculpt 26.04 on the StarLite V. Keep a look-out for the
+new Sculpt UI in action, the touch-based window interactions, and the screen
+rotation.
+
+: <video controls width="720">
+:   <source src="https://genode.org/files/genode_25_05_touch_wm.mp4" type="video/mp4" />
+:   <a href="https://genode.org/files/genode_25_05_touch_wm.mp4">Download as mp4</a>
+: </video>
+
+Sculpt OS reshaped into re-usable building blocks
+#################################################
+
+According to our [https://genode.org/about/road-map - road map's] guiding
+theme "building bridges", we aspire to make the time-tested mechanisms and
+patterns of Sculpt OS easily re-usable to other incarnations of Genode-based
+systems. The gold nuggets of Sculpt OS are the ability to install, deploy,
+and update software in a safeguarded manner, the discovery and driver support
+of a wide range of commodity PC hardware, the coherent way of configuring and
+monitoring components, and the dynamic composability of the system.
+
+In former versions of Sculpt OS, these features were closely coupled with
+the implementation of its administrative user interface called "leitzentrale".
+The current release dissolves this coupling by making each technical feature
+independently available and deeply customizable. For example, alternatives
+to Sculpt OS may swap out the user interface by a completely different
+personality, or even shun the interactive user interface altogether for
+headless operation.
+
+
+Mixed deployment from the boot-image and from installable packages
+==================================================================
+
+The key for the new level of flexibility is the depot-deploy component.
+This component consumes the description of a _deployment_ as input for the
+configuration of a dynamic init runtime. In contrast to an init configuration,
+the deployment can refer to packages stored in a depot of software. Once the
+depot-deploy component encounters the need to know more about a package, it
+issues a query for information. In turn, it accepts so called _blueprints_ as
+responses to such queries.
+
+In the former version of Sculpt OS, this mechanism used to be co-located
+with the administrative user interface in the so-called sculpt-manager
+component. In the new version, the depot-deploy mechanism sits right at the
+static foundation of the system in the form of a dedicated component with
+no dependencies. Even infrastructure like drivers and the software depot
+live in the system as part of the deployment.
+
+Not all components need to be deployed from packages. Some components, in
+particular the drivers needed for accessing the software depot, can be
+deployed from executable binaries provided by the boot image just as well.
+This mixed deployment of boot-image and depot content gives the system
+immense flexibility. For example, any component initially deployed from the
+boot image can later be dynamically replaced by a different version installed
+as a package.
+
+In practice, a deployment consists of a variety of components of different
+roles. For example, board-specific device drivers that enable the interaction
+with underlying hardware, or infrastructural components like the GUI
+compositor, or the selection of applications installed by the user. This
+variety calls for a structuring facility. This facility comes in the form of
+so-called _options_. An option listed in the deployment refers to a distinct
+configuration snippet to be incorporated into the deployment, similar to an
+include file. But in contrast to include files, options deliberately cannot
+be nested.
+
+The deployment description including the used options are monitored by the
+depot-deploy component. On each change, like whenever a child component is
+added, the configuration of the init runtime is updated accordingly. Error
+conditions such as missing package information or lacking dependencies are
+reflected as annotations of the init runtime configuration.
+
+To illustrate the reusability of the new depot-deploy component, Genode's
+on-target test orchestration framework called _depot_autopilot_ has been
+updated to use the depot-deploy component, replacing a formerly custom
+implementation.
+
+
+Dynamic device discovery and board-support options
+==================================================
+
+The selection of device drivers depending on dynamically discovered hardware
+used to be managed by the sculpt-manager component. So Genode users in
+want for a similarly flexible hardware discovery mechanism either had to
+use Sculpt OS as is - including unwanted parts like the user interface - or
+craft their own solution.
+
+The new depot-deploy option mechanism cleared the way for untangling the
+board-specific driver selection for the sculpt manager. By convention, each
+deployment has enabled a "board" option, which is meant to contain
+board-specific device drivers. When integrating the system image, the board
+option is populated from a board-dependent file. E.g., when building Sculpt
+for the PC,
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/gems/sculpt/option/board-pc - option/board-pc] is picked up.
+This option contains a number of child components as driver candidates but
+most of them are not immediately spawned but marked as to-be-discovered by
+having their 'enabled' attribute set to 'discover'. However, all information
+about how those drivers ought to be connected to the deployment is readily
+there. All it would take to spawn a driver is setting the 'enabled' attribute
+to 'yes'.
+
+The drivers are accompanied with a component called
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/pc/src/app/pc_discover - discover],
+which has the sole purpose of enabling the drivers in the board option
+according to the runtime discovery of the hardware as reported by the platform
+driver. It also removes the child nodes for drivers that mismatch the
+discovered hardware to condense the board option to the relevant parts.
+
+Not all boards need a discovery component. For example, the
+[https://codeberg.org/genodelabs/genode-allwinner/src/branch/main/sculpt/option/board-pinephone - board option for the PinePhone]
+contains a statically known selection of drivers.
+
+The notion of board options brings several benefits. First, such options
+become immediately useful for non-Sculpt systems. Second, they nicely entail
+the information how driver services are attained on each board. And finally,
+it removes board-specific knowledge and policy from the code of the sculpt
+manager. New boards can be added with no code modifications.
+
+
+The configuration has become the data model
+===========================================
+
+For propagating configurations to components, Sculpt OS introduced the concept
+of the in-memory config file system. Each file on this file system
+corresponded to a component configuration. The files were meant to be owned
+and modified by the user only. For example, _/config/deploy_ referred to the
+deployment as defined by the user. The sculpt-manager component used to
+transform those configurations into files hosted at the _/config/managed/_
+directory, while incorporating dynamic changes like interactive modifications
+of the deployment. The actual components would consume the _/managed/_ files.
+
+In practice, the relationship of the files stored at _/config/_ and
+_/config/managed/_ was not always easy to grasp because it depended on
+the dynamic policy of the sculpt manager. For example, a manually provided
+_/config/event_filter_ configuration had the effect of pinning the
+configuration of the event filter to the provided file. But _/config/deploy_
+was taken as mere starting point for a deployment that could later diverge
+from it when interactively adding components.
+
+The new version simplifies the concept by no longer feeding configurations
+into the manager's data model but by representing the manager's data model
+as a file system directly. The _/config/_ file system has been replaced by
+the _/model/_ file system and the _/managed/_ sub directory is gone.
+This makes the operation of the manager vastly more transparent and removes
+policy that used to be expressed in the code.
+
+
+Formerly builtin features made optional
+=======================================
+
+Combined, the option mechanism and the _/model/_ file system have paved the
+ground for moving almost all formerly hardwired aspects of Sculpt OS to the
+deployment level. Even the entire visible infrastructure of Sculpt OS like the
+GUI compositor, pointer, event filter, clipboard, and the administrative user
+interface are now under the sole control of the user who can tweak and replace
+any aspect by editing the model and observing the effects immediately.
+
+[image sculpt_26_04_leitzentrale]
+  Sculpt OS now lays its entire construction plan into the hands of the user,
+  opening up the system for customization at all levels. The construction plan
+  is not merely a declarative description of the system but it can be live
+  edited at will. Since any change takes immediate effect, declarative system
+  administration becomes an interactive experience.
+
+
+Base framework and OS-level infrastructure
+##########################################
+
+New mechanism for downgrading RAM to read-only access
+=====================================================
+
+In situations where ROM modules are dynamically created, they are backed by
+RAM dataspaces, which are by their nature not read-only. Such ROM servers
+either had to hand out distinct RAM allocations to each client, or leverage
+Genode's managed dataspaces to share a read-only copy among multiple clients.
+But the former is wasteful, and the latter is rather complicated and not fully
+supported on all kernels.
+
+The current release streamlines the creation of read-only dataspaces from RAM
+by introducing a new RPC function "seal" to the PD-session interface. For a
+RAM dataspace allocated by the PD, the seal operation downgrades the dataspace
+such that any subsequent attachment of the dataspace to an address space will
+result in read-only mappings. Attachments established prior to the sealing
+remain unaffected. This way, the original creator of the RAM dataspace is able
+to keep a writeable mapping while all other peers are downgraded to read-only
+access. This is useful for ROM services that support version changes of ROMs
+over time. For ROM services that hand out ROMs with constant data, the RAM
+dataspace - once filled with content using a temporary attachment - can be
+detached before sealing. Then, by definition, no mutation can happen while the
+ROM module exists.
+
+All existing ROM servers have been adapted to use the new interface, thereby
+making the _cached_fs_rom_ server usable on the Linux and Fiasco versions of
+Genode. Also all components using the framework's 'Dynamic_rom_session'
+utility implicitly invoke the sealing mechanism now.
+
+
+Optimized state reports for human readability
+=============================================
+
+Even though init's state reports were already valued for providing diagnostics
+at runtime, they left the potential of the HID syntax, in particular its
+tabular style, unused so far. To make such reports more easy to interpret
+for human readers, the state of requested/provided sessions is now printed
+in tabular style using the service type as (leftmost) name of each row.
+To improve ergonomics further, session states are now abbreviated (e.g.,
+OK instead CAP_HANDED_OUT), yielding more visual space to other details.
+
+
+Libc inode handling
+===================
+
+In Genode's libc, the inode values as returned by 'stat' never carried
+meaningful information because, in contrast to Unix, there exists no global
+namespace for those numbers. With multiple file-system sessions of independent
+VFS servers mounted in one program, inode values can easily clash. Since those
+numbers were not meaningful anyway, some VFS plugins just return 0. Others use
+local pointers as (presumably) unique numbers. Whenever using file-system
+sessions in a nested way, those conflicts are even more likely.
+
+In practice, clashes of inode numbers have sometimes surprising effects when
+using software ported from Unix-like systems. For example, when opening a
+second file in vim that happens to have the same inode number as an already
+open file, vim assumes that the second file is a hardlink to the first and
+switches to the already open file. That's not what the user expects (there
+are no hardlinks on Genode to begin with). To discharge such policies and to
+relieve VFS plugin developers from producing inode numbers out of thin air, we
+now let the libc create artificial inode numbers by computing a checksum over
+the path. This way, each file distinctly visible by a program will get a
+different number (disregarding hash collisions).
+
+
+Libraries and applications
+##########################
+
+Qt6 updated to version 6.8.3
+============================
+
+Since the Chromium engine of our QtWebEngine 6.6.2 port became too old for
+the Genode Users Forum, we updated Qt to version 6.8.3. In order to build
+Qt applications for this new version, the Qt host tools need to be updated
+using the _tool/tool_chain_qt6_ script.
+
+
+Software provided via the Genode-world repository
+=================================================
+
+In line with the plan for the Genode-world repository outlined in
+[https://genode.org/documentation/release-notes/26.02#Software_provided_via_the_Genode-world_repository - release 26.02],
+more existing ports got converted into Goa projects. In addition, components
+and pkgs that were hosted in personal Goa project repositories have now found
+a new home in Genode-world.
+
+Thus the glib library, libvnc, and sdl_vnc are now available as Goa projects.
+
+The imported 'vnc_server' component allows for accessing a Genode system via
+the VNC protocol and makes use of the 'libvnc' project under the hood.
+
+The imported 'screenshot' component, allows for taking screenshots of a
+running Sculpt OS.
+
+The imported 'goa_testbed' pkg enables developers to test-drive their Goa
+projects directly on a running Sculpt OS instance by uploading the ingredients
+and executing them on target.
+
+A new 'chrony' meta-pkg was created to ease the creation of NTP-based
+system-clock components, primarily used on machines that do not feature a
+real-time clock, where the initial time is collected from a remote source.
+This prompted us to also add the gmp library to the 'goa' meta-pkg as well as
+this library is necessary on ARM.
+
+Accompanying the Qt 6.8.3 update is an updated QtWebEngine and an adapted
+Falkon webbrower making use of the new web engine.
+
+
+LTE modem stack
+###############
+
+Having previously dipped into
+[https://genodians.org/ssumpf/2020-12-04-mbim - LTE modem support] using
+the Mobile Broadband Interface Model (MBIM) and Huawai's ME906 LTE modem, we
+were able to gather more experience during the
+[https://genodians.org/ssumpf/2022-05-09-telephony - PinePhone] enablement
+which featured the Quectel EG25-G modem.
+
+This lead us to the conclusion that for packet-data connections, LTE modems in
+general support one or more modes of operation, namely: the Qualcomm MSM
+Interface (QMI) which is the most widely used, the aforementioned MBIM
+protocol, or a plain USB-Ethernet interface (ECM/NCM). Additionally, the
+control channel for each mode is either in binary-message format (QMI and
+MBIM) or commands can be sent using traditional AT-commands through an
+USB-serial device.
+
+When working with the PinePhone, we realized that the Quectel EG25-G modem
+supports all three modes of operation, and therefore, it is the ideal candidate
+to review and update our LTE modem support while additionally bringing QMI to
+Genode.
+
+
+MBIM
+----
+
+Having previously enabled the MBIM protocol by porting
+[https://gitlab.freedesktop.org/mobile-broadband/libmbim - libmbim]
+to Genode, it was time to update the library to a current version (1.34.0) and
+transform it into a Goa project. In order to actually establish a data
+connection, we had previously written a small _mbimcli_ tool, which now can be
+found under _genode-world/network/mbimcli_ that also has been turned into a
+Goa project. Please inspect the README file there for usage information.
+
+Because our Huawai modem also supports MBIM (through an USB configuration
+profile) we were able to successfully test MBIM there as well as on the
+Quectel modem (where MBIM has to be configured with an AT-command).
+
+The scenario works as follows: Because LTE modems are exposed as USB devices,
+Genode's USB-NIC driver (_usb_net_) needs to be started. When an LTE-MBIM
+modem is discovered, the driver will initialize the wwan-driver and the
+cdc-wdm driver for the control channel (see
+[https://genodians.org/ssumpf/2020-12-04-mbim - LTE modem support]). _mbimcli_
+can then access the control channel through a terminal session provided by
+_usb_net_, while Ethernet frames are transferred through Genode's Nic-session
+from the _usb_net_ component to the NIC router. For this to work, _mbimcli_
+generates a configuration file for the NIC router. For a more detailed
+explanation please refer to Johannes'
+[https://genodians.org/jschlatow/2021-07-21-mobile-network - Mobile networking in Sculpt]
+article.
+
+
+QMI
+---
+
+Analogously to MBIM, we enabled the qmi_wwan driver within our USB-NIC driver,
+ported [https://www.freedesktop.org/wiki/Software/libqmi - libqmi] (1.38.0)
+as a Goa project to Genode, and wrote a small _qmicli_ tool that implements
+the same behavior as _mbicli_ but uses QMI-library calls instead of MBIM calls.
+This worked with our Quectel modem almost out of the box.
+
+
+ECM/NCM
+-------
+
+Once a modem is configured as ECM/NCM (done so in our Sculpt OS version for
+the PinePhone) only the _usb_net_ driver needs to be started. The driver can
+then be used like any other Ethernet driver on Genode. For configuration
+purposes, LTE modems expose USB UARTs. One of these UARTs can be used to send
+AT-commands in order to configure the modem (e.g., setup the APN for the data
+connection). We expose these UARTs through the "option" driver in _usb_net_.
+If an LTE-modem UART is found by the driver, it will request a terminal
+session for the UART. In case this behavior is unwanted, the terminal session
+can be routed to Genode's black-hole server.
+
+
+Testing
+-------
+
+MBIM can be tested with the "mobile_network" package offered by jschlatow. For
+low-level testing, there exist run scripts for both MBIM (_mbimcli.run_) and
+QMI (qmicli.run) in _repos/ports/run_.
+
+
+Device drivers
+##############
+
+Platform driver
+===============
+
+The platform driver's shape largely changes with this release. On the one
+hand, we reorganized the way DMA buffers are administered. Secondly, support
+for message-signaled interrupts (MSI) and its extended variant (MSI-X) has
+become explicitly usable and more scalable. We took the necessary
+modifications as opportunity to tidy up and restructure the platform
+driver's implementation.
+
+
+Fine-grained DMA-buffer accounting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Until now, DMA buffer allocation and freeing was a constituent part of the
+"Platform" service and hard-wired with the related device(s) within one
+session. This seemed natural because the platform driver has to take care that
+I/O controlling devices, like S-MMUs or IOMMUs, are configured in a way that
+these memory portions are accessible by the peripherals. Nonetheless, the
+accounting of the costs for these DMA buffers was tied to the used platform
+session too. Components that handle distinct DMA buffers for different
+clients, e.g. a shared dataspace per client, which a peripheral can directly
+access, had a hard time to realize separate cost accounting for their clients
+when DMA buffers and their shared platform session came into play.
+
+Therefore, we've decided to introduce a distinct new service called "Dma",
+which gets served by the platform driver in addition to the "Platform"
+service. The administration of DMA buffers got moved to this new service, but
+contrary to the previous approach, components can now open up multiple "Dma"
+sessions addressing the same device(s). The platform-driver policy pools
+"Platform" and "Dma" sessions matching this one policy and, as long as
+sessions are subject to the same policy, the interoperation of devices and DMA
+buffers will just work. The opportunity of having one DMA session per client
+facilitates the resource accounting a lot for drivers that multiplex device
+accesses, like for instance the GPU or the USB-host driver.
+
+The changes are hardly visible to most developers and users. Mostly when it
+comes to the routing of the platform driver's service to device drivers, now
+one needs to be aware that the "Dma" service needs to be routed as well.
+
+
+MSI and MSI-X support
+~~~~~~~~~~~~~~~~~~~~~
+
+Message-signaled-interrupts (MSI) and their enhanced MSI-X version are ways to
+decouple device signaling from classical interrupt lines, corresponding
+controllers and their pins by using in-band messages on appropriate buses like
+PCI. MSIs can lower interrupt latency, increase distinguishable interrupts per
+device, and thereby allow to distribute device driving routines across several
+CPU cores.
+
+In the past, the usage of either an interrupt, MSI, or MSI-X was transparent
+to the device driver. In general, the platform driver exposed the interrupt
+pins available. But if a device was capable of using MSI or MSI-X, one of
+these mechanisms was selected under the hood. To the client, a general IRQ
+service got exposed while the type of interrupt remained hidden.
+
+Just providing one interrupt regardless of the actual mechanism being used is
+a simple solution for simple drivers. The downside is: drivers cannot profit
+from the potential of having several multi-core distributed interrupts.
+Additionally, often device-driver manufacturers have singular knowledge about
+circumstances where MSI or MSI-X are malfunctioning, and should not be used.
+Last but not least, we experienced ported device drivers where the legacy
+interrupt handling part wasn't working as stable as the MSI variant anymore.
+Most probably, because it isn't tested in practice.
+
+Finally, we decided to expose all knowledge about available interrupt options
+to the client of the platform service, and let the client decide which one to
+use. Moreover, the platform service got extended to enable clients to allocate
+more than one MSI-X dependent on the abilities of the device.
+
+A typical devices ROM a client might observe might look like the following:
+
+! + device 00:06:0 | type: pci | used: false | msi: 1 | msi_x: 32
+!   + irq | number: 5
+! ...
+
+The device driver utilities used by all drivers of the framework, which can be
+found at _repos/os/include/platform_session/device.h_ remain compatible
+Therefore, current drivers don't need to be touched as long as there is no
+pressure to explicitly make use of a specific interrupt variant.
+
+The 'Platform::Device::Irq' utility - if used as before - will determine what
+kind of interrupt is supported and will use either MSI-X, MSI, or normal IRQ
+in that order of preference. Additional constructors of the very same utility
+class allow developers to explicitly decide what interrupt to use,
+respectively how many.
+
+
+Linux device-driver environment (DDE) updated to kernel 6.18.19
+===============================================================
+
+We continued the process of updating our DDE Linux based drivers, moved to a
+more recent LTS version (6.18.19) and concluded the update of 'pc_linux' and
+thus all 'pc' driver components.
+
+During the update, we consolidated the inner workings of various DDE Linux
+variants to align them more closely in an effort to minimize differences
+to simplify a future updating endeavor.
+
+This release also brings initial MSI/MSI-X support to DDE Linux as further
+enhancement. Pretending that devices only feature support for legacy
+interrupts and configuring our emulation environment accordingly while letting
+our platform layer handling MSI transparently worked well in the past.
+However, with more recent wireless network devices, this approach was not as
+prosperous. For example, we could get Intel BE201 WiFi to work only when
+explicitly using MSI-X.
+
+The explicit MSI support allows DDE Linux PCI drivers to pick the type of
+interrupt to utilize now. Naturally, the available types of interrupts are
+still managed by the platform driver but now the driver is free to operate
+best to its abilities. In return, we benefit from less uncertainty where it
+was not always clear if unexpected behavior of drivers stemmed from
+mismatching interrupt delivery mechanisms.
+
+
+Updated ACPICA support
+======================
+
+The [https://acpica.org - ACPI Component Architecture project ACPICA] develops
+and maintains an operating-system-independent reference implementation of ACPI,
+which can be used by operating systems like Genode to utilize the full
+functionality of modern PCs. We updated the port on Genode to a recent version
+in order to support modern notebooks better. Specifically, the battery report
+via the ACPI _BIX format is now supported.
+
+
+AHCI
+====
+
+With the help of our community, we were able to address a long standing issue
+(5088) where AHCI controllers would not reset during driver startup. It turned
+out that this behavior was caused by the BIOS/UEFI handing over a half
+configured controller where the FIS-receive DMA engine was still configured
+and running. Disabling the engine before HBA controller reset solved this
+problem, which should lead to more hardware being supported by Genode.
+
+
+Intel Sound Open Firmware
+=========================
+
+Starting with Generation 11 (Tiger Lake), more and more Intel-based laptops
+have made use of additional DSPs for handling various audio related tasks that
+require additional device-driver components. While previous HDA (Azalia)
+drivers still work for the core audio interface, devices like the internal
+DMIC microphones or HDMI-based audio connectors are not detected.
+
+[https://sofproject.org - Sound Open Firmware] is an open standard that drives
+recent HDA devices and requires, as the name suggests, Intel provided firmware
+to be loaded onto the DSP in question. We already ported the Linux SOF driver
+over to Genode some years ago but kept it on a separate topic branch because
+it was tied to one specific laptop model.
+
+With Genode 26.05, we finally release the first version of the 'pc_audio'
+driver that makes use of Genode's Record and Play sessions with the goal to
+support more platforms and devices in the future. For information on how to
+configure/use the driver please consult the README file at
+_repos/pc/src/driver/audio/pc/README_.
+
+
+I2C-connected touchpads
+=======================
+
+Touchpads or trackpads are the primary pointing devices of mobile PCs. While
+the actually installed devices are quite diverse, the firmware typically used
+to provide uniform access via PS/2 mouse emulation in the past. In modern
+notebooks (since Intel Tiger Lake), this emulation has become less reliable
+resulting in jumping or stuck pointers due to erratic input events. Therefore,
+we had to deal with the actual device interface when enabling the first Tiger
+Lake platform in 2022 and implemented an experimental Linux-based driver, that
+serves the touchpad option in Sculpt OS.
+
+From the OS perspective, touchpads appear as I2C Human Interface Device (HID)
+quasi-standard devices. HID (known from USB devices) comprises a wide range of
+input devices on I2C too, but we practically addressed touchpads and
+touchscreens only. Thus, the complete picture not only comprises the actual
+HID driver but also drivers for Intel's Low Power Subsystem (LPSS) I2C bus and
+the GPIO host controller for PIH-based interrupts as well as substantial
+discovery of ACPI device resources. As Genode's ACPI support does not meet the
+requirements of the latter, the current *pc_i2c_hid* driver combines the
+driver modules into one component but requires the following parameters that
+vary per notebook model from offline ACPI discovery as configuration elements.
+
+! + config
+!   + i2c_slave  | irq: 266 | bus_addr: 44 | hid_addr: 32 | gpio_chip: INT34C5  | . Fujitsu U7411 (SYNAPTICS)
+!   x i2c_slave  | irq: 128 | bus_addr: 44 | hid_addr: 32 | gpio_chip: INTC1083 | . HP ZBook Core Ultra Series 2
+!   x i2c_slave  | irq: 104 | bus_addr: 93 | hid_addr: 1                        | . StarLabs StarLite V
+!   + i2c_master | bus_speed_hz: 400 | + fmcn | hcnt: 193 | lcnt: 313 | hold_time: 80 | . Tiger/Alder/Raptor Lake
+!   x i2c_master | bus_speed_hz: 400 | + fmcn | hcnt: 115 | lcnt: 120 | hold_time: 35 | . Meteor/Arrow Lake
+!   x i2c_master | bus_speed_hz: 400 | + fmcn | hcnt: 106 | lcnt: 213 | hold_time: 80 | . StarLabs StarLite V
+
+The 'i2c_slave' node defines the touchpad device by its I2C bus address, HID
+descriptor register address, and interrupt source. For GPIO pin-based
+interrupts 'gpio_chip' specifies the controller model and 'irq' the PIN to
+use. If 'gpio_chip' is not specified, the platform interrupt 'irq' is used.
+The 'i2c_master' nodes specifies properties of the I2C controller itself.
+
+The touchpad driver supports platforms from Tiger Lake to Arrow Lake with a
+range of discovered configuration parameters for concrete device models that
+can be enabled on demand. Due to the fairly timing-sensitive initialization
+phase of the Linux implementation, the driver defers responses to Genode's
+heartbeat mechanism until the touchpad was successfully detected. So, you may
+enable the heartbeat monitoring when integrating the component like the Sculpt
+option does to automatically restart the driver.
+
+! config
+! + heartbeat | rate_ms: 2000
+! + start pc_i2c_hid | caps: 130 | ram: 8M
+!   + heartbeat | restart_after_skipped: 4
+
+In the future, two major concerns of the current driver must be addressed.
+First, the GPIO host controller driver must be moved into a separate component
+to provide pin access to other drivers like ones for audio AMP companion chips
+of Intel HDA or fingerprint sensors. Second, the manual configuration of
+ACPI-based parameters must be replaced by boot-time or runtime discovery.
+
+
+Wifi
+====
+
+We added support for Intel Wireless BE201 devices by enabling the iwlwifi MLD
+driver in our DDE-Linux-based 'pc_wifi' driver.
+
+As a long standing shortcoming, we also addressed the handling of invalid
+characters in SSIDs and passphrases, which are just byte strings in the WiFi
+standard. Those are now encoded in the _printf-escaped_ format used by
+'wpa_supplicant'. For convenience, we provide a utility that translates UTF-8
+strings to and from the encoding and is used, for example, by the network
+dialog in Sculpt OS.
+
+
+Display rotation and flipping for VESA and EFI boot framebuffer
+===============================================================
+
+The VESA framebuffer driver and boot framebuffer got enhanced to support
+rotation and flipping, to report and to consume the same configuration format
+as the Intel display driver. With those extensions, both drivers can be used
+in Sculpt with the same UI to interactively rotate and flip the display
+content. The feature is practically relevant for the Steam Deck where the
+display content needs to be rotated to be usable.
+
+
+Platforms
+#########
+
+Linux
+=====
+
+For running network scenarios on base-linux, our established solution was to
+use a Linux-specific network driver that ties to an existing tap device on the
+host system. While this is a simple and robust solution, it requires root
+permissions for setting up the host system accordingly, which is quite onerous
+when using the Goa SDK on different host systems.
+
+In order to eliminate this point of friction, we took QEMU's user-mode
+networking as an example and implemented a network driver based on QEMU's
+libslirp. The new _linux_slirp_nic_ component is now used by the Goa SDK by
+default. The configuration options are documented in the component's
+[https://codeberg.org/genodelabs/genode/src/branch/main/repos/os/src/driver/nic/spec/linux_slirp/linux_slirp_nic.hsd - HSD file].
+
+
+Build system and tooling
+########################
+
+Support for using Sequoia PGP
+=============================
+
+Genode's depot tools use GnuPG for signing archives and for the verification
+of downloaded archives. With Sequoia PGP as an alternative implementation of
+the OpenPGP standard reaching maturity, we added support for Sequoia PGP to
+our depot tools.
+
+If the 'sq' binary is available in version 1.2.0 or later, the publish and
+download tool will use Sequoia PGP instead of GnuPG. As Sequoia uses
+'gpg-agent' as a fallback backend, no user action is required. However, you
+may also import your secret key into Sequoia's keystore to eliminate this
+GnuPG dependency.
+
+Goa SDK
+=======
+
+In line with the recent release of Sculpt 26.04, we updated the built-in
+version information. You can switch to the new version with Goa's 'update-goa'
+command:
+
+! $ goa update-goa 26.04
+
+As announced in the
+[https://genode.org/documentation/release-notes/26.02#Goa_SDK - release notes 26.02]
+the updated Goa SDK now employs the flattened structure of the _pkg/_ and the
+new '--only-tests' option.
+
+In addition, we also added support for Sequoia PGP to Goa's copy of Genode's
+depot tools. This also included adaptations to the 'add-depot-user' command: We
+renamed the '--gpg-user-id' argument to '--user-id' and added a '--fingerprint'
+argument.
+
+Furthermore, the new Goa SDK comes with a bouquet of smaller changes:
+
+* As mentioned in Section [Linux], Goa now uses the libslirp-based network
+  driver by default.
+
+* The '--run-as <name>' argument has been replaced by
+  '--genodelabs-user <name>'. The new argument extends the scope to archives
+  referenced by the _pkg/archives_ and _used_apis_ files.
+
+* We adapted the 'bump-version' command to the usage pattern employed by
+  the genode-world repository. First, genode-world defines archive versions
+  in a central _goarc_ file instead of _version_ files inside each project
+  directory. Second, genode-world prefixes each archive with the upstream
+  version of the ported library/application. The modified 'bump-version'
+  command now preserves version prefixes and refrains from creating a
+  _version_ file if any version of a project's archive is specified in a
+  _goarc_ file.
+
+* We added support for versioned symbols to the 'extract-abi-symbols' command,
+  which previously failed if a shared library contained any versioned symbol.
+
+* We removed support for overriding the 'project_name' and 'project_dir'
+  variables in _goarc_ files due to unintended side-effects and negligible
+  benefit.
+
+* We removed support for runtime specifications that provide an "Uplink"
+  session. As Goa allows the customization of its internal NIC router
+  configuration since Sculpt 24.04, this feature is not in use anymore.
+
+* The two-staged build process for Meson projects has been removed in favor of
+  using a GCC spec file. We had already applied this approach to the other
+  build systems in 26.02.
+
+* For CMake-based projects, Goa now generates a boilerplate _Find*.cmake_ file
+  for every archive defined by the _used_apis_ file unless the archive already
+  contains such a file. This removes the need to add those boilerplate files
+  to every individual api archive.
