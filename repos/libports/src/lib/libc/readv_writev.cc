@@ -76,7 +76,7 @@ static ssize_t readv_writev_impl(Rw_func rw_func, int fd, const struct iovec *io
 
 		bytes_transferred_total += bytes_transferred;
 
-		if (bytes_transferred < iov->iov_len)
+		if (size_t(bytes_transferred) < iov->iov_len)
 			return bytes_transferred_total;
 
 		iov++;
