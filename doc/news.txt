@@ -4,6 +4,41 @@
                                ===========
 
 
+Genode OS Framework release 26.05 | 2026-05-29
+##############################################
+
+| Genode 26.05 turns the most innovative aspects of Sculpt OS into reusable
+| framework features while advancing the driver support across the board
+| including LTE, I2C HID, SOF audio, ACPI, and Wifi. Further highlights are
+| touch-based window management, the update of Qt to version 6.8.3, and a
+| variety of Goa SDK improvements. The release is topped off with fresh
+| revisions of the "Foundations", "Applications", and "Platforms" books.
+
+Genode 26.05 accumulates all the advancements of the recent release of
+[https://genode.org/news/sculpt-os-release-26.04 - Sculpt OS 26.04],
+in particular regarding driver support, touch-based window management, and
+a bouquet of improvements of the Goa SDK. But the advancement goes much farther
+than incremental improvements. The most innovative aspects of Sculpt OS have
+just been liberated into reusable building blocks for the use in other
+incarnations of Genode-based systems. Aspects like dynamic device discovery,
+its unique blend of declarative administration, or multi-staged booting are no
+longer exclusive to Sculpt OS but have now become a commodity for Genode users
+at large.
+
+Following up on the migration of the project from GitHub to Codeberg, we
+are happy to report the completion of this delicate mission. All source-code
+repositories and more than 5800 issue discussions have been successfully
+relocated, and Genode Labs happily joined the Codeberg non-profit as a member.
+This infrastructure change along with the framework's recent switch of its
+configuration format called for a holistic documentation update. Therefore,
+the release is accompanied with fresh revisions of the three Genode books.
+
+Among the further highlights are the update of Qt to version 6.8.3, a largely
+improved LTE stack, and de-privileged networking on Linux.
+More topics and background stories are provided by the official
+[https:/documentation/release-notes/26.05 - release documentation of version 26.05...]
+
+
 Sculpt OS release 26.04 | 2026-04-30
 ####################################
 
