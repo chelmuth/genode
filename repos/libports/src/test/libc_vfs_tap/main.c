@@ -28,6 +28,8 @@ int main(int argc, char** argv)
 {
 	enum { BUFFLEN = 1500 };
 
+	setlinebuf(stdout);
+
 	int fd = open("/dev/tap0", O_RDWR);
 	if (fd == -1) {
 		printf("Error: open(/dev/tap0) failed\n");
