@@ -1,0 +1,25 @@
+The driver will get stuck in 'iwl_trans_activate_nic()' when
+restarting the driver for the first and sometimes the second
+time on certain devices. Issuing a software reset beforehand
+seems to fix this problem.
+
+--- src/linux/drivers/net/wireless/intel/iwlwifi/pcie/gen1_2/trans.c
++++ src/linux/drivers/net/wireless/intel/iwlwifi/pcie/gen1_2/trans.c
+@@ -4179,6 +4179,14 @@ int iwl_pci_gen1_2_probe(struct pci_dev *pdev,
+ 	/* set the things we know so far for the grab NIC access */
+ 	iwl_trans_set_info(iwl_trans, &info);
+ 
++	/*
++	 * Always issue software reset as that seems to address
++	 * restart issues noticed recent machines.
++	 */
++	ret = iwl_trans_pcie_sw_reset(iwl_trans, true);
++	if (ret)
++		return ret;
++
+ 	/*
+ 	 * Let's try to grab NIC access early here. Sometimes, NICs may
+ 	 * fail to initialize, and if that happens it's better if we see
+-- 
+2.34.1
+
