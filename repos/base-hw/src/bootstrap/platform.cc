@@ -219,7 +219,9 @@ Platform::Platform()
 	/* temporarily map all bootstrap memory 1:1 for transition to core */
 	// FIXME do not insert as mapping for core
 	core_pd->map_insert(Mapping(bootstrap_region.base, bootstrap_region.base,
-	                            (addr_t)&_bss_end - (addr_t)&_prog_img_beg, Genode::PAGE_FLAGS_KERN_TEXT));
+	                            (addr_t)&_bss_end - (addr_t)&_prog_img_beg,
+	                            { RW, EXEC, KERN, NO_GLOBAL, RAM,
+	                              Genode::CACHED }));
 
 	board.cpus = _prepare_cpu_memory_area();
 
