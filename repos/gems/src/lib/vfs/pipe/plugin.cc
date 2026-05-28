@@ -367,6 +367,9 @@ class Vfs_pipe::File_system : public Vfs::File_system
 		                 Vfs::Vfs_handle **handle,
 		                 Allocator &alloc) override
 		{
+			if (!_valid_path(cpath))
+				return OPEN_ERR_UNACCESSIBLE;
+
 			if (mode & OPEN_MODE_CREATE) {
 				warning("cannot open fifo pipe with OPEN_MODE_CREATE");
 				return OPEN_ERR_NO_PERM;
@@ -377,9 +380,6 @@ class Vfs_pipe::File_system : public Vfs::File_system
 				error("pipe only supports opening with WO or RO mode");
 				return OPEN_ERR_NO_PERM;
 			}
-
-			if (!_valid_path(cpath))
-				return OPEN_ERR_UNACCESSIBLE;
 
 			Path const path { cpath };
 			if (!path.has_single_element()) {
@@ -629,6 +629,11 @@ class Vfs_pipe::Pipe_file_system : public Vfs_pipe::File_system
 			 * or
 			 * "/pipe_number/out"
 			 */
+
+			Pipe_space::Id id { ~0UL };
+			if (!_pipe_id(cpath, id))
+				return false;
+
 			Path io { cpath };
 			if (io.has_single_element())
 				return true;
@@ -735,6 +740,10 @@ class Vfs_pipe::Fifo_file_system : public Vfs_pipe::File_system
 
 		bool _valid_path(const char *cpath) const  override
 		{
+			Pipe_space::Id id { ~0UL };
+			if (!_pipe_id(cpath, id))
+				return false;
+
 			/*
 			 * either we have no access control (single file in path)
 			 * or we need to verify access control
