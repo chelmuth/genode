@@ -172,7 +172,7 @@ This component consumes the description of a _deployment_ as input for the
 configuration of a dynamic init runtime. In contrast to an init configuration,
 the deployment can refer to packages stored in a depot of software. Once the
 depot-deploy component encounters the need to know more about a package, it
-issues a query for information. In turn, it accepts so called _blueprints_ as
+issues a query for information. In turn, it accepts so-called _blueprints_ as
 responses to such queries.
 
 In the former version of Sculpt OS, this mechanism used to be co-located
@@ -235,7 +235,7 @@ about how those drivers ought to be connected to the deployment is readily
 there. All it would take to spawn a driver is setting the 'enabled' attribute
 to 'yes'.
 
-The drivers are accompanied with a component called
+The drivers are accompanied by a component called
 [https://codeberg.org/genodelabs/genode/src/branch/main/repos/pc/src/app/pc_discover - discover],
 which has the sole purpose of enabling the drivers in the board option
 according to the runtime discovery of the hardware as reported by the platform
@@ -627,7 +627,7 @@ via the ACPI _BIX format is now supported.
 AHCI
 ====
 
-With the help of our community, we were able to address a long standing issue
+With the help of our community, we were able to address a long-standing issue
 (5088) where AHCI controllers would not reset during driver startup. It turned
 out that this behavior was caused by the BIOS/UEFI handing over a half
 configured controller where the FIS-receive DMA engine was still configured
@@ -720,7 +720,7 @@ Wifi
 We added support for Intel Wireless BE201 devices by enabling the iwlwifi MLD
 driver in our DDE-Linux-based 'pc_wifi' driver.
 
-As a long standing shortcoming, we also addressed the handling of invalid
+As a long-standing shortcoming, we also addressed the handling of invalid
 characters in SSIDs and passphrases, which are just byte strings in the WiFi
 standard. Those are now encoded in the _printf-escaped_ format used by
 'wpa_supplicant'. For convenience, we provide a utility that translates UTF-8
