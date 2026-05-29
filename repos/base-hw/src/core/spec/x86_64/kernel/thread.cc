@@ -20,6 +20,7 @@
 #include <kernel/main.h>
 #include <platform.h>
 
+#include <hw/memory_map.h>
 #include <hw/spec/x86_64/acpi.h>
 
 using namespace Kernel;
@@ -33,6 +34,16 @@ void Core_thread::Tlb_invalidation::execute(Cpu &cpu)
 	 * is done during a pd destruction.
 	 */
 	cpu.switch_to(caller._pd.mmu_regs);
+
+	/*
+	 * if size is equal to whole user space, the whole Pd gets
+	 * flushed, which is typically done when the Pd gets destroyed
+	 * in that case as a precautionary measure, switch to the core
+	 * Pd if that one is actively used here to prohibit use after
+	 * free of the page-table pointer
+	 */
+	if (size == Hw::Mm::user().size && cpu.active(pd.mmu_regs))
+		cpu.switch_to(caller._pd.mmu_regs);
 
 	/* if this is the last cpu, wake up the caller thread */
 	if (--cnt == 0) {
