@@ -12,3 +12,16 @@ index 1441466..c07224e 100644
      Pd::kern.Space_mem::insert (Pd::kern.quota, reg_base, 0, Hpt::HPT_NX | Hpt::HPT_G | Hpt::HPT_UC | Hpt::HPT_W | Hpt::HPT_P, p & ~PAGE_MASK);
  
      cap  = read<uint64>(REG_CAP);
+--- a/include/iommu_intel.hpp
++++ b/include/iommu_intel.hpp
+@@ -266,6 +266,10 @@ class Dmar : public Iommu::Interface, public List<Dmar>
+             if (!qi())
+                 return;
+ 
++            /* XXX check whether Genode owns resources for invalidation */
++            if (read<uint64>(REG_IQA) != Buddy::ptr_to_phys (invq))
++                return;
++
+             qi_submit (Dmar_qi_iec(idx));
+             qi_wait();
+         }

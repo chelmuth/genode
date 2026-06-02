@@ -565,8 +565,19 @@ class Intel::Io_mmu : private Attached_mmio<0x800>,
 		 */
 		void unmap_irq(Pci::Bdf const &bdf, unsigned idx) override
 		{
-			if (!_remap_irqs)
+			if (!_remap_irqs) {
+				/*
+				 * If IRQ remapping has already been enabled during boot, the
+				 * kernel is in charge of the remapping. However, it can't
+				 * invalidate the entries, since the hardware resources are
+				 * in control of this driver. So, we have to do the
+				 * invalidation.
+				 */
+				if (read<Global_status::Ires>())
+					invalidator().invalidate_irq(idx, true);
+
 				return;
+			}
 
 			if (_irq_table.unmap(_irq_allocator, bdf, idx))
 				invalidator().invalidate_irq(idx, false);
