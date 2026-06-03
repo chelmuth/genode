@@ -44,7 +44,7 @@ option
     + rom board         | + child model           | label: option/board
     + rom platform_info | + parent
 
-+ child audio | binary: pc_audio | priority: -1 | ram: 8M | caps: 200 | enabled: yes
++ child audio | binary: pc_audio | priority: -1 | ram: 9M | caps: 200 | enabled: yes
   + provides
     + audio_in
     + audio_out
