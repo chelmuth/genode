@@ -123,13 +123,13 @@ static unsigned short scan_code_set_1[SCAN_CODE_SET_1_NUM_KEYS] = {
 	/* 65 */ Input::KEY_UNKNOWN,
 	/* 66 */ Input::KEY_UNKNOWN,
 	/* 67 */ Input::KEY_UNKNOWN,
-	/* 68 */ Input::KEY_UNKNOWN,
+	/* 68 */ Input::KEY_F17,
 	/* 69 */ Input::KEY_UNKNOWN,
 	/* 6a */ Input::KEY_UNKNOWN,
 	/* 6b */ Input::KEY_UNKNOWN,
 	/* 6c */ Input::KEY_UNKNOWN,
 	/* 6d */ Input::KEY_UNKNOWN,
-	/* 6e */ Input::KEY_UNKNOWN,
+	/* 6e */ Input::KEY_F23,
 	/* 6f */ Input::KEY_SCREENLOCK,
 	/* 70 */ Input::KEY_UNKNOWN,
 	/* 71 */ Input::KEY_UNKNOWN,
@@ -167,6 +167,7 @@ inline void init_scan_code_set_1_0xe0()
 	scan_code_set_1_0xe0[0x1c] = Input::KEY_KPENTER;
 	scan_code_set_1_0xe0[0x1d] = Input::KEY_RIGHTCTRL;
 	scan_code_set_1_0xe0[0x20] = Input::KEY_MUTE;
+	scan_code_set_1_0xe0[0x22] = Input::KEY_PLAYPAUSE;
 	scan_code_set_1_0xe0[0x2e] = Input::KEY_VOLUMEDOWN;
 	scan_code_set_1_0xe0[0x30] = Input::KEY_VOLUMEUP;
 	scan_code_set_1_0xe0[0x35] = Input::KEY_KPSLASH;
@@ -189,6 +190,7 @@ inline void init_scan_code_set_1_0xe0()
 	scan_code_set_1_0xe0[0x5e] = Input::KEY_POWER;
 	scan_code_set_1_0xe0[0x5f] = Input::KEY_SLEEP;
 	scan_code_set_1_0xe0[0x63] = Input::KEY_WAKEUP;
+	scan_code_set_1_0xe0[0x6e] = Input::KEY_SWITCHVIDEOMODE;
 }
 
 #endif /* _SCAN_CODE_SET_1_H_ */
