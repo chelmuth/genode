@@ -26,7 +26,13 @@ struct Window_layouter::Panorama
 
 	Rect rect { };
 
-	bool valid_capture { };
+	enum class Capture_state {
+		NONE,    /* panorama has no capture (e.g., wm within nested nitpicker) */
+		PRESENT, /* at least one capture is present */
+		MISSING  /* the last capture (temporarily) disappeared */
+	} capture_state = Capture_state::NONE;
+
+	bool capture_missing() const { return capture_state == Capture_state::MISSING; }
 
 	struct Capture;
 	using Captures = List_model<Capture>;
@@ -71,7 +77,8 @@ struct Window_layouter::Panorama
 	{
 		rect = Rect::from_node(gui_info);
 
-		valid_capture = false;
+		if (capture_state == Capture_state::PRESENT)
+			capture_state =  Capture_state::MISSING;
 
 		_captures.update_from_node(gui_info,
 
@@ -82,7 +89,7 @@ struct Window_layouter::Panorama
 
 			[&] (Capture &capture, Node const &node) {
 				if (node.has_attribute("width") && node.has_attribute("height"))
-					valid_capture = true;
+					capture_state = Capture_state::PRESENT;
 				capture.update(node); }
 		);
 	}
