@@ -8,15 +8,13 @@ Configuration
 
 A typical configuration looks as follows.
 
-! <config arch="x86_64" report="yes">
-!     <remove user="alice" pkg="nano3d"/>
-!     <remove user="bob"   pkg="wm" version="2042-42-42"/>
-!     <remove-all>
-!         <keep user="alice" pkg="font"/>
-!     </remove-all>
-! </config>
+! + config | arch: x86_64 | report: yes
+!   + remove | user: alice | pkg: nano3d
+!   + remove | user: bob   | pkg: wm | version: 2042-42-42
+!   + remove-all
+!     + keep | user: alice | pkg: font
 
-The '<config>' node comes with two possible attributes.
+The 'config' node comes with two possible attributes.
 
 :arch:
 
@@ -28,12 +26,12 @@ The '<config>' node comes with two possible attributes.
   This is an optional attribute. If set to "yes", a "removed_archives" report
   is created, listing each deleted archive.
 
-The '<remove>' node instructs the component to remove a PKG archive from the
-depot. The '<remove-all>' node instructs the component to remove all PGK archives.
-It can be combined with a '<keep>' node to instruct the component to keep a
+The 'remove' node instructs the component to remove a PKG archive from the
+depot. The 'remove-all' node instructs the component to remove all PGK archives.
+It can be combined with a 'keep' node to instruct the component to keep a
 given PKG archive while removing all the others.
 
-The '<remove>' and '<keep>' nodes accept the following attributes.
+The 'remove' and 'keep' nodes accept the following attributes.
 
 
 :pkg:
@@ -54,16 +52,16 @@ Reporting
 
 When activated, the component reports the following content.
 
-! <removed_archives>
-!  <removed path="bob/bin/x86_64/wm/2023-04-11T1218"/>
-!  <removed path="alice/bin/x86_64/nano3d/2023-04-11T1218"/>
-!  <removed path="bob/bin/x86_64/themed_decorator/2023-04-11T1218"/>
-!  <removed path="bob/bin/x86_64/decorator/2023-04-11T1218"/>
-!  <removed path="bob/raw/wm/2020-06-21"/>
-!  <removed path="bob/raw/window_layouter/2020-02-19"/>
-!  <removed path="bob/pkg/wm/2023-04-11T1218"/>
-!  <removed path="alice/pkg/nano3d/2023-04-11T1218"/>
-! </removed_archives>
+! removed_archives
+! + removed | path: bob/bin/x86_64/wm/2023-04-11T1218
+! + removed | path: alice/bin/x86_64/nano3d/2023-04-11T1218
+! + removed | path: bob/bin/x86_64/themed_decorator/2023-04-11T1218
+! + removed | path: bob/bin/x86_64/decorator/2023-04-11T1218
+! + removed | path: bob/raw/wm/2020-06-21
+! + removed | path: bob/raw/window_layouter/2020-02-19
+! + removed | path: bob/pkg/wm/2023-04-11T1218
+! + removed | path: alice/pkg/nano3d/2023-04-11T1218
+! -
 
 Example
 ~~~~~~~

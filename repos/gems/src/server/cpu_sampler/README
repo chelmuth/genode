@@ -8,9 +8,8 @@ for each thread.
 Configuration options
 ---------------------
 
-! <config sample_interval_ms="100" sample_duration_s="1">
-!   <policy label="init -> test-cpu_sampler -> ep" />
-! </config>
+! + config | sample_interval_ms: 100 | sample_duration_s: 1
+!   + policy | label: init -> test-cpu_sampler -> ep
 
 The 'sample_interval_ms' attribute configures the time between two samples in
 milliseconds.

@@ -3,10 +3,9 @@ via individual TCP connections. It supports multiple clients. The TCP port
 to be used for each client is defined in as session policy in the config node
 of the TCP server:
 
-! <config>
-!   <policy label_prefix="client" ip="10.0.0.5" port="8181"/>
-!   <policy label_prefix="another_client" port="8282"/>
-! </config>
+! + config
+!   + policy | label_prefix: client | ip: 10.0.0.5 | port: 8181
+!   + policy | label_prefix: another_client        | port: 8282
 
 If only a port is described in the policy the TCP terminal will listen on
 that port for incomming connections. If an IP address is provided additionally,

@@ -8,12 +8,11 @@ Configuration
 
 This is an example configuration of the component:
 
-! <config>
-!   <virtual-block-device max_lvl="2" degree="64" num_leaves="512" />
-!   <free-tree max_lvl="2" degree="64" num_leaves="2048" />
-! </config>
+! + config
+!   + virtual-block-device | max_lvl: 2 | degree: 64 | num_leaves: 512
+!   + free-tree            | max_lvl: 2 | degree: 64 | num_leaves: 2048
 
-This is a short description of the tags and attributes:
+This is a short description of the nodes and attributes:
 
 :config.virtual-block-device.degree:
   Contains the configuration for the hash tree that forms the virtual block

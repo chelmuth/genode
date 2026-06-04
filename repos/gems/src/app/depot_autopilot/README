@@ -45,113 +45,78 @@ Configuration
 
 This is an example configuration of the Depot Autopilot:
 
-! <config arch="x86_64" children_label_prefix="dynamic -> " repeat="false">
-!   <static>
-!     <parent-provides>
-!       <service name="ROM"/>
-!       <service name="CPU"/>
-!       ...
-!     </parent-provides>
-!   </static>
-!   <common_routes>
-!     <service name="ROM" label_last="ld.lib.so"> <parent/> </service>
-!     <service name="ROM" label_last="init">      <parent/> </service>
-!     <service name="CPU">                        <parent/> </service>
+! + config | arch: x86_64 | children_label_prefix: dynamic ->  | repeat: false
 !     ...
-!   </common_routes>
-!
-!   <previous-results time_sec="3"
-!                     succeeded="0"
-!                     skipped="1"
-!                     failed="1"> test-rm_fault_no_nox            skipped
-! test-rm_nested                  failed     0.653  log "Error: "</previous-results>
-!
-!   <start name="test-mmio" pkg="genodelabs/pkg/test-mmio/2018-10-30"/>
-!   <start name="test-rtc" skip="true"/>
-!   <start name="test-xml_node" pkg="genodelabs/pkg/test-xml_node/2018-10-30"/>
+!   + previous-results | time_sec: 3 | succeeded: 0 | skipped: 1 | failed: 1
+!     : test-rm_fault_no_nox            skipped
+!     : test-rm_nested                  failed     0.653  log "Error: "
+!   + start test-mmio     | pkg: genodelabs/pkg/test-mmio/2018-10-30
+!   + start test-rtc      | skip: true
+!   + start test-xml_node | pkg: genodelabs/pkg/test-xml_node/2018-10-30
 !   ...
-! </config>
 
-:<config arch>:
+The config node supports the following attributes.
+
+:'arch':
 
   Defines the architecture that the Autopilot is running on for querying the
-  appropriate variant of the test packages. Must be one of "x86_64", "x86_32",
-  "arm_v7a".
+  appropriate variant of the test packages. Must be one of 'x86_64', 'x86_32',
+  'arm_v7a', or 'arm_v8a'.
 
-:<config children_label_prefix>:
+:'children_label_prefix':
 
   Label prefix of LOG sessions of the components of a test. This is required
   to relate incoming LOG-session request to a running test.
 
-:<config repeat>:
+:'repeat':
 
-  Can be one of
+  Can be set to 'false' to process the test plan only once, or
+  'until_forever' to repeat the test plan infinitely, or
+  'until_failed' to repeat the test plan until one test fails.
 
-    "false"         - process the given test list only once,
-    "until_forever" - endlessly repeat processing the given test list,
-    "until_failed"  - repeat processing the given test list until it fails.
+The 'previous-results' sub node contains quoted content that shall preceed the
+overview table. Each line of the is expected to have the format: "$NAME
+$SEC.$MS  $RESULT  $ADDITIONAL_INFO" where $NAME is the name of the test
+package right-padded with whitespaces to a size of 32, $SEC are the seconds of
+the test duration left-padded with whitespaces to a size of 3, $MS are the
+milliseconds of the test duration left-padded with zeros to a size of 3,
+$RESULT is one of "ok", "failed", "skipped" right-padded with whitespaces to a
+size of 7, and $ADDITIONAL_INFO is an arbitrary string. This format is the
+same as in the result line printed out by the Autopilot after each single
+test. The string is taken as is and should not contain additional tabulators,
+whitespaces or newlines.
 
-:<config><static>:
+The 'previous-results' node supports the following attributes.
 
-  Contains Init configuration that shall always be added to the configuration
-  of the target Init that runs the test scenarios. For information about the
-  format of the content of this tag see 'repos/os/src/init/config.xsd'
-
-:<config><common_routes>:
-
-  Contains a routing configuration like in a <route> tag of an Init <start>
-  node that shall be added to the routing configuration of the runtime-Init
-  of each test.
-
-:<config><previous-results>:
-
-  Contains a string that shall preceed the overview table. Each line of the
-  string is expected to have the format:
-  " $NAME  $SEC.$MS  $RESULT  $ADDITIONAL_INFO" where $NAME is the name of the
-  test package right-padded with whitespaces to a size of 32, $SEC are the
-  seconds of the test duration left-padded with whitespaces to a size of 3,
-  $MS are the milliseconds of the test duration left-padded with zeros to a
-  size of 3, $RESULT is one of "ok", "failed", "skipped" right-padded with
-  whitespaces to a size of 7, and $ADDITIONAL_INFO is an arbitrary string.
-  This format is the same as in the result line printed out by the Autopilot
-  after each single test. The string is taken as is and should not contain '<'
-  or additional tabulators, whitespaces or newlines. It is suggested that all
-  occurences of '<' are replaced with "&lt;", so, they can be sanitized in the
-  future.
-
-:<config><previous-results time_sec>:
+:'time_sec':
 
   Contains a time in seconds that shall be added to the total time shown in
   header of the overview.
 
-:<config><previous-results succeeded>:
-:<config><previous-results failed>:
-:<config><previous-results skipped>:
+:'succeeded', 'failed', and 'skipped':
 
   A non-negative number that denotes how many tests are already
   succeeded/failed/skipped. The number is added to the number of
   succeeded/failed/skipped tests in the result overview.
 
-:<config><start>:
+Each named 'start' node stands for a test that shall be evaluated by the
+Autopilot. The tests are evaluated in order. Also the result overview is
+ordered this way. A 'start' node has the following attributes.
 
-  Each <start> node stands for a test that shall be evaluated by the Autopilot.
-  The tests are evaluated in the order that the start nodes state. Also the
-  result overview is ordered this way.
-
-:<config><start name>:
+:'name':
 
   This string is used to identify the test in the log output of the Autopilot
   and to name the runtime component of the test. It should be unique amongst
-  all <start> nodes.
+  all 'start' nodes.
 
-:<config><start pkg>:
+:'pkg':
 
   Defines the Genode package path of the test package in the format
   "$DEPOT_USER/pkg/$NAME/$VERSION".
 
-:<config><start skip>:
+:'skip':
 
-  A boolean value. Its default value is false. If set to true, the test is not
+  A boolean value. Its default value is 'no'. If set to 'yes', the test is not
   evaluated at all, no package or "pkg" attribute is needed. The test only
   appears in the overview with the result "skipped".
 
@@ -162,155 +127,56 @@ Format of test packages
 Besides the mandatory package content, a test package is expected to provide a
 'runtime' file. This is an example runtime file:
 
-! <runtime ram="32M" caps="1000" binary="init">
+! runtime | ram: 32M | caps: 1000 | binary: test-example
+! + requires
+!   + timer
+!   + nic
+! + fail | after_seconds: 20
+! + succeed
+!   : Ignores    tabs
+!   : and newlines but      no whitespaces      !
+!   : Some XML: <my-node 4/>
+!   : [test-example] Wildcarded *text *literal
+!   :
 !
-! 	<requires> <timer/> <nic/> </requires>
+! + content
+!   + rom | label: ld.lib.so
+!   + rom | label: test-example
 !
-! 	<fail after_seconds="20"/>
-! 	<succeed>Ignores		tabs	
-! 		and newlines but      no whitespaces      !
-! 		Some XML: &lt;my-node my_attr="123"/>
-! 		[init -> test-example] Wildcarded *text *literal star &#42; ampersand &amp;
-! 	</succeed>
-!
-! 	<content>
-! 		<rom label="ld.lib.so"/> <rom label="test-example"/>
-! 	</content>
-!
-! 	<config>
-! 		<parent-provides>
-! 			...
-! 		</parent-provides>
-! 		<default-route>
-! 			...
-! 		</default-route>
-! 		<default caps="100"/>
-! 		<start name="test-example" caps="500" ram="10M"/>
-! 	</config>
-! </runtime>
+! + config
+!   ...
+! -
 
-:<runtime ram>:
+The 'runtime' top-level node has the following attributes.
 
-  Amount of RAM quota that is donated to the tests root component.
+:'ram':
 
-:<runtime caps>:
+  Amount of RAM expected by the test.
 
-  Amount of CAP quota that is donated to the tests root component.
+:'caps':
 
-:<runtime binary>:
+  Amount of capabilities expected by the test.
 
-  Name of the binary of the tests root component.
+:'binary':
 
-:<requires>:
+  Name of the test's executable binary.
 
-  Not examined yet. Should contain a sub-node for every individual resource
-  that the test expects to be provided by the world outside its sub-tree. This
-  exists mainly for the annotation of required drivers. Normally, drivers
-  should not be part of a test sub-tree as we don't want to get into the
-  situation of restarting them.
+:'config':
 
-:<fail after_seconds="33"/>:
-:<succeed after_seconds="100"/>:
+  Name of the config ROM for the test if the configuration is not immediately
+  provided b an 'config' sub node.
 
-  Let the test fail or succeed after a timeout given in seconds.
+The 'fail' and 'succeed' sub nodes express failure or success conditions.
+Their respective 'after_seconds' attribute denotes the test timeout in
+seconds. The sub nodes can host quoted content that is matched against the
+test's log output. The test fails or succeeds as soon as the entire pattern
+matches. Tabs and newlines are ignored. The character '*' in the pattern is
+interpreted a non-greedy wildcard.
 
-:<fail>Error!</fail>:
-:<succeed>Done!</succeed>:
+The 'content' sub node lists the ROM modules expected by the test-package.
+Each ROM module is listed as a named 'rom' sub node.
 
-  Let the test fail or succeed as soon as the pattern could be
-  completely matched against the LOG-session output of the test. Tabs and
-  newlines are ignored in the pattern as well as in the test output. Literal
-  characters '<', '&', '*' in the pattern must be escaped as "&lt;", "&amp;",
-  "&#42;". A character '*' in the pattern is treated as non-greedy wildcard.
-
-:<fail>Error!</fail>:
-
-:<succeed>Done!</succeed>:
-
-:<content>:
-
-  Lists required files from the test-package build besides the root-component
-  binary.
-
-:<content><rom label>:
-
-  Requirement for a file with the given name.
-
-:<config>:
-
-  Contains the configuration for the tests root component.
-
-
-Integration
------------
-
-:Required sessions:
-
-* A Timer session for realizing timeout events stated in the test
-  runtime-files and providing timing information in the LOG output.
-
-* A Report session labeled "query". Through this report, the Depot Autopilot
-  requests the blueprint for the test-package required next. This is an
-  example content of this report:
-
-  ! <query arch="x86_64">
-  !   <blueprint pkg="genodelabs/pkg/test-spark/2018-11-02"/>
-  ! </query>
-
-  The format is compliant to that of the "query" ROM required by the Depot
-  Query component in 'repos/gems/src/app/depot_query'.
-
-* A ROM session labeled "blueprint". The blueprint ROM is expected to contain
-  the information requested via the above stated "query" Report. It may look
-  like this:
-
-  ! <blueprint>
-  !   <pkg name="test-spark" path="genodelabs/pkg/test-spark/2018-11-02">
-  !     <rom label="spark.lib.so" path="genodelabs/bin/x86_64/spark/2018-11-01/spark.lib.so"/>
-  !     <missing_rom label="ld.lib.so"/>
-  !     ... # further <rom> and <missing_rom> tags
-  !
-  !     <runtime ram="32M" caps="1000" binary="init">
-  !       ... # content of the tests runtime file
-  !     </runtime>
-  !   </pkg>
-  ! </blueprint>
-
-  The format is compliant to that of the "blueprint" Report provided by the
-  Depot Query component in 'repos/gems/src/app/depot_query'.
-
-* A Report session labeled "init.config". Through this report a configuration
-  for an Init component is provided in a way that it serves as parent for the
-  root components of the tests. It may look like this:
-
-  ! <config>
-  !   ... # content of <static> tag in Autopilot configuration
-  !
-  !   <start name="test-spark" caps="1000" ram="32M">
-  !     <binary name="init"/>
-  !
-  !     <config ...> ... <config> # from the tests runtime file
-  !
-  !     <route>
-  !       ... # content of <common_routes> tag in Autopilot configuration
-  !
-  !       # routes for each <content><rom> tags in the tests runtime file
-  !       <service name="ROM" label_last="test-spark">
-  !         <parent label="genodelabs/bin/x86_64/test-spark/2018-11-02/test-spark"/>
-  !       </service>
-  !       ...
-  !
-  !     </route>
-  !   </start>
-  ! </config>
-
-:Provided services:
-
-* A LOG service for matching LOG-event patterns stated in the test runtime-
-  files against the LOG output of the test components. Thus, you should take
-  care that all LOG session requests of test components are routed to the
-  Depot Autopilot. You can still receive the whole LOG output of the test
-  components as part of the LOG output of the Depot Autopilot.
+The 'config' sub node contains the test's configuration.
 
 
 Depot Autopilot Run script
@@ -362,7 +228,7 @@ example containing all of these variables:
 
 :TEST_REPEAT:
 
-  See the <config repeat> attribute of the Depot Autopilot.
+  See the 'config' node's 'repeat' attribute.
 
 To get a hint which build components (TEST_BUILDS) and which boot modules
 (TEST_MODULES) you may want to enter for a given test package, you may have

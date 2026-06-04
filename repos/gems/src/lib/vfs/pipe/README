@@ -17,30 +17,22 @@ component to a named pipe and write data using standard fwrite() calls.
 
 Here a sample scenario where stdin of a component is attached to a named pipe:
 
-! <start name="vfs" ram="4M">
-!   <provides> <service name="File_system"/> </provides>
-!   <config>
-!     <vfs>
-!       <pipe>
-!         <fifo name="upstream"/>
-!         <fifo name="downstream"/>
-!       </pipe>
-!     </vfs>
-!     <default-policy root="/" writeable="yes"/>
-!   </config>
-! </start>
+! + start vfs | ram: 4M
+!   + provides | + service File_system
+!   + config
+!     + default-policy | root: / | writeable: yes
+!     + vfs
+!       + pipe
+!         + fifo upstream
+!         + fifo downstream
 !
-! <start name="my-libc-app" ram="4M">
-!   <config>
-!     <vfs>
-!       <dir name="dev">
-!         <dir name="pipe"> <fs/> </dir>
-!         <log/>
-!       </dir>
-!     </vfs>
-!     <libc stdin="/dev/pipe/upstream" stdout="/dev/log" stderr="/dev/log"/>
-!   </config>
-! </start>
+! + start my-libc-app | ram: 4M
+!   + config
+!     + libc | stdin: /dev/pipe/upstream | stdout: /dev/log | stderr: /dev/log
+!     + vfs
+!       + dir dev
+!         + dir pipe | + fs
+!         + log
 
 The fifo named 'upstream' represents a named pipe file which can be opened with
 read-only or write-only flags.
