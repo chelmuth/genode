@@ -2,8 +2,8 @@
 # Specific driver portions
 #
 
-LIB_MK := $(addprefix lib/mk/,pc_wifi.inc) \
-          $(foreach SPEC,x86_32 x86_64,lib/mk/spec/$(SPEC)/pc_wifi.mk) \
+LIB_MK := lib/mk/pc_wifi.inc \
+          lib/mk/spec/x86_64/pc_wifi.mk
 
 MIRROR_FROM_REP_DIR := src/lib/pc/lx_emul \
                        src/include \
@@ -22,9 +22,8 @@ DDE_LINUX_REP_DIR  := $(GENODE_DIR)/repos/dde_linux
 WS_PORT_DIR    := $(call port_dir,$(DDE_LINUX_REP_DIR)/ports/wpa_supplicant)
 LIBNL_PORT_DIR := $(call port_dir,$(DDE_LINUX_REP_DIR)/ports/libnl)
 
-DDE_LINUX_LIB_MK := \
+DDE_LINUX_LIB_MK := lib/mk/spec/x86_64/libnl.mk \
           $(addprefix lib/mk/,libnl.inc libnl_include.mk wifi.inc) \
-          $(foreach SPEC,x86_32 x86_64,lib/mk/spec/$(SPEC)/libnl.mk) \
           $(addprefix lib/mk/,wpa_driver_nl80211.mk wpa_supplicant.mk)
 
 MIRROR_FROM_DDE_LINUX_DIR := $(DDE_LINUX_LIB_MK) \

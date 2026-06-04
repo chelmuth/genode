@@ -1,4 +1,4 @@
-REQUIRES := x86
+REQUIRES := x86_64
 
 include $(call select_from_repositories,lib/mk/wifi.inc)
 
