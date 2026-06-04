@@ -9,13 +9,13 @@ The Nitpicker GUI server serves as a broker between input drivers, framebuffer
 drivers, and applications. For each of these component types, it provides a
 dedicated service interface. Input drivers connect to the "Event" service,
 framebuffer drivers to the "Capture" service, and applications to the "Gui"
-service. Hence, its '<start>' node should normally be equipped with the
+service. Hence, its 'start' node should normally be equipped with the
 following declaration about the provided services.
 
-! <provides>
-!   <service name="Gui"/> <service name="Capture"/> <service name="Event"/>
-! </provides>
-
+! + provides
+!   + service Gui
+!   + service Capture
+!   + service Event
 
 Nitpicker supports the following configuration options, supplied via Genode's
 config mechanism.
@@ -26,15 +26,14 @@ Domains
 
 Nitpicker clients are grouped into so-called domains where each domain can be
 subjected to a different policy. The assignment of clients to domains is
-expressed via '<policy>' nodes as illustrated by the following example:
+expressed via 'policy' nodes as illustrated by the following example:
 
-! <config>
+! + config
 !   ...
-!   <policy label_prefix="pointer"    domain="pointer"/>
-!   <policy label_prefix="status_bar" domain="panel"/>
-!   <default-policy                   domain=""/>
+!   + policy | label_prefix: pointer    | domain: pointer
+!   + policy | label_prefix: status_bar | domain: panel
+!   + default-policy                    | domain: default
 !   ...
-! </config>
 
 When a session is created, the session label as provided with the creation
 request determines the policy rule to apply to the session. The policy with
@@ -43,19 +42,18 @@ client labeled as "pointer" will be assigned to the domain named "pointer".
 The client labeled as "status_bar" will be assigned to the domain "panel".
 All other clients will be assigned to the third domain with an empty name.
 
-The properties of each domain are declared via '<domain>' nodes. For example:
+The properties of each domain are declared via 'domain' nodes. For example:
 
-! <config>
+! + config
 !   ...
-!  <domain name="pointer" layer="1" content="client" label="no" origin="pointer" />
-!  <domain name="panel"   layer="2" content="client" label="no" />
-!  <domain name=""        layer="3" content="tinted" label="yes"
-!                         focus="click" ypos="18" height="-18" />
+!   + domain pointer | layer: 1 | content: client | label: no | origin:  pointer
+!   + domain panel   | layer: 2 | content: client | label: no
+!   + domain default | layer: 3 | content: tinted | label: yes
+!                      focus: click | ypos: 18 | height: -18
 !   ...
-! </config>
 
-The 'name' attribute of a '<domain>' node corresponds to the 'domain'
-declarations of the '<policy>' nodes.
+The 'name' attribute of a 'domain' node corresponds to the 'domain'
+declarations of the 'policy' nodes.
 
 
 Layering
@@ -78,9 +76,9 @@ For each domain, the coordinate system can be constrained in the following
 ways.
 
 The 'origin' attribute specifies the location of the coordinate (0,0) on
-screen. It can take the values "top_left", "top_right", "bottom_left",
-"bottom_right", and "pointer". By default, the coordinate origin (0,0) refers
-to the top-left screen corner. When configured to use the "pointer" as origin,
+screen. It can take the values 'top_left', 'top_right', 'bottom_left',
+'bottom_right', and 'pointer'. By default, the coordinate origin (0,0) refers
+to the top-left screen corner. When configured to use the 'pointer' as origin,
 all views of the domain are positioned relative to the current pointer
 position. If the mouse if moved, the movement will be applied to all views of
 the domain. This enables the realization of pointer shapes outside of the
@@ -95,7 +93,7 @@ useful to preserve a certain screen area for a panel.
 The combination of the 'origin' attribute with 'xpos' and 'ypos' allows the
 constraining of the screen at each border without the need to specify
 values that depend on the screen dimension. E.g., for placing a panel at
-the right screen border, the 'origin' attribute can be set to "top_right"
+the right screen border, the 'origin' attribute can be set to 'top_right'
 and the 'xpos' value to a negative width of the panel.
 
 
@@ -119,12 +117,12 @@ Input-focus policy
 The 'focus' attribute denotes if and how nitpicker assigns the input focus
 to sessions of the configured domain.
 
-:"none": No session of the domain ever receives the focus.
+:'none': No session of the domain ever receives the focus.
 
-:"click": A session receives the focus when clicked with the mouse. After
+:'click': A session receives the focus when clicked with the mouse. After
   the mouse button is released, the session keeps the focus.
 
-:"transient": A clicked session temporarily receives the input focus
+:'transient': A clicked session temporarily receives the input focus
   while a mouse button is pressed. Upon the release of the mouse button,
   the input focus is restored to the original session.
 
@@ -139,12 +137,12 @@ client. However, the builtin policy is not always desired. For example, in
 console-like scenarios, the focus should always correspond to the visible
 console regardless of any mouse clicks. Nitpicker supports such scenarios by
 the use of an external focus-policy component (e.g., nit_focus). By setting
-the '<config>' attribute 'focus' to "rom", the focus is obtained from an
-external ROM module named "focus". The focus ROM is expected to have a 'label'
+the 'config' attribute 'focus' to 'rom', the focus is obtained from an
+external ROM module named 'focus'. The focus ROM is expected to have a 'label'
 attribute with the value set to the label of the to-be focused client. When
-using an external focus policy, domains configured as "click" are internally
-handled like "transient" focusable domains. It is up to the external focus
-policy component to make a new focus permanent by providing an updated "focus"
+using an external focus policy, domains configured as 'click' are internally
+handled like 'transient' focusable domains. It is up to the external focus
+policy component to make a new focus permanent by providing an updated 'focus'
 ROM.
 
 
@@ -157,8 +155,8 @@ However, certain clients such as a window decorator or a panel expect to
 observe motion events referring to their part of the GUI regardless of the
 current input focus. Otherwise, such a client cannot give visual feedback about
 the currently hovered window control. To accommodate such clients, the 'hover'
-domain attribute can be set to the value "always" instead of the default value
-"focused".
+domain attribute can be set to the value 'always' instead of the default value
+'focused'.
 
 
 Tinting and labeling of screen regions
@@ -171,13 +169,13 @@ trusted applications to sneak credentials from the user. Both the tinting
 and labeling are influenced by a color configured via the 'color' attribute of
 the domain.
 
-If the domain's 'label' attribute is set to "yes", each view of the domain is
+If the domain's 'label' attribute is set to 'yes', each view of the domain is
 surrounded by a frame painted with the domain color. Furthermore, the textual
 label of the session is painted as watermark over the view content.
 
-If the 'content' attribute is set to "tinted", the client-provided content
+If the 'content' attribute is set to 'tinted', the client-provided content
 is mixed with the domain color unless the client has the input focus. If set
-to "client", no tinting is performed. The latter is useful for trusted domains
+to 'client', no tinting is performed. The latter is useful for trusted domains
 such as the pointer or a global panel.
 
 
@@ -187,7 +185,7 @@ Input policy for alpha blending
 By default, a client using alpha blending also controls the input mask that
 determines for what pixels the user input is handled by the client or
 "falls through" to the view that is visible in the background. If the domain's
-'input' attribute is set to "always", the input mask is ignored and user input
+'input' attribute is set to 'always', the input mask is ignored and user input
 is always forwarded to the foreground client.
 
 
@@ -195,23 +193,21 @@ Global key definitions
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Nitpicker is able to direct global key sequences to dedicated clients using
-'<global-key>' nodes. Such a node contains the key name of the initiating key
+'global-key' nodes. Such a node contains the key name of the initiating key
 of the sequence as 'name' attribute and the designated receiver of the sequence
 as 'label' attribute. If specified, all events belonging to the sequence will
 be reported to the client with the specified label. This enables clients to
 handle global shortcuts. The client with the matching label will receive all
 events until the number of concurrently pressed keys reaches zero. This way, it
 is possible to handle chords of multiple keys starting with the key specified
-in the '<key>' node. For the routing of global keys to clients, the order of
-'<key>' nodes is important. If multiple nodes exists for different labels, the
+in the 'key' node. For the routing of global keys to clients, the order of
+'key' nodes is important. If multiple nodes exists for different labels, the
 first match will take effect. For example:
 
-! <config>
+! + config
 !   ...
-!   <global-key name="KEY_F11" label="launchpad -> testnit" />
-!   <global-key name="KEY_F11" label="launchpad" />
-!   ...
-! </config>
+!   + global-key KEY_F11 | label: launchpad -> testnit
+!   + global-key KEY_F11 | label: launchpad
 
 The "launchpad" client will receive all key sequences starting with F11 unless
 the "launchpad -> testnit" program is running. As soon as testnit gets started
@@ -222,27 +218,22 @@ launchpad would always receive the events.
 Background color
 ~~~~~~~~~~~~~~~~
 
-The background color can be defined via the '<background>' config node:
+The background color can be defined via the 'background' config node:
 
-! <config>
+! + config
 !   ...
-!   <background color="#112233" />
-!   ...
-! </config>
-
+!   + background | color: #112233
 
 Status reporting
 ~~~~~~~~~~~~~~~~
 
 Nitpicker can be configured to report parts of its internal state to the
 outside world via report sessions. The reporting can be enabled using the
-'<report>' node as follows:
+'report' node as follows:
 
-! <config>
+! + config
 !   ...
-!   <report focus="yes" />
-!   ...
-! </config>
+!   + report | focus: yes
 
 The 'hover' attribute enables the reporting of the currently hovered session.
 The 'focus' attribute enables the reporting of the currently focused session.
@@ -269,17 +260,16 @@ respective display resolution. Together, all capture clients span a panorama,
 which is the bounding box of all capture clients. Each capture client shows a
 part of the panorama.
 
-By default, when configuring nitpicker with an empty '<capture/>' node, the
+By default, when configuring nitpicker with an empty 'capture' node, the
 top-left corner of each capture client corresponds to the coordinate origin
 (0, 0) of the panorama. Hence, each client obtains a mirror of the panorama.
 This default policy can be overridden by explicit rules as follows:
 
-! <capture>
-!   <policy label="intel_fb -> eDP-1" width_mm="160" height_mm="90" />
-!   <policy label="intel_fb -> HDMI-A-1" xpos="1024" ypos="0"
-!                                        width="1280" height="800"/>
-!   <default-policy/>
-! </capture>
+! + capture
+!   + policy | label: intel_fb -> eDP-1    | width_mm: 160 | height_mm: 90
+!   + policy | label: intel_fb -> HDMI-A-1 | xpos:  1024 | ypos: 0
+!                                            width: 1280 | height: 800
+!   + default-policy
 
 The policy for the 'eDP-1' connector merely overrides the physical dimensions
 of the display as reported by the driver. This is useful in situations where
@@ -301,8 +291,8 @@ policy, won't obtain any picture.
 Cascaded usage scenarios
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Nitpicker can be used in a nested fashion by specifying the '<config>'
-attributes 'request_framebuffer="yes"' and 'request_input="yes". If
+Nitpicker can be used in a nested fashion by setting the 'config'
+attributes 'request_framebuffer' and 'request_input' to 'yes'. If
 specified, nitpicker requests sessions to an "Input" and a "Framebuffer"
 service upon startup and uses those as input/output back end. Those services
 are usually provided by the gui_fb component.
