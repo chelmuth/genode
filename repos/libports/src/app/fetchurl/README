@@ -1,11 +1,11 @@
-A small frontend to the libcURL library.
+A small front end to the libcURL library.
 
 Configuration
 -------------
 
 The component will try to fetch the given resource. If this operation stalls
 for a given amount of time, the transfer will be aborted. The duration can be
-set by setting the 'progress_timeout' attribute in the '<config>' node. It is
+set by setting the 'progress_timeout' attribute in the 'config' node. It is
 specified in milliseconds and the default value is 10 seconds.
 
 The 'ignore_failures' attribute instructs the component to always report
@@ -19,39 +19,41 @@ and show diagnostic messages during its operation.
 The following config snippets illustrate its usage.
 
 Load the socket plugin in to the fetchurl binary (print output to log):
-!<config>
-! <libc stdout="/dev/log" stderr="/dev/log"
-!       rtc="/dev/rtc" socket="/socket"/>
-! <vfs>
-!  <dir name="dev">
-!   <log/> <null/>
-!   <inline name="rtc">2000-01-01 00:00</inline>
-!   <inline name="random">01234567890123456789</inline>
-!  </dir>
-!  <dir name="socket"> <lwip dhcp="yes"/> </dir>
-! </vfs>
-! <fetch url="http://genode.org/about/LICENSE"
-!        path="/dev/log" retry="3"/>
-! <report progress="yes"/>
-!</config>
+! + config
+!   + libc | stdout: /dev/log | stderr: /dev/log | rtc: /dev/rtc | socket: /socket
+!   + vfs
+!   | + dir dev
+!   |   + log
+!   |   + null
+!   |   + inline rtc    | : 2000-01-01 00:00
+!   |   + inline random | : 01234567890123456789
+!   | + dir socket | + lwip | dhcp: yes
+!   |
+!   + fetch
+!   |       url:   http://genode.org/about/LICENSE
+!   |       path:  /dev/log
+!   |       retry: 3
+!   |
+!   + report | progress: yes
 
 Use the socket plugin of an other vfs (store file in a directory):
-!<config>
-! <libc stdout="/dev/log" stderr="/dev/log"
-!       rtc="/dev/rtc" socket="/socket"/>
-! <vfs>
-!  <dir name="dev">
-!   <log/> <null/>
-!   <inline name="rtc">2000-01-01 00:00</inline>
-!   <inline name="random">01234567890123456789</inline>
-!  </dir>
-!  <fs name="tcpip"/>
-!  <dir name="download"> <fs label="download -> /"/> </dir>
-! </vfs>
-! <fetch url="http://genode.org/about/LICENSE"
-!        path="/download/LICENSE" retry="3"/>
-! <report progress="yes"/>
-!</config>
++ config
+  + libc | stdout: /dev/log | stderr: /dev/log | rtc: /dev/rtc | socket: /socket
+  + vfs
+  | + dir dev
+  |   + log
+  |   + null
+  |   + inline rtc    | : 2000-01-01 00:00
+  |   + inline random | : 01234567890123456789
+  | + fs tcpip
+  | + dir download | + fs | label: download -> /
+  |
+  + fetch
+  |       url:   http://genode.org/about/LICENSE
+  |       path:  /download/LICENSE
+  |       retry: 3
+  |
+  + report | progress: yes
 
 The two primary options are 'url', the URL to fetch, and 'path', the
 file-system path where fetched data is written. Secondary options are
@@ -62,29 +64,27 @@ given URL.
 
 An example TOR proxying configuration:
 
-! <fetch url="http://genode.org/about/LICENSE" path="LICENSE"
-!        proxy="sock5://10.0.0.1:9050" />
+! + fetch
+!         url:   http://genode.org/about/LICENSE
+!         path:  LICENSE
+!         proxy: sock5://10.0.0.1:9050
 
 The presence of a 'report' node in the configuration with an
 affirmative 'progress' attribute will enable a progress report.
 The 'delay_ms' attribute will set the minimum interval between
-reports and defauts to 100 miliseconds. The report format consists
-of a '<fetch>' node for each resource that features the following
+reports and defaults to 100 milliseconds. The report format consists
+of a 'fetch' node for each resource that features the following
 attributes:
 
+! progress
+! + fetch | url: ... | total: 16380 | now: 4096 | finished: false
+! -
+
 * :url: specified URL of the resource
-
 * :total: total amount of bytes to download
-
 * :now: amount of bytes downloaded so far
-
-* :timeout: denotes if the download timed-out
-
+* :timeout: denotes if the download timed out
 * :finished: denotes if the download has finished
-
 * :result: denotes the result of the download attempt.
   Valid values are 'success' and 'failed'.
 
-! <progress>
-!   <fetch url="..." total="16380" now="4096" finished="false"/>
-! </progress>

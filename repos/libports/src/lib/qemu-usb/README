@@ -34,13 +34,16 @@ Usage webcam model attached to the xHCI model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If the xHCI model is enabled and used, the webcam device model can be
-enabled by specifying a XML node in the config ROM.
+enabled by specifying a 'webcam' node in the config ROM.
 
-<config ...>
-  ...
-  <webcam width="640" height="480" fps="15" vertical_flip="false" screen_size="false"/>
-  ...
-</config>
+! + config ...
+!   ...
+!   + webcam
+!            width:         640
+!            height:        480
+!            fps:           15
+!            vertical_flip: no
+!            screen_size:   no
 
 Webcam attributes are optional, default values are depicted above. The model
 supports YUV2 and BGR3 image formats reported to the guest via bFormatIndex.

@@ -2,15 +2,9 @@ Iris Gallium driver of MESA for Intel GPUs
 
 Genode specific option:
 
-In order to improve performance the Intel driver implements a buffer-object
-cache which is quite memory hungry. In order to safe memory and lower
-performance the following environment variable can be set in a component's
-"config" node:
+In order to improve performance, the Intel driver implements a buffer-object
+cache, which is quite memory hungry. In order to trade memory consumption
+against performance, the following environment variable can be set in a
+component's 'config' node:
 
-XML:
-
-! <env key="IRIS_USE_BO_CACHE" value="false"/>
-
-HID:
-
-! + env key: IRIS_USE_BO_CACHE | value: false
+! + env IRIS_USE_BO_CACHE | : false

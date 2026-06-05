@@ -6,18 +6,21 @@ Configuration
 The following snippet shows how to configure the component to extract
 multiple archives one at a time:
 
-!<config verbose="false">
-!  <libc stdout="/dev/log" stderr="/dev/log" rtc="/dev/null"
-!        update_mtime="no"/>
-!  <vfs>
-!          <dir name="download"> <fs label="download -> /"/> </dir>
-!          <dir name="content">  <fs label="content -> /" writeable="yes"/> </dir>
-!          <dir name="dev"> <log/> <null/> </dir>
-!  </vfs>
-!  <extract archive="/download/foo.zip" to="/content/foo123/" strip="1"/>
-!  <extract archive="/download/bar.zip" to="/content/bar/" strip="1"/>
-!  <extract archive="/download/README.xz" to="/content/" name="README"/>
-!</config>
+! + config | verbose: false
+!   + libc
+!   |      stdout:       /dev/log
+!   |      stderr:       /dev/log
+!   |      rtc:          /dev/null
+!   |      update_mtime: no
+!   + vfs
+!   | + dir download | + fs | label: download -> /
+!   | + dir content  | + fs | label: content -> / | writeable: yes
+!   | + dir dev
+!   |   + log
+!   |   + null
+!   + extract | archive: /download/foo.zip | to: /content/foo123/ | strip: 1
+!   + extract | archive: /download/bar.zip | to: /content/bar/    | strip: 1
+!   + extract README | archive: /download/README.xz | to: /content/
 
 Each 'extract' node contains the source path to the archive in its 'archive'
 attribute. The destination path, where the content of the archive should be
@@ -36,5 +39,5 @@ The 'stop_on_failure' attribute of the 'config' node instructs the component
 to stop processing any archive after the extraction of one has already failed.
 
 In the default configuration 'ignore_failures' is 'false' while 'stop_on_failure'
-is 'true' so processing a batch of archives will stop on the first failure and
+is 'yes' so processing a batch of archives will stop on the first failure and
 leads to exiting with a non-zero exit-value.

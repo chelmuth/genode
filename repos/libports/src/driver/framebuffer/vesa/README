@@ -9,10 +9,7 @@ By default, the driver sets up a resolution of 1024x768 at 16 bit color
 depth. This behaviour can be overridden by supplying the following
 arguments via Genode's config mechanism:
 
-! <config width="1024"
-!         height="768"
-!         depth="16"
-!         buffered="no" />
++ config | width: 1024 | height: 768 | depth: 16 | buffered: no
 
 The 'depth' attribute is specified in bits per pixel. If setting the
 'buffered' attribute to 'yes', the VESA driver hands out a plain
