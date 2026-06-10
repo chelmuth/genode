@@ -417,7 +417,7 @@ struct Genode::Directory : Noncopyable, Interface
 
 		void rename(Path const &from, Path const &to)
 		{
-			_fs.rename(from.string(), to.string());
+			_fs.rename(join(_path, from).string(), join(_path, to).string());
 		}
 
 		/**
