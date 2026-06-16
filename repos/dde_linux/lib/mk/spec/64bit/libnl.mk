@@ -1,6 +1,8 @@
 LIB_DIR     = $(REP_DIR)/src/lib/libnl
 LIB_INC_DIR = $(LIB_DIR)/include
 
+INC_DIR += $(LIB_INC_DIR)/spec/64bit
+
 LIBS += libc libnl_include
 
 LIBNL_CONTRIB_DIR := $(call select_from_ports,libnl)/src/lib/libnl
@@ -26,4 +28,4 @@ vpath %.c  $(LIBNL_CONTRIB_DIR)
 vpath %.c  $(LIB_DIR)
 vpath %.cc $(LIB_DIR)
 
-# vi: set ft=make :
+CC_CXX_WARN_STRICT :=
