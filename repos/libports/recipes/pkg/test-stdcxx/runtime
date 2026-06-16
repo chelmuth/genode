@@ -14,5 +14,5 @@ runtime | ram: 10M | caps: 150 | binary: test-stdcxx
 
 + config
   + vfs | + dir dev | + log
-  + libc | stdout: /dev/log
+  + libc | stdout: /dev/log | stderr: /dev/log
 -

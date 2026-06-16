@@ -107,15 +107,30 @@ static void test_ignore()
 }
 
 
+#include <base/log.h>
+
+static void test_cout()
+{
+	std::cout << "cout| Wird angezeigt" << std::endl;
+	std::cout << "cout| Wird nicht angezeigt\n";
+	Genode::error("----------------");
+	std::cerr << "cerr| Wird angezeigt\n";
+	std::cout << "cout| Wird erst beim std::cerr output angezeigt\n";
+	Genode::error("----------------");
+	std::cerr << "cerr| Wird zusammen mit std::cout output nach Genode::error output angezeigt\n";
+}
+
 int main(int argc, char **argv)
 {
 	std::cout << "° °° °°° test-stdcxx started °°° °° °"  << std::endl;
 
-	test_string(2015, 5, 4);
-	test_cstdlib();
-	test_stdexcept();
-	test_lock_guard();
-	test_ignore();
+	if (1) test_cout();
+
+	if (0) test_string(2015, 5, 4);
+	if (0) test_cstdlib();
+	if (0) test_stdexcept();
+	if (0) test_lock_guard();
+	if (0) test_ignore();
 
 	std::cout << "° °° °°° test-stdcxx finished °°° °° °" << std::endl;
 }
