@@ -122,15 +122,15 @@ static Cpu::Xcr0::access_t xcr0()
 
 void Vcpu::load(Cpu_state &state)
 {
-	Cpu::Ia32_tsc_aux::write(
-	    (Cpu::Ia32_tsc_aux::access_t)_vcpu_context.tsc_aux_guest);
-
 	_vcpu_context.virt.switch_world(state, _cpu().stack_start());
 }
 
 
 void Vcpu::load()
 {
+	Cpu::Ia32_tsc_aux::write(
+	    (Cpu::Ia32_tsc_aux::access_t)_vcpu_context.tsc_aux_guest);
+
 	_state.with_state([&] (auto &state) {
 		if (state.fpu.charged())
 			state.fpu.with_state([&](auto const &fpu) {
@@ -173,6 +173,8 @@ void Vcpu::save(Cpu_state &state)
 			return 512;
 		});
 	});
+
+	Cpu::Ia32_tsc_aux::write((Cpu::Ia32_tsc_aux::access_t)_cpu().id().value);
 }
 
 
