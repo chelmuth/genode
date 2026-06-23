@@ -23,6 +23,7 @@
 
 /* core includes */
 #include <types.h>
+#include <kernel/core_interface.h>
 
 /* base-hw internal includes */
 #include <hw/spec/arm_64/cpu.h>
@@ -125,6 +126,17 @@ struct Board::Cpu : Hw::Arm_64_cpu
 	                                               size_t const size);
 	static void cache_invalidate_data_region(addr_t const addr,
 	                                         size_t const size);
+
+	Kernel::Sys_reg_access_result user_msr_read(addr_t const, addr_t &) {
+		return Kernel::Sys_reg_access_result::FAILED; }
+	Kernel::Sys_reg_access_result user_msr_write(addr_t const, addr_t) {
+		return Kernel::Sys_reg_access_result::FAILED; }
+
+	Cpu();
+
+	bool rear(Cpu &other) const;
+
+	void print(Output &output) const;
 };
 
 #endif /* _CORE__SPEC__ARM_V8__CPU_H_ */

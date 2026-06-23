@@ -26,6 +26,7 @@
 #include <hw/spec/arm/cpu.h>
 
 /* base-hw core includes */
+#include <kernel/core_interface.h>
 #include <util.h>
 
 namespace Kernel { struct Thread_fault; }
@@ -126,6 +127,17 @@ struct Board::Arm_cpu : public Hw::Arm_cpu
 	static Id executing_id() { return { 0 }; }
 
 	static void single_step(Context &, bool) { };
+
+	Kernel::Sys_reg_access_result user_msr_read(addr_t const, addr_t &) {
+		return Kernel::Sys_reg_access_result::FAILED; }
+	Kernel::Sys_reg_access_result user_msr_write(addr_t const, addr_t) {
+		return Kernel::Sys_reg_access_result::FAILED; }
+
+	Arm_cpu();
+
+	bool rear(Arm_cpu &other) const;
+
+	void print(Output &output) const;
 };
 
 #endif /* _CORE__SPEC__ARM__CPU_SUPPORT_H_ */
