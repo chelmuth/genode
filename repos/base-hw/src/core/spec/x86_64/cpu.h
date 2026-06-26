@@ -90,10 +90,20 @@ class Board::Cpu : public Hw::X86_64_cpu
 			void init(addr_t tss_addr);
 		} __attribute__((packed)) gdt { };
 
-		struct Fpu
+		Cpuid_0   cpuid_0   {};
+		Cpuid_1   cpuid_1   { cpuid_0.max_leaf() };
+		Cpuid_6   cpuid_6   { cpuid_0.max_leaf() };
+		Cpuid_d_0 cpuid_d_0 { cpuid_0.max_leaf() };
+		Cpuid_d_1 cpuid_d_1 { cpuid_0.max_leaf() };
+
+		enum class Xstate_support
 		{
-			Fpu();
-		} fpu { };
+			LEGACY, XSAVE, XSAVEOPT, XSAVES
+		};
+
+		Xstate_support xstate_support { Xstate_support::LEGACY };
+
+		Xcr0::access_t xcr0 { 0 };
 
 		struct alignas(64) Fpu_context
 		{
@@ -104,6 +114,9 @@ class Board::Cpu : public Hw::X86_64_cpu
 			 * Data saved/restored by related co-processor load/restore ops.
 			 */
 			char _data[SIZE] = { 0 };
+
+			Xstate_support xstate_support;
+			Xcr0::access_t xcr0;
 
 			struct Context : Mmio<SIZE>
 			{
@@ -118,7 +131,7 @@ class Board::Cpu : public Hw::X86_64_cpu
 				using Mmio<SIZE>::Mmio;
 			};
 
-			Fpu_context();
+			Fpu_context(Cpu &);
 
 			void save();
 			void load() const;
@@ -133,9 +146,9 @@ class Board::Cpu : public Hw::X86_64_cpu
 				EFLAGS_IOPL_3 = 3 << 12,
 			};
 
-			Genode::Align_at<Fpu_context> fc {};
+			Genode::Align_at<Fpu_context> fc;
 
-			Context(bool privileged);
+			Context(bool privileged, Cpu &);
 
 			void print(Output &output) const;
 
@@ -160,6 +173,8 @@ class Board::Cpu : public Hw::X86_64_cpu
 			Mmu_context(addr_t page_table_base, addr_t id);
 		};
 
+		Cpu();
+
 		/**
 		 * Return kernel name of the executing CPU
 		 */
@@ -172,10 +187,8 @@ class Board::Cpu : public Hw::X86_64_cpu
 
 		static void single_step(Context &regs, bool on);
 
-		static bool pcid_avail();
-
-		static void invalidate_tlb(Mmu_context &mmu_context,
-		                           addr_t, size_t, bool);
+		void invalidate_tlb(Mmu_context &mmu_context,
+		                    addr_t, size_t, bool);
 
 		static void clear_memory_region(addr_t const addr,
 		                                size_t const size,
