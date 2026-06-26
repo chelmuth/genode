@@ -63,7 +63,7 @@ struct Vfs_ttf::Font_from_file
 };
 
 
-struct Vfs_ttf::File_system : Dir_file_system, File_system_factory, Watch_response_handler
+struct Vfs_ttf::File_system : Dir_file_system, File_system_factory, Watch_handle::Handler
 {
 	Vfs::Env &_env;
 
@@ -73,12 +73,20 @@ struct Vfs_ttf::File_system : Dir_file_system, File_system_factory, Watch_respon
 		float              size;
 		Cached_font::Limit cache_limit;
 
-		Font_config(Node const &config)
-		:
-			path(config.attribute_value("path", Directory::Path())),
-			size((float)config.attribute_value("size_px", 16.0d)),
-			cache_limit({config.attribute_value("cache", Number_of_bytes())})
-		{ }
+		static Font_config from_node(Node const &node)
+		{
+			return {
+				.path        = node.attribute_value("path", Directory::Path()),
+				.size        = (float)node.attribute_value("size_px", 16.0d),
+				.cache_limit = { node.attribute_value("cache", Number_of_bytes()) }
+			};
+		}
+
+		bool operator != (Font_config const &other) const
+		{
+			return path != other.path || size != other.size
+			    || cache_limit.value != other.cache_limit.value;
+		}
 	} _font_config;
 
 	struct Font
@@ -106,7 +114,7 @@ struct Vfs_ttf::File_system : Dir_file_system, File_system_factory, Watch_respon
 	Readonly_value_file_system<unsigned> _max_width_fs  { *this, "max_width",  0 };
 	Readonly_value_file_system<unsigned> _max_height_fs { *this, "max_height", 0 };
 
-	Watcher _watcher;
+	Watch_handle _watch_handle;
 
 	void _update_attributes()
 	{
@@ -133,17 +141,25 @@ struct Vfs_ttf::File_system : Dir_file_system, File_system_factory, Watch_respon
 
 	void update(Node const &config, File_system_factory &) override
 	{
-		_font_config = Font_config(config);
+		Font_config const orig = _font_config;
+		_font_config = Font_config::from_node(config);
 		_font.construct(_env, _font_config);
 		_update_attributes();
-		_glyphs_fs.trigger_watch_response();
+
+		if (orig != _font_config)
+			_glyphs_fs.notify_watchers();
 	}
 
-	void watch_response() override
+	/**
+	 * Watch_handle::Handler interface
+	 */
+	void io_handle_watch() override
 	{
+		/* called whenever the TTF input file changes */
+
 		_font.construct(_env, _font_config);
 		_update_attributes();
-		_glyphs_fs.trigger_watch_response();
+		_glyphs_fs.notify_watchers();
 	}
 
 	using Config = String<200>;
@@ -169,9 +185,9 @@ struct Vfs_ttf::File_system : Dir_file_system, File_system_factory, Watch_respon
 	:
 		Dir_file_system(vfs_env, parent_fs, Node(_config(node))),
 		_env(vfs_env),
-		_font_config(node),
+		_font_config(Font_config::from_node(node)),
 		_font(vfs_env, _font_config),
-		_watcher(vfs_env, _font_config.path, *this)
+		_watch_handle(vfs_env.watch_handles(), vfs_env.root_dir(), _font_config.path, *this)
 	{
 		Dir_file_system::update(Node(_config(node)), *this);
 	}
