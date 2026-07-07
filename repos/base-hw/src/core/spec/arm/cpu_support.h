@@ -41,6 +41,8 @@ namespace Board {
 
 struct Board::Arm_cpu : public Hw::Arm_cpu
 {
+	Id const _id;
+
 	struct Fpu_context
 	{
 		uint32_t fpscr { 1UL << 24 }; /* VFP/SIMD - status/control register     */

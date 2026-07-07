@@ -44,6 +44,8 @@ namespace Board {
 
 struct Board::Cpu : Hw::Arm_64_cpu
 {
+	Id const _id;
+
 	enum Exception_entry {
 		SYNC_LEVEL_EL1          = 0x000,
 		IRQ_LEVEL_EL1           = 0x080,

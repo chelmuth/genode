@@ -47,6 +47,10 @@ namespace Kernel { class Pd; }
 
 class Board::Cpu : public Hw::Riscv_cpu
 {
+	protected:
+
+		Id const _id;
+
 	public:
 
 		struct alignas(8) Context : Genode::Cpu_state
