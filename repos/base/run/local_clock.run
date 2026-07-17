@@ -1,0 +1,63 @@
+if {[have_cmd_switch --autopilot]} {
+	assert {![have_include power_on/qemu]} {
+		Autopilot mode is not supported on this platform.
+	}
+}
+
+# return expected ratio of remote_clock_fn calls
+proc expected_ratio { } {
+	if {[have_spec arm] || [have_spec arm_64]} {
+		# since half of the calls are unsync()-ed, it cannot be lower than 0.5
+		return 0.7
+	}
+
+	if {[have_spec foc]} {
+		# coarse timer granularity on foc leads to higher variance
+		return 0.6
+	}
+
+	return 0.3
+}
+
+build { core init timer lib/ld test/local_clock }
+
+create_boot_directory
+
+install_config {
+config | prio_levels: 2
++ parent-provides
+  + service ROM
+  + service IRQ
+  + service IO_MEM
+  + service IO_PORT
+  + service PD
+  + service RM
+  + service CPU
+  + service LOG
+
++ default-route
+  + any-service
+    + parent
+    + any-child
+
++ default | caps: 100
+
++ start timer | priority: 0 | ram: 1M
+  + provides | + service Timer
+
++ start test | priority: -1 | ram: 10M
+  + binary test-local_clock
+  + config | ld_verbose: yes | expected_ratio: } [expected_ratio] {
+-
+}
+
+build_boot_image [build_artifacts]
+
+append qemu_args "  -nographic"
+
+run_genode_until "child \"test\" exited with exit value.*\n" 80
+
+grep_output {\[init\] child "test" exited with exit value}
+
+compare_output_to {[init] child "test" exited with exit value 0}
+
