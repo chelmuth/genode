@@ -104,8 +104,9 @@ namespace Genode::Vfs {
 
 	struct File_system_factory;
 
-	enum Write_result { WRITE_ERR_WOULD_BLOCK, WRITE_ERR_INVALID,
-	                    WRITE_ERR_IO,          WRITE_OK };
+	enum class Write_error { RETRY, DENIED };
+
+	using Write_result = Attempt<size_t, Write_error>;
 
 	enum class Read_error { RETRY, DENIED };
 
