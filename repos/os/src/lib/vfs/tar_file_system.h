@@ -184,16 +184,16 @@ class Vfs_tar::File_system : public Vfs::File_system
 	{
 		using Tar_vfs_handle::Tar_vfs_handle;
 
-		Read_result read(Byte_range_ptr const &dst) override
+		Read_result read(At const at, Byte_range_ptr const &dst) override
 		{
 			file_size const record_size = _node->record->size();
 
-			file_size const record_bytes_left = record_size >= seek()
-			                                  ? record_size  - seek() : 0;
+			file_size const record_bytes_left = record_size >= at.pos
+			                                  ? record_size  - at.pos : 0;
 
 			size_t const count = min(size_t(record_bytes_left), dst.num_bytes);
 
-			char const *data = (char *)_node->record->data() + seek();
+			char const *data = (char *)_node->record->data() + at.pos;
 
 			memcpy(dst.start, data, count);
 
@@ -205,14 +205,14 @@ class Vfs_tar::File_system : public Vfs::File_system
 	{
 		using Tar_vfs_handle::Tar_vfs_handle;
 
-		Read_result read(Byte_range_ptr const &dst) override
+		Read_result read(At const at, Byte_range_ptr const &dst) override
 		{
 			if (dst.num_bytes < sizeof(Dirent))
 				return Read_error::DENIED;
 
 			Dirent &dirent = *(Dirent*)dst.start;
 
-			unsigned const index = (unsigned)(seek() / sizeof(Dirent));
+			unsigned const index = unsigned(at.pos / sizeof(Dirent));
 
 			Node const *node_ptr = _node->lookup_child(index);
 
@@ -272,12 +272,13 @@ class Vfs_tar::File_system : public Vfs::File_system
 	{
 		using Tar_vfs_handle::Tar_vfs_handle;
 
-		Read_result read(Byte_range_ptr const &dst) override
+		Read_result read(At const at, Byte_range_ptr const &dst) override
 		{
+			if (at.pos)
+				return Read_error::DENIED;
+
 			Record const *record = _node->record;
-
 			size_t const count = min(dst.num_bytes, 100UL);
-
 			memcpy(dst.start, record->linked_name(), count);
 
 			return count;
@@ -343,9 +344,9 @@ class Vfs_tar::File_system : public Vfs::File_system
 		}
 
 
-		file_size num_dirent()
+		unsigned num_dirent()
 		{
-			file_size count = 0;
+			unsigned count = 0;
 			for (Node *child_node = first(); child_node; child_node = child_node->next(), count++) ;
 			return count;
 		}
@@ -483,12 +484,12 @@ class Vfs_tar::File_system : public Vfs::File_system
 		Node     &root_node;
 		bool      valid;              /* true after first lookup */
 		char      key[256];           /* key used for lookup */
-		file_size cached_num_dirent;  /* cached value */
+		unsigned  cached_num_dirent;  /* cached value */
 
 		Num_dirent_cache(Node &root_node)
 		: root_node(root_node), valid(false), cached_num_dirent(0) { }
 
-		file_size num_dirent(char const *path)
+		unsigned num_dirent(char const *path)
 		{
 			/* check for cache miss */
 			if (!valid || strcmp(path, key) != 0) {
@@ -655,7 +656,7 @@ class Vfs_tar::File_system : public Vfs::File_system
 			return RENAME_ERR_NO_ENTRY;
 		}
 
-		file_size num_dirent(char const *path) override
+		unsigned num_dirent(char const *path) override
 		{
 			return _cached_num_dirent.num_dirent(path);
 		}

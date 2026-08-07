@@ -220,8 +220,8 @@ struct Vfs_ip::Directory : Vfs_ip::Node
 
 	virtual ~Directory() { };
 
-	virtual Vfs_ip::Node *child(char const *)                     = 0;
-	virtual file_size num_dirent()                                = 0;
+	virtual Vfs_ip::Node *child(char const *) = 0;
+	virtual unsigned num_dirent()             = 0;
 
 	using Open_result = Directory_service::Open_result;
 	virtual Open_result open(File_system &fs,
@@ -304,12 +304,12 @@ struct Vfs_ip::Ip_vfs_file_handle final : Vfs_handle
 	bool write_ready() const override {
 		return (file) ? file->write_ready() : false; }
 
-	Read_result read(Byte_range_ptr const &dst) override
+	Read_result read(At const at, Byte_range_ptr const &dst) override
 	{
 		if (!file) return Read_error::DENIED;
 
 		try {
-			long const res = file->read(*this, dst, seek());
+			long const res = file->read(*this, dst, at.pos);
 			if (res < 0)
 				return Read_error::DENIED;
 			return res;
@@ -317,12 +317,12 @@ struct Vfs_ip::Ip_vfs_file_handle final : Vfs_handle
 		catch (File::Would_block) { return Read_error::RETRY; }
 	}
 
-	Write_result write(Const_byte_range_ptr const &src) override
+	Write_result write(At const at, Const_byte_range_ptr const &src) override
 	{
 		if (!file)
 			return Write_error::DENIED;
 		try {
-			long res = file->write(*this, src, seek());
+			long res = file->write(*this, src, at.pos);
 			if (res < 0)
 				return Write_error::DENIED;
 			return res;
@@ -374,9 +374,9 @@ struct Vfs_ip::Ip_vfs_dir_handle final : Vfs_handle
 	bool read_ready()  const override { return true; }
 	bool write_ready() const override { return false; }
 
-	Read_result read(Byte_range_ptr const &dst) override
+	Read_result read(At const at, Byte_range_ptr const &dst) override
 	{
-		long const res = dir.read(dst, seek());
+		long const res = dir.read(dst, at.pos);
 		if (res < 0)
 			return Read_error::DENIED;
 		return res;
@@ -956,7 +956,7 @@ class Vfs_ip::Ip_sockopt_dir : public Vfs_ip::Directory
 			return 0;
 		}
 
-		file_size num_dirent() override
+		unsigned num_dirent() override
 		{
 			error(__PRETTY_FUNCTION__, " called not implemented");
 			return 0;
@@ -1144,7 +1144,7 @@ class Vfs_ip::Ip_socket_dir final : public Socket_dir
 			return _sockopt_fs.child(name);
 		}
 
-		file_size num_dirent() override { return _num_nodes() + 1; }
+		unsigned num_dirent() override { return _num_nodes() + 1; }
 
 		long read(Byte_range_ptr const &dst,
 		          file_size seek_offset) override
@@ -1207,7 +1207,7 @@ struct Vfs_ip::Ip_socket_handle final : Vfs_handle
 
 	bool read_ready() const override { return true; }
 
-	Read_result read(Byte_range_ptr const &dst) override
+	Read_result read(At, Byte_range_ptr const &dst) override
 	{
 		return Format::snprintf(
 			dst.start, dst.num_bytes, "%s/%s\n", _dir.parent().name(), _dir.name());
@@ -1459,7 +1459,7 @@ class Vfs_ip::Protocol_dir_impl : public Protocol_dir
 		 ** Directory interface **
 		 *************************/
 
-		file_size num_dirent() override { return _num_nodes(); }
+		unsigned num_dirent() override { return _num_nodes(); }
 
 		long read(Byte_range_ptr const &dst, file_size seek_offset) override
 		{
@@ -1758,7 +1758,7 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 		 ** Directory interface **
 		 *************************/
 
-		file_size num_dirent() override { return 7; }
+		unsigned num_dirent() override { return 7; }
 
 		Directory::Open_result
 		open(File_system &, Allocator &, char const*, unsigned, Vfs_handle**) override
@@ -1853,7 +1853,7 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 			return STAT_ERR_NO_ENTRY;
 		}
 
-		file_size num_dirent(char const *path) override
+		unsigned num_dirent(char const *path) override
 		{
 			if (_is_root(path)) return num_dirent();
 

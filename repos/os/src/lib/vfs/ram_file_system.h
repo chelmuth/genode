@@ -84,8 +84,8 @@ struct Vfs_ram::Io_handle final : Vfs_handle, private List<Io_handle>::Element
 		Vfs_handle(ds, alloc, status_flags), _fs(fs), node(node), path(path)
 	{ }
 
-	inline Write_result write(Const_byte_range_ptr const &) override;
-	inline Read_result  read(Byte_range_ptr const &) override;
+	inline Write_result write(At, Const_byte_range_ptr const &) override;
+	inline Read_result  read(At, Byte_range_ptr const &) override;
 
 	bool read_ready () const override { return true; }
 	bool write_ready() const override { return true; }
@@ -546,11 +546,11 @@ class Vfs_ram::File_system : public Vfs::File_system
 		 ** Directory service interface **
 		 *********************************/
 
-		file_size num_dirent(char const *path) override
+		unsigned num_dirent(char const *path) override
 		{
 			if (Node * const node = lookup(path))
 				if (Directory * const dir = dynamic_cast<Directory *>(node))
-					return dir->length();
+					return unsigned(dir->length());
 
 			return 0;
 		}
@@ -890,25 +890,19 @@ class Vfs_ram::File_system : public Vfs::File_system
 };
 
 
-Vfs_ram::Write_result Vfs_ram::Io_handle::write(Const_byte_range_ptr const &buf)
+Vfs_ram::Write_result Vfs_ram::Io_handle::write(At at, Const_byte_range_ptr const &buf)
 {
 	if (!writeable())
 		return Write_error::DENIED;
 
-	Seek const seek { size_t(Vfs_handle::seek()) };
-
-	size_t const num_bytes = node.write(buf, seek);
 	modifying = true;
-
-	return num_bytes;
+	return node.write(buf, Seek { size_t(at.pos) });
 }
 
 
-Vfs_ram::Read_result Vfs_ram::Io_handle::read(Byte_range_ptr const &dst)
+Vfs_ram::Read_result Vfs_ram::Io_handle::read(At at, Byte_range_ptr const &dst)
 {
-	Seek const seek { size_t(Vfs_handle::seek()) };
-
-	return node.read(dst, seek);
+	return node.read(dst,  Seek { size_t(at.pos) });
 }
 
 

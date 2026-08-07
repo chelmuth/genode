@@ -69,12 +69,12 @@ class Genode::Vfs::Single_file_system : public File_system
 					_type(type), _rwx(rwx), _filename(filename)
 				{ }
 
-				Read_result read(Byte_range_ptr const &dst) override
+				Read_result read(At const at, Byte_range_ptr const &dst) override
 				{
 					if (dst.num_bytes < sizeof(Dirent))
 						return Read_error::DENIED;
 
-					file_size index = seek() / sizeof(Dirent);
+					file_size index = at.pos / sizeof(Dirent);
 
 					Dirent &out = *(Dirent*)dst.start;
 
@@ -169,7 +169,7 @@ class Genode::Vfs::Single_file_system : public File_system
 			return STAT_OK;
 		}
 
-		file_size num_dirent(char const *path) override
+		unsigned num_dirent(char const *path) override
 		{
 			if (_root(path))
 				return 1;

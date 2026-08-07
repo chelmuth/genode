@@ -49,7 +49,7 @@ class Tresor::File
 {
 	private:
 
-		enum State { IDLE, SYNC, READ, WRITE_INITIALIZED, WRITE_OFFSET_APPLIED };
+		enum State { IDLE, SYNC, READ, WRITE };
 
 		Vfs::Env *_env { };
 		Tresor::Path const *_path { };
@@ -78,7 +78,7 @@ class Tresor::File
 				_env->root_dir().close(&_handle);
 		}
 
-		void read(HOST_STATE succeeded, HOST_STATE failed, Vfs::file_offset off, Byte_range_ptr dst, bool &progress)
+		void read(HOST_STATE succeeded, HOST_STATE failed, Vfs::file_size off, Byte_range_ptr dst, bool &progress)
 		{
 			switch (_state) {
 			case IDLE:
@@ -91,11 +91,11 @@ class Tresor::File
 
 			case READ:
 				{
-					_handle.seek(off + _num_processed_bytes);
 					Byte_range_ptr curr_dst { dst.start     + _num_processed_bytes,
 					                          dst.num_bytes - _num_processed_bytes };
+					Vfs::At const at { .pos = off + _num_processed_bytes };
 
-					Vfs::Read_result result = _handle.read(curr_dst);
+					Vfs::Read_result result = _handle.read(at, curr_dst);
 					if (result == Vfs::Read_error::RETRY)
 						break;
 
@@ -120,33 +120,26 @@ class Tresor::File
 			}
 		}
 
-		void write(HOST_STATE succeeded, HOST_STATE failed, Vfs::file_offset off, Const_byte_range_ptr src, bool &progress)
+		void write(HOST_STATE succeeded, HOST_STATE failed, Vfs::file_size off, Const_byte_range_ptr src, bool &progress)
 		{
 			switch (_state) {
 			case IDLE:
 
 				_num_processed_bytes = 0;
-				_state = WRITE_INITIALIZED;
+				_state = WRITE;
 				progress = true;
 				break;
 
-			case WRITE_INITIALIZED:
-
-				_handle.seek(off + _num_processed_bytes);
-				_state = WRITE_OFFSET_APPLIED;
-				progress = true;
-				break;
-
-			case WRITE_OFFSET_APPLIED:
+			case WRITE:
 			{
 				Span curr_src { src.start     + _num_processed_bytes,
 				                src.num_bytes - _num_processed_bytes };
+				Vfs::At const at { .pos = off + _num_processed_bytes };
 
-				_handle.write(curr_src).with_result(
+				_handle.write(at, curr_src).with_result(
 					[&] (size_t num_bytes) {
 						_num_processed_bytes += num_bytes;
 						if (_num_processed_bytes < src.num_bytes) {
-							_state = WRITE_INITIALIZED;
 							progress = true;
 							return;
 						}

@@ -79,7 +79,7 @@ namespace Util {
 		Operation        const  _op;
 		State                   _state;
 		char                   *_data;
-		Vfs::file_offset const  _base_offset;
+		Vfs::file_size   const  _base_offset;
 		size_t                  _current_offset;
 		size_t                  _current_count;
 		bool             const  _allow_partial;
@@ -98,9 +98,10 @@ namespace Util {
 
 			case State::IN_PROGRESS:
 				{
-					_handle.seek(_base_offset + _current_offset);
 					Byte_range_ptr const dst { _data + _current_offset, _current_count };
-					Vfs::Read_result const result = _handle.read(dst);
+					Vfs::At const at { .pos = _base_offset + _current_offset };
+
+					Vfs::Read_result const result = _handle.read(at, dst);
 
 					if (result == Vfs::Read_error::RETRY)
 						return progress;
@@ -135,17 +136,16 @@ namespace Util {
 
 			switch (_state) {
 			case State::PENDING:
-
-				_handle.seek(_base_offset + _current_offset);
-
 				_state = State::IN_PROGRESS;
 				progress = true;
+
 			[[fallthrough]];
 			case State::IN_PROGRESS:
 			{
 				Const_byte_range_ptr const src { _data + _current_offset, _current_count };
+				Vfs::At const at { .pos = _base_offset + _current_offset };
 
-				Vfs::Write_result result = _handle.write(src);
+				Vfs::Write_result result = _handle.write(at, src);
 				if (result == Vfs::Write_error::RETRY) {
 					if (_allow_partial) {
 						_state = State::COMPLETE;
@@ -219,7 +219,7 @@ namespace Util {
 		Io_job(Vfs::Vfs_handle &handle,
 		       Operation        op,
 		       Buffer          &buffer,
-		       Vfs::file_offset      base_offset,
+		       Vfs::file_size   base_offset,
 		       Partial_result   partial_result = Partial_result::DENY)
 		:
 			_handle(handle), _op(op), _state(_initial_state(op)), _data(buffer.base),
