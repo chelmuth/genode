@@ -12,6 +12,7 @@
  */
 
 /* Genode includes */
+#include <kernel/interface.h>
 #include <timer_session/connection.h>
 
 using namespace Genode;
@@ -21,9 +22,9 @@ void Timer::Connection::_set_alarm(Duration deadline)
 {
 	Mutex::Guard guard (_local_clock_mutex);
 
-	Tsc const start_ts = Tsc { Trace::timestamp() };
+	Tsc const start_ts = Tsc { 100 * Kernel::time() };
 	_last_clock_value  = Remote_clock { trigger_at(deadline.trunc_to_plain_us().value) };
-	Tsc const end_ts   = Tsc { Trace::timestamp() };
+	Tsc const end_ts   = Tsc { 100 * Kernel::time() };
 
 	_local_clock.add_data_point(_last_clock_value, start_ts, end_ts);
 }
@@ -36,8 +37,8 @@ Duration Timer::Connection::curr_time()
 	Mutex::Guard guard (_local_clock_mutex);
 
 	_last_clock_value = _local_clock.predicted(
-		[&] () -> Remote_clock { return Remote_clock { elapsed_us() };       },
-		[&] () -> Tsc          { return Tsc          { Trace::timestamp() }; });
+		[&] () -> Remote_clock { return Remote_clock { elapsed_us() };         },
+		[&] () -> Tsc          { return Tsc          { 100 * Kernel::time() }; });
 	
-	return Duration { Microseconds { _last_clock_value.us } };
+	return Duration { Microseconds { _last_clock_value.us }};
 }
