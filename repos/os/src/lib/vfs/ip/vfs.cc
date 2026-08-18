@@ -1706,7 +1706,7 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 		 ** File_system interface **
 		 ***************************/
 
-		void update(Genode::Node const &config, File_system::Factory &) override
+		Progress update(Genode::Node const &config, File_system::Factory &) override
 		{
 			using Addr = String<16>;
 
@@ -1722,7 +1722,7 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 				log("Using DHCP for interface configuration.");
 				genode_socket_config address_config = { .dhcp = true };
 				genode_socket_config_address(&address_config);
-				return;
+				return PROGRESSED;
 			}
 
 			Addr ip_addr    = config.attribute_value("ip_addr", Addr());
@@ -1732,10 +1732,10 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 
 			if (ip_addr == "") {
 				warning("Missing \"ip_addr\" attribute. Ignoring network interface config.");
-				return;
+				return PROGRESSED;
 			} else if (netmask == "") {
 				warning("Missing \"netmask\" attribute. Ignoring network interface config.");
-				return;
+				return PROGRESSED;
 			}
 
 			log("static network interface: ip_addr=",ip_addr," netmask=",netmask);
@@ -1749,6 +1749,8 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 			};
 
 			genode_socket_config_address(&address_config);
+
+			return PROGRESSED;
 		}
 
 

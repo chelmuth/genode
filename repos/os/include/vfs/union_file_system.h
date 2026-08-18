@@ -528,9 +528,10 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 
 		char const *type() override { return "dir"; }
 
-		void update(Node const &node, File_system::Factory &factory) override
+		Progress update(Node const &node, File_system::Factory &factory) override
 		{
 			using namespace Genode;
+			Progress result = STALLED;
 
 			/* construct child file systems only once */
 			if (!_first_file_system) {
@@ -544,6 +545,7 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 					}
 
 					error("failed to create VFS node: ", sub_node);
+					result = PROGRESSED;
 				});
 			} else {
 
@@ -563,10 +565,12 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 						return;
 					}
 
-					curr->update(sub_node, factory);
+					if (curr->update(sub_node, factory).progressed)
+						result = PROGRESSED;
 					curr = curr->next;
 				});
 			}
+			return result;
 		}
 };
 

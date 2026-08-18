@@ -306,9 +306,9 @@ class Genode::Vfs::Dir_file_system : public File_system, public Parent_fs
 		static char const *name()   { return "dir"; }
 		char const *type() override { return "dir"; }
 
-		void update(Node const &node, Factory &factory) override
+		Progress update(Node const &node, Factory &factory) override
 		{
-			_union.update(node, factory);
+			return _union.update(node, factory);
 		}
 };
 

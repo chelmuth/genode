@@ -140,15 +140,18 @@ struct Vfs_ttf::File_system : Dir_file_system, Vfs::File_system::Factory,
 		return nullptr;
 	}
 
-	void update(Node const &config, Vfs::File_system::Factory &) override
+	Progress update(Node const &config, Vfs::File_system::Factory &) override
 	{
 		Font_config const orig = _font_config;
 		_font_config = Font_config::from_node(config);
 		_font.construct(_env, _font_config);
 		_update_attributes();
 
-		if (orig != _font_config)
+		bool const progressed = (orig != _font_config);
+		if (progressed)
 			_glyphs_fs.notify_watchers();
+
+		return { progressed };
 	}
 
 	/**

@@ -99,9 +99,9 @@ class Genode::Vfs::Root : public Env, private Env::Io, private Env::User
 			Root(env, alloc, config, *this)
 		{ }
 
-		void apply_config(Node const &config)
+		Progress apply_config(Node const &config)
 		{
-			_fs.update(config, _fs_factory);
+			return _fs.update(config, _fs_factory);
 		}
 
 		Genode::Env      &env()              override { return _env; }

@@ -78,7 +78,7 @@ class Genode::Vfs::File_system : public Directory_service
 		/**
 		 * Adjust to configuration changes
 		 */
-		virtual void update(Node const &, Factory &) { }
+		virtual Progress update(Node const &, Factory &) { return STALLED; }
 
 		/**
 		 * Return the file-system type
