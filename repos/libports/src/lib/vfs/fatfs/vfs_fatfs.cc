@@ -346,7 +346,7 @@ class Vfs_fatfs::File_system : public Vfs::File_system
 
 		File_system(Vfs::Env &env, Parent_fs &parent_fs, Node const &config)
 		:
-			_vfs_env(env), _parent_fs(parent_fs)
+			Vfs::File_system(config), _vfs_env(env), _parent_fs(parent_fs)
 		{
 			{
 				if (f_setcp(0) != FR_OK) {

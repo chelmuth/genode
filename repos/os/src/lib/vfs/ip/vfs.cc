@@ -1688,9 +1688,9 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 
 	public:
 
-		Ip_file_system(Vfs::Env &env, Parent_fs &parent_fs, Genode::Node const &)
+		Ip_file_system(Vfs::Env &env, Parent_fs &parent_fs, Genode::Node const &node)
 		:
-			Directory(""), _env(env), _parent_fs(parent_fs)
+			File_system(node), Directory(""), _env(env), _parent_fs(parent_fs)
 		{
 			_wakeup_remote.data     = this;
 			_wakeup_remote.callback = _schedule_wakeup;

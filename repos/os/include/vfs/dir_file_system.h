@@ -137,6 +137,7 @@ class Genode::Vfs::Dir_file_system : public File_system, public Parent_fs
 
 		Dir_file_system(Env &env, Parent_fs &parent_fs, Name const &name)
 		:
+			File_system( Ident { { "dir ", name } }),
 			_env(env), _parent_fs(parent_fs), _name(name), _union(env, *this)
 		{ }
 

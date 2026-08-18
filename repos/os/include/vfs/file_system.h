@@ -32,6 +32,23 @@ class Genode::Vfs::File_system : public Directory_service
 			virtual File_system *create(Vfs::Env &env, Parent_fs &, Node const &) = 0;
 		};
 
+		/**
+		 * File-system identity used for updating the union fs via 'List_model'
+		 */
+		struct Ident
+		{
+			String<100> string;
+
+			/**
+			 * Return file-system ident string from node type and attribute
+			 *
+			 * This function composes identity from the note type and
+			 * attributes. Sub nodes are not part of the identity.
+			 */
+			inline static Ident from_node(Node const &node);
+
+		} const _ident;
+
 	private:
 
 		/*
@@ -44,10 +61,19 @@ class Genode::Vfs::File_system : public Directory_service
 
 		/**
 		 * Our next sibling within the same 'Union_file_system'
+		 * Construct fs with its identity defined by node type and attributes
 		 */
-		struct File_system *next;
+		struct File_system *next = nullptr;
 
-		File_system() : next(0) { }
+		/**
+		 * Construct fs with specified identity string
+		 */
+		File_system(Ident const &ident) : _ident(ident) { }
+
+		/**
+		 * Construct fs with its identity defined by node type and attributes
+		 */
+		File_system(Node const &node) : File_system(Ident::from_node(node)) { }
 
 		/**
 		 * Adjust to configuration changes
@@ -59,5 +85,25 @@ class Genode::Vfs::File_system : public Directory_service
 		 */
 		virtual char const *type() = 0;
 };
+
+
+Genode::Vfs::File_system::Ident
+Genode::Vfs::File_system::Ident::from_node(Node const &node)
+{
+	char buf[decltype(string)::capacity()] { };
+
+	return Generator::generate(Byte_range_ptr(buf, sizeof(buf)),
+	                           node.type(), [&] (Generator &g) {
+		g.node_attributes(node);
+	}).convert<Ident>(
+		[&] (size_t len) {
+			len = max(len, 3u) - 3u;  /* omit HID end marker and line breaks */
+			return Ident { { Cstring(buf, len) } };
+		},
+		[&] (Buffer_error) {
+			warning("dropping attributes for VFS identity of: ", node);
+			return Ident { node.type() };
+	});
+}
 
 #endif /* _INCLUDE__VFS__FILE_SYSTEM_H_ */

@@ -104,7 +104,7 @@ struct Vfs_import::File_system : Vfs::File_system
 
 	File_system(Vfs::Env &env, Node const &config)
 	:
-		_heap(env.env().ram(), env.env().rm())
+		Vfs::File_system(config), _heap(env.env().ram(), env.env().rm())
 	{
 		bool overwrite = config.attribute_value("overwrite", false);
 

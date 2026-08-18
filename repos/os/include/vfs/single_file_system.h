@@ -136,6 +136,7 @@ class Genode::Vfs::Single_file_system : public File_system
 		                   Node_rwx    rwx,
 		                   Node const &config)
 		:
+			File_system(config),
 			_parent_fs(parent_fs), _type(node_type), _rwx(rwx),
 			_filename(config.attribute_value("name", Filename(type_name)))
 		{ }

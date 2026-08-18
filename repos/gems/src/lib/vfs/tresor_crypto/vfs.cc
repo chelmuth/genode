@@ -561,6 +561,7 @@ class Vfs_tresor_crypto::Keys_file_system : public Vfs::File_system, public Vfs:
 
 		Keys_file_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Tresor_crypto::Interface &crypto)
 		:
+			Vfs::File_system(Ident { type_name() }),
 			_vfs_env(vfs_env), _parent_fs(parent_fs), _key_reg(*this, vfs_env.alloc(), crypto)
 		{ }
 
