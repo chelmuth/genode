@@ -26,10 +26,18 @@ class Genode::Vfs::File_system : public Directory_service
 
 		struct Factory : Interface
 		{
+			struct Attr { Vfs::File_system &fs; };
+
+			using Instance = Genode::Allocation<Vfs::File_system::Factory>;
+
+			enum class Error { DENIED };
+
 			/**
-			 * Create and return a new file-system
+			 * Create and return a new file-system instance
 			 */
-			virtual File_system *create(Vfs::Env &env, Parent_fs &, Node const &) = 0;
+			virtual Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &) = 0;
+
+			virtual void _free(Instance &) = 0;
 		};
 
 		/**
@@ -84,6 +92,11 @@ class Genode::Vfs::File_system : public Directory_service
 		 * Return the file-system type
 		 */
 		virtual char const *type() = 0;
+
+		/**
+		 * Hook for implementing 'Factory::_free' for VFS plugins
+		 */
+		virtual void destruct() { };
 };
 
 

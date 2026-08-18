@@ -38,7 +38,7 @@
 static char const *_factory_symbol() { return "vfs_file_system_factory"; }
 
 
-struct Genode::Vfs::Root::Factory::Entry_base : File_system::Factory,
+struct Genode::Vfs::Root::Factory::Entry_base : Vfs::File_system::Factory,
                                                 private List<Entry_base>::Element
 {
 	friend class Genode::List<Entry_base>;
@@ -58,10 +58,19 @@ struct Genode::Vfs::Root::Factory::Entry_base : File_system::Factory,
 template <typename FILE_SYSTEM>
 struct Genode::Vfs::Root::Factory::Builtin_entry : Entry_base
 {
-	Builtin_entry() : Entry_base(FILE_SYSTEM::name()) { }
+	Allocator &_alloc;
 
-	Vfs::File_system *create(Vfs::Env &env, Parent_fs &parent_fs, Node const &node) override {
-		return new (env.alloc()) FILE_SYSTEM(env, parent_fs, node); }
+	Builtin_entry(Allocator &a) : Entry_base(FILE_SYSTEM::name()), _alloc(a) { }
+
+	Instance::Attempt create(Vfs::Env &env, Parent_fs &parent_fs, Node const &node) override
+	{
+		return { *this, { *new (_alloc) FILE_SYSTEM(env, parent_fs, node) } };
+	}
+
+	void _free(Instance &fs) override
+	{
+		destroy(_alloc, &fs.fs);
+	}
 };
 
 
@@ -74,9 +83,17 @@ struct Genode::Vfs::Root::Factory::External_entry : Entry_base
 		Entry_base(name), _fs_factory(fs_factory)
 	{ }
 
-	File_system *create(Vfs::Env &env, Parent_fs &parent_fs, Node const &config) override
+	Instance::Attempt create(Vfs::Env &env, Parent_fs &parent_fs, Node const &config) override
 	{
 		return _fs_factory.create(env, parent_fs, config);
+	}
+
+	void _free(Instance &) override
+	{
+		/*
+		 * Never called because the 'create' 'Result' returned by an external
+		 * plugin refers to the plugin's respective factory.
+		 */
 	}
 };
 
@@ -87,7 +104,7 @@ struct Genode::Vfs::Root::Factory::External_entry : Entry_base
 template <typename FILE_SYSTEM>
 void Genode::Vfs::Root::Factory::_add_builtin_fs()
 {
-	_list.insert(new (&_md_alloc) Builtin_entry<FILE_SYSTEM>());
+	_list.insert(new (&_md_alloc) Builtin_entry<FILE_SYSTEM>(_md_alloc));
 }
 
 
@@ -144,34 +161,23 @@ bool Genode::Vfs::Root::Factory::_probe_external_factory(Vfs::Env &env,
 /**
  * Create and return a new file-system
  */
-Genode::Vfs::File_system *
+Genode::Vfs::File_system::Factory::Instance::Attempt
 Genode::Vfs::Root::Factory::create(Vfs::Env   &env,
                                    Parent_fs  &parent_fs,
                                    Node const &node)
 {
-	auto try_create = [&] () -> Vfs::File_system *
-	{
-		for (Entry_base *e = _list.first(); e; e = e->next())
-			if (e->matches(node))
-				try { return e->create(env, parent_fs, node); }
-				catch (...) { return nullptr; }
-
-		return nullptr;
-	};
-
-	/* try if type is handled by the currently registered fs types */
-	if (Vfs::File_system *fs = try_create())
-		return fs;
-
-	/* if the builtin fails, do not try loading an external */
+	for (Entry_base *e = _list.first(); e; e = e->next())
+		if (e->matches(node))
+			return e->create(env, parent_fs, node);
 
 	/* probe for file system implementation available as shared lib */
 	if (_probe_external_factory(env, node))
-		/* try again with the new file system type loaded */
-		if (Vfs::File_system *fs = try_create())
-			return fs;
 
-	return nullptr;
+	for (Entry_base *e = _list.first(); e; e = e->next())
+		if (e->matches(node))
+			return e->create(env, parent_fs, node);
+
+	return Error::DENIED;
 }
 
 

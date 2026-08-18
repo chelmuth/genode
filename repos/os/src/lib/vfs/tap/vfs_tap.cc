@@ -285,16 +285,18 @@ struct Vfs_tap::Compound_file_system : Union_file_system,
 	 ** Factory interface **
 	 ***********************/
 
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 	{
-		if (node.has_type("dir"))       return &_dot_dir_fs;
-		if (node.has_type("data"))      return &_data_fs;
-		if (node.has_type("info"))      return &_info_fs;
-		if (node.has_type("mac_addr"))  return &_mac_addr_fs;
-		if (node.has_type("name"))      return &_name_fs;
+		if (node.has_type("dir"))       return { *this, { _dot_dir_fs  } };
+		if (node.has_type("data"))      return { *this, { _data_fs     } };
+		if (node.has_type("info"))      return { *this, { _info_fs     } };
+		if (node.has_type("mac_addr"))  return { *this, { _mac_addr_fs } };
+		if (node.has_type("name"))      return { *this, { _name_fs     } };
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	/***********************
 	 ** Constructor, etc. **
@@ -344,6 +346,8 @@ struct Vfs_tap::Compound_file_system : Union_file_system,
 	static const char *name() { return "tap"; }
 
 	char const *type() override { return name(); }
+
+	void destruct() override { destroy(_env.alloc(), this); }
 };
 
 
@@ -353,16 +357,19 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
 		                         Node const &config) override
 		{
-			if (config.attribute_value("mode", Vfs_tap::Uplink_mode::NIC_CLIENT) == Vfs_tap::Uplink_mode::NIC_CLIENT)
-				return new (env.alloc())
-					Vfs_tap::Compound_file_system<Vfs_nic::File_system>(env, parent_fs, config);
-			else
-				return new (env.alloc())
-					Vfs_tap::Compound_file_system<Vfs_uplink::File_system>(env, parent_fs, config);
+			if (config.attribute_value("mode", Vfs_tap::Uplink_mode::NIC_CLIENT) == Vfs_tap::Uplink_mode::NIC_CLIENT) {
+				using Fs = Vfs_tap::Compound_file_system<Vfs_nic::File_system>;
+				return { *this, { *new (env.alloc()) Fs(env, parent_fs, config) } };
+			} else {
+				using Fs = Vfs_tap::Compound_file_system<Vfs_uplink::File_system>;
+				return { *this, { *new (env.alloc()) Fs(env, parent_fs, config) } };
+			}
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory f;

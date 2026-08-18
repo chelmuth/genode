@@ -23,11 +23,14 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &parent_fs, Node const &node) override
+		using Fs = Vfs_jitterentropy::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs, Node const &node) override
 		{
-			return new (env.alloc())
-				Vfs_jitterentropy::File_system(parent_fs, env.alloc(), node);
+			return { *this, { *new (env.alloc()) Fs(parent_fs, env.alloc(), node) } };
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory factory;

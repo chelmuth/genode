@@ -254,18 +254,20 @@ struct Vfs_trace::Subject : Dir_file_system, private Vfs::File_system::Factory
 	String<17>                             _buffer_string { _buffer_size_fs.buffer() };
 	Trace_buffer_file_system               _trace_fs;
 
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 	{
 		if (node.has_type(Value_file_system<unsigned>::type_name())) {
-			if (_enabled_fs.matches(node))     return &_enabled_fs;
-			if (_buffer_size_fs.matches(node)) return &_buffer_size_fs;
+			if (_enabled_fs.matches(node))     return { *this, { _enabled_fs } };
+			if (_buffer_size_fs.matches(node)) return { *this, { _buffer_size_fs } };
 		}
 
 		if (node.has_type(Trace_buffer_file_system::type_name()))
-			return &_trace_fs;
+			return { *this, { _trace_fs } };
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	void notify_watchers(Span const &rel_path) override
 	{
@@ -380,21 +382,22 @@ struct Vfs_trace::File_system : Dir_file_system, private Vfs::File_system::Facto
 		return config.attribute_value("ram", Number_of_bytes(0));
 	}
 
-	/**
-	 * File_system_factory interface
-	 */
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &parent_fs, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &parent_fs, Node const &node) override
 	{
-		Vfs::File_system *result = nullptr;
-
 		if (node.has_type(Subject::type_name()))
-			_policy_id.with_result(
+			return _policy_id.convert<Instance::Attempt>(
 				[&] (Trace::Policy_id const id) {
-					result = new (_env.alloc()) Subject(_env, parent_fs, _trace, id, node); },
-				[&] (Trace::Connection::Alloc_policy_error) { });
-
-		return result;
+					auto &fs = *new (_env.alloc())
+						Subject(_env, parent_fs, _trace, id, node);
+					return Instance::Attempt { *this, { fs } };
+				},
+				[&] (Trace::Connection::Alloc_policy_error) {
+					return Error::DENIED;
+				});
+		return Error::DENIED;
 	}
+
+	void _free(Instance &inst) override { destroy(_env.alloc(), &inst.fs); };
 
 	static Const_byte_range_ptr _config(Vfs::Env &vfs_env, Trace_directory &directory)
 	{
@@ -431,6 +434,8 @@ struct Vfs_trace::File_system : Dir_file_system, private Vfs::File_system::Facto
 	}
 
 	char const *type() override { return "trace"; }
+
+	void destruct() override { destroy(_env.alloc(), this); }
 };
 
 
@@ -444,13 +449,19 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &vfs_env, Vfs::Parent_fs &parent_fs, Node const &node) override
+		using Fs = Vfs_trace::File_system;
+
+		Instance::Attempt create(Vfs::Env &vfs_env, Vfs::Parent_fs &parent_fs, Node const &node) override
 		{
-			try { return new (vfs_env.alloc())
-				Vfs_trace::File_system(vfs_env, parent_fs, node); }
+			try {
+				auto &fs = *new (vfs_env.alloc()) Fs(vfs_env, parent_fs, node);
+				return { *this, { fs } };
+			}
 			catch (...) { error("could not create 'trace_fs' "); }
-			return nullptr;
+			return Error::DENIED;
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory factory;

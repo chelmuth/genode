@@ -654,15 +654,18 @@ struct Vfs_block::File_system : Union_file_system, private Vfs::File_system::Fac
 	static size_t io_buffer(Node const &config) {
 		return config.attribute_value("io_buffer", DEFAULT_IO_BUFFER_SIZE); }
 
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 	{
-		if (node.has_type("dir"))         return &_dot_dir_fs;
-		if (node.has_type("data"))        return &_data_fs;
-		if (node.has_type("info"))        return &_info_fs;
-		if (node.has_type("block_count")) return &_block_count_fs;
-		if (node.has_type("block_size"))  return &_block_size_fs;
-		return nullptr;
+		if (node.has_type("dir"))         return { *this, { _dot_dir_fs } };
+		if (node.has_type("data"))        return { *this, { _data_fs } };
+		if (node.has_type("info"))        return { *this, { _info_fs } };
+		if (node.has_type("block_count")) return { *this, { _block_count_fs } };
+		if (node.has_type("block_size"))  return { *this, { _block_size_fs } };
+
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	using Config = String<200>;
 

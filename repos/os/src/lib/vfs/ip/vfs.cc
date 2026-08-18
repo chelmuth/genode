@@ -1973,7 +1973,7 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 		struct genode_socket_io_progress io_progress { };
 
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &parent_fs, Node const &config) override
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs, Node const &config) override
 		{
 			io_progress.data = &env;
 			io_progress.callback = socket_progress;
@@ -1981,12 +1981,16 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 			using Label = String<Session_label::capacity()>;
 
 			if (genode_socket_init(genode_env_ptr(env.env()), &io_progress,
-			                       config.attribute_value("label", Label("")).string()))
-				return new (env.alloc()) Vfs_ip::Ip_file_system(env, parent_fs, config);
+			                       config.attribute_value("label", Label("")).string())) {
+				auto &fs = *new (env.alloc()) Vfs_ip::Ip_file_system(env, parent_fs, config);
+				return { *this, { fs } };
+			}
 
-			struct Socket_init_failed { };
-			throw Socket_init_failed();
+			error("vfs_ip: socket init failed");
+			return Error::DENIED;
 		}
+
+		void _free(Instance &) override { };
 	};
 
 	static Factory factory;

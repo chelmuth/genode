@@ -537,14 +537,15 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 			if (!_first_file_system) {
 				node.for_each_sub_node([&] (Node const &sub_node) {
 
-					File_system * const fs = factory.create(_env, *this, sub_node);
-					if (fs) {
-						fs->update(sub_node, factory);
-						_append_file_system(fs);
-						return;
-					}
-
-					error("failed to create VFS node: ", sub_node);
+					factory.create(_env, *this, sub_node).with_result(
+						[&] (Vfs::File_system::Factory::Instance &created) {
+							created.fs.update(sub_node, factory);
+							_append_file_system(&created.fs);
+							created.deallocate = false;
+						},
+						[&] (Vfs::File_system::Factory::Error) {
+							error("failed to create VFS node: ", sub_node);
+						});
 					result = PROGRESSED;
 				});
 			} else {

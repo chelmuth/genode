@@ -223,6 +223,8 @@ struct Vfs_xoroshiro::File_system : Single_file_system
 	static char const *name()   { return "xoroshiro"; }
 	char const *type() override { return "xoroshiro"; }
 
+	void destruct() override { destroy(_alloc, this); }
+
 	Open_result open(char const  *path, unsigned,
 	                 Vfs_handle **out_handle,
 	                 Allocator   &alloc) override
@@ -256,11 +258,15 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
+		using Fs = Vfs_xoroshiro::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
 		                         Node const &node) override
 		{
-			return new (env.alloc()) Vfs_xoroshiro::File_system(env, parent_fs, node);
+			return { *this, { *new (env.alloc()) Fs(env, parent_fs, node) } };
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory factory;

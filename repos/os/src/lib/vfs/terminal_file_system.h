@@ -323,17 +323,19 @@ struct Vfs_terminal::File_system : Union_file_system,
 		return config.attribute_value("name", Name("terminal"));
 	}
 
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 	{
-		if (node.has_type("dir"))        return &_dot_dir_fs;
-		if (node.has_type("data"))       return &_data_fs;
-		if (node.has_type("info"))       return &_info_fs;
-		if (node.has_type("rows"))       return &_rows_fs;
-		if (node.has_type("columns"))    return &_columns_fs;
-		if (node.has_type("interrupts")) return &_interrupts_fs;
+		if (node.has_type("dir"))        return { *this, { _dot_dir_fs } };
+		if (node.has_type("data"))       return { *this, { _data_fs } };
+		if (node.has_type("info"))       return { *this, { _info_fs } };
+		if (node.has_type("rows"))       return { *this, { _rows_fs } };
+		if (node.has_type("columns"))    return { *this, { _columns_fs } };
+		if (node.has_type("interrupts")) return { *this, { _interrupts_fs } };
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	using Config = String<200>;
 	static Config _config(Vfs_terminal::Name const &name)

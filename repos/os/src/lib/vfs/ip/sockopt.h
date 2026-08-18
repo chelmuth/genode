@@ -196,19 +196,21 @@ struct Vfs_ip::Sockopt_file_system : Dir_file_system, File_system::Factory
 	Tcpopt<GENODE_TCP_KEEPIDLE>  _tcp_keepidle  { *this, "tcp_keepidle" , _sock };
 	Tcpopt<GENODE_TCP_KEEPINTVL> _tcp_keepintvl { *this, "tcp_keepintvl", _sock };
 
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 	{
 		if (node.has_type(Sockopt<GENODE_SO_INVALID>::type_name())) {
-			if (_so_error.matches(node))      return &_so_error;
-			if (_so_keepalive.matches(node))  return &_so_keepalive;
-			if (_so_reuseaddr.matches(node))  return &_so_reuseaddr;
-			if (_tcp_keepcnt.matches(node))   return &_tcp_keepcnt;
-			if (_tcp_keepidle.matches(node))  return &_tcp_keepidle;
-			if (_tcp_keepintvl.matches(node)) return &_tcp_keepintvl;
+			if (_so_error.matches(node))      return { *this, { _so_error } };
+			if (_so_keepalive.matches(node))  return { *this, { _so_keepalive } };
+			if (_so_reuseaddr.matches(node))  return { *this, { _so_reuseaddr } };
+			if (_tcp_keepcnt.matches(node))   return { *this, { _tcp_keepcnt } };
+			if (_tcp_keepidle.matches(node))  return { *this, { _tcp_keepidle } };
+			if (_tcp_keepintvl.matches(node)) return { *this, { _tcp_keepintvl } };
 		}
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	using Config    = Genode::String<512>;
 	using Generator = Genode::Generator;

@@ -158,23 +158,25 @@ struct Vfs_capture::File_system : Union_file_system, Vfs::File_system::Factory
 	Label const _label;
 	Name  const _name;
 
-	Genode::Env &_env;
+	Vfs::Env &_env;
 
 	Dir_file_system  _dot_dir_fs;
-	Data_file_system _data_fs { *this, _name, _label, _env };
+	Data_file_system _data_fs { *this, _name, _label, _env.env() };
 
 	static Name name(Node const &config)
 	{
 		return config.attribute_value("name", Name("capture"));
 	}
 
-	Vfs::File_system *create(Vfs::Env&, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env&, Parent_fs &, Node const &node) override
 	{
-		if (node.has_type("dir"))  return &_dot_dir_fs;
-		if (node.has_type("data")) return &_data_fs;
+		if (node.has_type("dir"))  return { *this, { _dot_dir_fs } };
+		if (node.has_type("data")) return { *this, { _data_fs    } };
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	using Config = String<200>;
 	static Config _config(Name const &name)
@@ -197,8 +199,8 @@ struct Vfs_capture::File_system : Union_file_system, Vfs::File_system::Factory
 		Union_file_system(vfs_env, parent_fs),
 		_label(node.attribute_value("label", Label(""))),
 		_name(name(node)),
-		_env(vfs_env.env()),
-		_dot_dir_fs(vfs_env, *this, Dir_file_system::Name(".", _name))
+		_env(vfs_env),
+		_dot_dir_fs(_env, *this, Dir_file_system::Name(".", _name))
 	{
 		Union_file_system::update(Node(_config(name(node))), *this);
 	}
@@ -206,6 +208,8 @@ struct Vfs_capture::File_system : Union_file_system, Vfs::File_system::Factory
 	static const char *name() { return "capture"; }
 
 	char const *type() override { return name(); }
+
+	void destruct() override { destroy(_env.alloc(), this); }
 };
 
 
@@ -215,11 +219,15 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
+		using Fs = Vfs_capture::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
 		                         Node const &node) override
 		{
-			return new (env.alloc()) Vfs_capture::File_system(env, parent_fs, node);
+			return { *this, { *new (env.alloc()) Fs(env, parent_fs, node) } };
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory f;

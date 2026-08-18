@@ -1771,30 +1771,32 @@ struct Vfs_tresor_trust_anchor::File_system : Dir_file_system, Vfs::File_system:
 		return node.attribute_value("storage_dir", Storage_path());
 	}
 
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 	{
 		if (node.has_type(Decrypt_file_system::type_name())) {
-			return &_decrypt_fs;
+			return { *this, { _decrypt_fs } };
 		}
 
 		if (node.has_type(Encrypt_file_system::type_name())) {
-			return &_encrypt_fs;
+			return { *this, { _encrypt_fs } };
 		}
 
 		if (node.has_type(Generate_key_file_system::type_name())) {
-			return &_gen_key_fs;
+			return { *this, { _gen_key_fs } };
 		}
 
 		if (node.has_type(Hashsum_file_system::type_name())) {
-			return &_hash_fs;
+			return { *this, { _hash_fs } };
 		}
 
 		if (node.has_type(Initialize_file_system::type_name())) {
-			return &_init_fs;
+			return { *this, { _init_fs } };
 		}
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	using Config = String<128>;
 
@@ -1826,6 +1828,8 @@ struct Vfs_tresor_trust_anchor::File_system : Dir_file_system, Vfs::File_system:
 	{
 		Dir_file_system::update(Node(_config(node)), *this);
 	}
+
+	void destruct() override { destroy(_env.alloc(), this); }
 };
 
 
@@ -1839,18 +1843,19 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &vfs_env, Vfs::Parent_fs &parent_fs,
+		using Fs = Vfs_tresor_trust_anchor::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
 		                         Node const &node) override
 		{
 			try {
-				return new (vfs_env.alloc())
-					Vfs_tresor_trust_anchor::File_system(vfs_env, parent_fs, node);
+				return { *this, { *new (env.alloc()) Fs(env, parent_fs, node) } };
 
-			} catch (...) {
-				error("could not create 'tresor_trust_anchor'");
-			}
-			return nullptr;
+			} catch (...) { error("could not create 'tresor_trust_anchor'"); }
+			return Error::DENIED;
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory factory;

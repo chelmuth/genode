@@ -125,20 +125,22 @@ struct Vfs_ttf::File_system : Dir_file_system, Vfs::File_system::Factory,
 		_max_height_fs.value(_font->font.font().bounding_box().h);
 	}
 
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 	{
 		if (node.has_type(Vfs_glyphs::File_system::type_name()))
-			return &_glyphs_fs;
+			return { *this, { _glyphs_fs } };
 
-		if (node.has_type(Readonly_value_file_system<unsigned>::type_name()))
-			return _baseline_fs.matches(node)   ? &_baseline_fs
-			     : _height_fs.matches(node)     ? &_height_fs
-			     : _max_width_fs.matches(node)  ? &_max_width_fs
-			     : _max_height_fs.matches(node) ? &_max_height_fs
-			     : nullptr;
+		if (node.has_type(Readonly_value_file_system<unsigned>::type_name())) {
+			if (_baseline_fs.matches(node))   return { *this, { _baseline_fs   } };
+			if (_height_fs.matches(node))     return { *this, { _height_fs     } };
+			if (_max_width_fs.matches(node))  return { *this, { _max_width_fs  } };
+			if (_max_height_fs.matches(node)) return { *this, { _max_height_fs } };
+		}
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	Progress update(Node const &config, Vfs::File_system::Factory &) override
 	{
@@ -197,6 +199,8 @@ struct Vfs_ttf::File_system : Dir_file_system, Vfs::File_system::Factory,
 	}
 
 	char const *type() override { return "ttf"; }
+
+	void destruct() override { destroy(_env.alloc(), this); }
 };
 
 
@@ -210,14 +214,19 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &vfs_env, Vfs::Parent_fs &parent_fs,
+		using Fs = Vfs_ttf::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
 		                         Node const &node) override
 		{
-			try { return new (vfs_env.alloc())
-				Vfs_ttf::File_system(vfs_env, parent_fs, node); }
+			try {
+				return { *this, { *new (env.alloc()) Fs(env, parent_fs, node) } };
+			}
 			catch (...) { }
-			return nullptr;
+			return Error::DENIED;
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory factory;

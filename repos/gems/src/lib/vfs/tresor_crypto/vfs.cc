@@ -247,16 +247,18 @@ class Vfs_tresor_crypto::Key_file_system : public Dir_file_system,
 		Encrypt_file_system _encrypt_fs;
 		Decrypt_file_system _decrypt_fs;
 
-		Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+		Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 		{
 			if (node.has_type(Encrypt_file_system::type_name()))
-				return &_encrypt_fs;
+				return { *this, { _encrypt_fs } };
 
 			if (node.has_type(Decrypt_file_system::type_name()))
-				return &_decrypt_fs;
+				return { *this, { _decrypt_fs } };
 
-			return nullptr;
+			return Error::DENIED;;
 		}
+
+		void _free(Instance &) override { };
 
 		using Config = String<128>;
 
@@ -901,14 +903,16 @@ struct Vfs_tresor_crypto::File_system : Dir_file_system, Vfs::File_system::Facto
 		Add_key_file_system    _add_key_fs;
 		Remove_key_file_system _remove_key_fs;
 
-		Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+		Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 		{
-			if (node.has_type(Add_key_file_system::type_name()))    return &_add_key_fs;
-			if (node.has_type(Remove_key_file_system::type_name())) return &_remove_key_fs;
-			if (node.has_type(Keys_file_system::type_name()))       return &_keys_fs;
+			if (node.has_type(Add_key_file_system::type_name()))    return { *this, { _add_key_fs    } };
+			if (node.has_type(Remove_key_file_system::type_name())) return { *this, { _remove_key_fs } };
+			if (node.has_type(Keys_file_system::type_name()))       return { *this, { _keys_fs       } };
 
-			return nullptr;
+			return Error::DENIED;
 		}
+
+		void _free(Instance &) override { };
 
 		using Config = String<128>;
 
@@ -943,6 +947,8 @@ struct Vfs_tresor_crypto::File_system : Dir_file_system, Vfs::File_system::Facto
 		{
 			Dir_file_system::update(Node(_config(node)), *this);
 		}
+
+		void destruct() override { destroy(_env.alloc(), this); }
 };
 
 
@@ -957,16 +963,19 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		File_system *create(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node) override
+		using Fs = Vfs_tresor_crypto::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Parent_fs &parent_fs, Node const &node) override
 		{
 			try {
-				return new (vfs_env.alloc())
-					Vfs_tresor_crypto::File_system(vfs_env, parent_fs, node);
+				return { *this, { *new (env.alloc()) Fs(env, parent_fs, node) } };
 			} catch (...) {
 				error("could not create 'tresor_crypto' file system");
 			}
-			return nullptr;
+			return Error::DENIED;
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory factory;

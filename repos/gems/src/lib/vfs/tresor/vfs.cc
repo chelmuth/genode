@@ -1359,13 +1359,15 @@ struct Vfs_tresor::Current_file_system : Dir_file_system, private Vfs::File_syst
 {
 	Data_file_system _data_fs;
 
-	Vfs::File_system *create(Vfs::Env&, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env&, Parent_fs &, Node const &node) override
 	{
 		if (node.has_type(Data_file_system::type_name()))
-			return &_data_fs;
+			return { *this, { _data_fs } };
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	using Config = String<128>;
 
@@ -1404,19 +1406,21 @@ struct Vfs_tresor::Control_file_system : Dir_file_system, private Vfs::File_syst
 	Deinitialize_file_system _deinitialize_fs { *this, _plugin };
 	Extend_file_system       _extend_fs       { *this, _plugin };
 
-	Vfs::File_system *create(Vfs::Env&, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env&, Parent_fs &, Node const &node) override
 	{
 		if (node.has_type(Rekey_file_system::type_name()))
-			return &_rekey_fs;
+			return { *this, { _rekey_fs } };
 
 		if (node.has_type(Deinitialize_file_system::type_name()))
-			return &_deinitialize_fs;
+			return { *this, { _deinitialize_fs } };
 
 		if (node.has_type(Extend_file_system::type_name()))
-			return &_extend_fs;
+			return { *this, { _extend_fs } };
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	using Config = String<256>;
 
@@ -1460,16 +1464,18 @@ struct Vfs_tresor::File_system : Dir_file_system, private Vfs::File_system::Fact
 	Current_file_system _current_fs;
 	Control_file_system _control_fs;
 
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 	{
 		if (node.has_type(Current_file_system::type_name()))
-			return &_current_fs;
+			return { *this, { _current_fs } };
 
 		if (node.has_type(Control_file_system::type_name()))
-			return &_control_fs;
+			return { *this, { _control_fs } };
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	using Config = String<256>;
 
@@ -1495,6 +1501,8 @@ struct Vfs_tresor::File_system : Dir_file_system, private Vfs::File_system::Fact
 	{
 		Dir_file_system::update(Node(_config(node)), *this);
 	}
+
+	void destruct() override { destroy(_env.alloc(), this); }
 };
 
 
@@ -1719,20 +1727,23 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 			 ** File_system_factory **
 			 *************************/
 
-			Vfs::File_system *create(Vfs::Env &vfs_env, Vfs::Parent_fs &parent_fs,
+			using Fs = Vfs_tresor::File_system;
+
+			Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
 			                         Node const &node) override
 			{
 				try {
 					if (!_plugin_ptr) {
-						_plugin_alloc_ptr = &vfs_env.alloc();
-						_plugin_ptr = new (_plugin_alloc_ptr) Vfs_tresor::Plugin { vfs_env, node };
+						_plugin_alloc_ptr = &env.alloc();
+						_plugin_ptr = new (_plugin_alloc_ptr) Vfs_tresor::Plugin { env, node };
 					}
-					return new (vfs_env.alloc())
-						Vfs_tresor::File_system(vfs_env, parent_fs, node, *_plugin_ptr);
+					return { *this, { *new (env.alloc()) Fs(env, parent_fs, node, *_plugin_ptr) } };
 
 				} catch (...) { error("could not create 'tresor_fs' "); }
-				return nullptr;
+				return Error::DENIED;
 			}
+
+			void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory factory { };

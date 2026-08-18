@@ -425,7 +425,10 @@ class Vfs_rump::File_system : public Vfs::File_system
 		 ***************************/
 
 		static char const *name()   { return "rump"; }
+
 		char const *type() override { return "rump"; }
+
+		void destruct() override { destroy(_env.alloc(), this); }
 
 
 		/*********************************
@@ -817,19 +820,25 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 			}
 		}
 
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &parent_fs, Node const &config) override
+		using Fs = Vfs_rump::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs, Node const &config) override
 		{
-			return new (env.alloc()) Vfs_rump::File_system(env, parent_fs, config);
+			return { *this, { *new (env.alloc()) Fs(env, parent_fs, config) } };
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	struct Extern_factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &parent_fs, Node const &node) override
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs, Node const &node) override
 		{
 			static _Factory factory(env.env(), env.alloc(), env.user(), node);
 			return factory.create(env, parent_fs, node);
 		}
+
+		void _free(Instance &instance) override { /* never called */ };
 	};
 
 	static Extern_factory factory;

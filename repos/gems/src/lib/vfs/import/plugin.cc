@@ -151,9 +151,16 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &, Node const &config) override
+		using Fs = Vfs_import::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &, Node const &config) override
 		{
-			return new (env.alloc()) Vfs_import::File_system(env, config);
+			return { *this, { *new (env.alloc()) Fs(env, config) } };
+		}
+
+		void _free(Instance &) override
+		{
+			warning("vfs_import fs cannot be freed");
 		}
 	};
 

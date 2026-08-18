@@ -33,6 +33,7 @@ class Vfs_jitterentropy::File_system : public Single_file_system
 {
 	private:
 
+		Allocator        &_alloc;
 		struct rand_data *_ec_stir;
 		bool              _initialized;
 
@@ -103,6 +104,7 @@ class Vfs_jitterentropy::File_system : public Single_file_system
 			Single_file_system(parent_fs,
 			                   Node_type::CONTINUOUS_FILE, name(),
 			                   Node_rwx::ro(), config),
+			_alloc(alloc),
 			_ec_stir(0),
 			_initialized(_init_jitterentropy(alloc))
 		{ }
@@ -115,6 +117,8 @@ class Vfs_jitterentropy::File_system : public Single_file_system
 
 		static char const *name()   { return "jitterentropy"; }
 		char const *type() override { return "jitterentropy"; }
+
+		void destruct() override { destroy(_alloc, this); }
 
 		Open_result open(char const *path, unsigned,
 		                 Vfs::Vfs_handle **out_handle,

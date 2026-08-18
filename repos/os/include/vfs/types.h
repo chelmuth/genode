@@ -18,6 +18,7 @@
 #include <util/misc_math.h>
 #include <util/string.h>
 #include <util/progress.h>
+#include <util/allocation.h>
 #include <base/node.h>
 #include <base/env.h>
 #include <base/signal.h>

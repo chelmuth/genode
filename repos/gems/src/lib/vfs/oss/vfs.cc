@@ -1364,40 +1364,42 @@ struct Vfs_oss::File_system : public Union_file_system,
 	/**
 	 * File_system_factory interface
 	 */
-	Vfs::File_system *create(Vfs::Env &, Parent_fs &, Node const &node) override
+	Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &node) override
 	{
-		if (node.has_type("dir"))  return &_dot_dir_fs;
-		if (node.has_type("data")) return &_data_fs;
-		if (node.has_type("info")) return &_info_fs;
+		if (node.has_type("dir"))  return { *this, { _dot_dir_fs } };
+		if (node.has_type("data")) return { *this, { _data_fs    } };
+		if (node.has_type("info")) return { *this, { _info_fs    } };
 
 		if (node.has_type(Readonly_value_file_system<unsigned>::type_name())) {
 
-			if (_channels_fs.matches(node))          return &_channels_fs;
-			if (_ifrag_avail_fs.matches(node))       return &_ifrag_avail_fs;
-			if (_ifrag_bytes_fs.matches(node))       return &_ifrag_bytes_fs;
-			if (_ofrag_avail_fs.matches(node))       return &_ofrag_avail_fs;
-			if (_ofrag_bytes_fs.matches(node))       return &_ofrag_bytes_fs;
-			if (_format_fs.matches(node))            return &_format_fs;
-			if (_optr_samples_fs.matches(node))      return &_optr_samples_fs;
-			if (_optr_fifo_samples_fs.matches(node)) return &_optr_fifo_samples_fs;
+			if (_channels_fs.matches(node))          return { *this, { _channels_fs     } };
+			if (_ifrag_avail_fs.matches(node))       return { *this, { _ifrag_avail_fs  } };
+			if (_ifrag_bytes_fs.matches(node))       return { *this, { _ifrag_bytes_fs  } };
+			if (_ofrag_avail_fs.matches(node))       return { *this, { _ofrag_avail_fs  } };
+			if (_ofrag_bytes_fs.matches(node))       return { *this, { _ofrag_bytes_fs  } };
+			if (_format_fs.matches(node))            return { *this, { _format_fs       } };
+			if (_optr_samples_fs.matches(node))      return { *this, { _optr_samples_fs } };
+			if (_optr_fifo_samples_fs.matches(node)) return { *this, { _optr_fifo_samples_fs } };
 		}
 
 		if (node.has_type(Value_file_system<unsigned>::type_name())) {
 
-			if (_enable_input_fs.matches(node))   return &_enable_input_fs;
-			if (_enable_output_fs.matches(node))  return &_enable_output_fs;
-			if (_halt_input_fs.matches(node))     return &_halt_input_fs;
-			if (_halt_output_fs.matches(node))    return &_halt_output_fs;
-			if (_ifrag_total_fs.matches(node))    return &_ifrag_total_fs;
-			if (_ifrag_size_fs.matches(node))     return &_ifrag_size_fs;
-			if (_ofrag_total_fs.matches(node))    return &_ofrag_total_fs;
-			if (_ofrag_size_fs.matches(node))     return &_ofrag_size_fs;
-			if (_play_underruns_fs.matches(node)) return &_play_underruns_fs;
-			if (_sample_rate_fs.matches(node))    return &_sample_rate_fs;
+			if (_enable_input_fs.matches(node))   return { *this, { _enable_input_fs  } };
+			if (_enable_output_fs.matches(node))  return { *this, { _enable_output_fs } };
+			if (_halt_input_fs.matches(node))     return { *this, { _halt_input_fs    } };
+			if (_halt_output_fs.matches(node))    return { *this, { _halt_output_fs   } };
+			if (_ifrag_total_fs.matches(node))    return { *this, { _ifrag_total_fs   } };
+			if (_ifrag_size_fs.matches(node))     return { *this, { _ifrag_size_fs    } };
+			if (_ofrag_total_fs.matches(node))    return { *this, { _ofrag_total_fs   } };
+			if (_ofrag_size_fs.matches(node))     return { *this, { _ofrag_size_fs    } };
+			if (_play_underruns_fs.matches(node)) return { *this, { _play_underruns_fs } };
+			if (_sample_rate_fs.matches(node))    return { *this, { _sample_rate_fs   } };
 		}
 
-		return nullptr;
+		return Error::DENIED;
 	}
+
+	void _free(Instance &) override { };
 
 	using Config = String<1024>;
 	static Config _config(Name const &name)
@@ -1506,6 +1508,8 @@ struct Vfs_oss::File_system : public Union_file_system,
 	static const char *name() { return "oss_next"; }
 
 	char const *type() override { return name(); }
+
+	void destruct() override { destroy(_env.alloc(), this); }
 };
 
 
@@ -1515,11 +1519,15 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
+		using Fs = Vfs_oss::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
 		                         Node const &config) override
 		{
-			return new (env.alloc()) Vfs_oss::File_system(env, parent_fs, config);
+			return { *this, { *new (env.alloc()) Fs(env, parent_fs, config) } };
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory f;

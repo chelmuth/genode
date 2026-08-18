@@ -97,6 +97,8 @@ struct Vfs_gpu::File_system : Single_file_system
 		_env(env)
 	{ }
 
+	void destruct() override { destroy(_env.alloc(), this); }
+
 	Open_result open(char const  *path, unsigned,
 	                 Vfs::Vfs_handle **out_handle,
 	                 Allocator   &alloc) override
@@ -166,17 +168,20 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &vfs_env, Vfs::Parent_fs &parent_fs,
+		using Fs = Vfs_gpu::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
 		                         Node const &node) override
 		{
-			_env = &vfs_env;
+			_env = &env;
 			try {
-				_fs = new (vfs_env.alloc()) Vfs_gpu::File_system(vfs_env, parent_fs, node);
-				return _fs;
+				return { *this, { *new (env.alloc()) Fs(env, parent_fs, node) } };
 			}
 			catch (...) { error("could not create 'gpu_fs' "); }
-			return nullptr;
+			return Error::DENIED;
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory factory;

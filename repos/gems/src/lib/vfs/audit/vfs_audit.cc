@@ -68,6 +68,8 @@ class Vfs_audit::File_system : public Vfs::File_system
 
 		void _log(auto &&... args) { _audit_log.log(args...); }
 
+		Allocator &_alloc;
+
 		Vfs::File_system &_fs;
 
 		Absolute_path const _audit_path;
@@ -172,12 +174,15 @@ class Vfs_audit::File_system : public Vfs::File_system
 		:
 			Vfs::File_system(config),
 			_audit_log(env.env(), config.attribute_value("label", String<64>("audit")).string()),
-			_fs(env.fs()),
+			_alloc(env.alloc()), _fs(env.fs()),
 			_audit_path(config.attribute_value(
 				"path", String<Absolute_path::capacity()>()))
 		{ }
 
 		const char* type() override { return "audit"; }
+
+		void destruct() override { destroy(_alloc, this); }
+
 
 		/***********************
 		 ** Directory service **
@@ -280,10 +285,14 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &, Node const &config) override
+		using Fs = Vfs_audit::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &, Node const &config) override
 		{
-			return new (env.alloc()) Vfs_audit::File_system(env, config);
+			return { *this, { *new (env.alloc()) Fs(env, config) } };
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory f;

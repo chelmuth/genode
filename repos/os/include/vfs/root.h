@@ -39,10 +39,16 @@ class Genode::Vfs::Root : public Env, private Env::Io, private Env::User
 
 			Factory(Allocator &alloc);
 
-			/**
-			 * File_system::Factory interface
-			 */
-			File_system *create(Env &, Parent_fs &, Node const &) override;
+			Instance::Attempt create(Env &, Parent_fs &, Node const &) override;
+
+			void _free(Instance &) override
+			{
+				/*
+				 * The 'Result' of 'create' should always refer to a 'Factory'
+				 * of a VFS 'File_system'.
+				 */
+				warning("unexpected call to Vfs::Root::Factory::_free");
+			}
 
 			/**
 			 * Register an additional factory for new file-system type

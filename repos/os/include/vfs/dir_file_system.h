@@ -31,13 +31,15 @@ class Genode::Vfs::Dir_file_system : public File_system, public Parent_fs
 		enum { MAX_NAME_LEN = 128 };
 		using Name = String<MAX_NAME_LEN>;
 
-	private:
+	protected:
 
 		Vfs::Env &_env;
 
 		Parent_fs &_parent_fs;
 
 		Name const _name;
+
+	private:
 
 		Union_file_system _union;
 

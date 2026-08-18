@@ -378,6 +378,8 @@ class Vfs_fatfs::File_system : public Vfs::File_system
 
 		char const *type() override { return "fatfs"; }
 
+		void destruct() override { destroy(_vfs_env.alloc(), this); }
+
 		Open_result open(char const *path, unsigned vfs_mode,
 		                 Vfs_handle **vfs_handle,
 		                 Allocator  &alloc) override
@@ -650,12 +652,16 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &vfs_env, Vfs::Parent_fs &parent_fs,
+		using Fs = Vfs_fatfs::File_system;
+
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &parent_fs,
 		                         Genode::Node const &node) override
 		{
-			Fatfs::block_init(vfs_env.env(), vfs_env.alloc());
-			return new (vfs_env.alloc()) Vfs_fatfs::File_system(vfs_env, parent_fs, node);
+			Fatfs::block_init(env.env(), env.alloc());
+			return { *this, { *new (env.alloc()) Fs(env, parent_fs, node) } };
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory factory;

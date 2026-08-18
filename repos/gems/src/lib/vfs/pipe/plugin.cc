@@ -588,6 +588,8 @@ class Vfs_pipe::Pipe_file_system : public Vfs_pipe::File_system
 
 		Pipe_file_system(Vfs::Env &env) : File_system(env) { }
 
+		void destruct() override { destroy(_env.alloc(), this); }
+
 		Open_result open(const char *cpath,
 		                 unsigned mode,
 		                 Vfs::Vfs_handle **handle,
@@ -759,6 +761,8 @@ class Vfs_pipe::Fifo_file_system : public Vfs_pipe::File_system
 			});
 		}
 
+		void destruct() override { destroy(_env.alloc(), this); }
+
 		bool directory(char const *cpath) override
 		{
 			Path const path { cpath };
@@ -783,14 +787,16 @@ extern "C" Genode::Vfs::File_system::Factory *vfs_file_system_factory(void)
 
 	struct Factory : Vfs::File_system::Factory
 	{
-		Vfs::File_system *create(Vfs::Env &env, Vfs::Parent_fs &, Node const &node) override
+		Instance::Attempt create(Vfs::Env &env, Vfs::Parent_fs &, Node const &node) override
 		{
 			if (node.has_sub_node("fifo")) {
-				return new (env.alloc()) Vfs_pipe::Fifo_file_system(env, node);
+				return { *this, { *new (env.alloc()) Vfs_pipe::Fifo_file_system(env, node) } };
 			} else {
-				return new (env.alloc()) Vfs_pipe::Pipe_file_system(env);
+				return { *this, { *new (env.alloc()) Vfs_pipe::Pipe_file_system(env) } };
 			}
 		}
+
+		void _free(Instance &instance) override { instance.fs.destruct(); };
 	};
 
 	static Factory f;
