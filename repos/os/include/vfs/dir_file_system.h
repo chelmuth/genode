@@ -41,7 +41,7 @@ class Genode::Vfs::Dir_file_system : public File_system, public Parent_fs
 
 	private:
 
-		Union_file_system _union;
+		Union_file_system _union { _env, *this, Ident { "union" } };
 
 		bool _slash(char const *path) const { return strcmp(path, "/") == 0; }
 
@@ -122,6 +122,18 @@ class Genode::Vfs::Dir_file_system : public File_system, public Parent_fs
 			bool write_ready() const override { return false; }
 		};
 
+		friend class Vfs::Root;
+
+		/**
+		 * Constructor used by 'Root::Factory::Builtin_entry'
+		 */
+		Dir_file_system(Env &env, Parent_fs &parent_fs, Node const &node)
+		:
+			Dir_file_system(env, parent_fs,
+			                node.attribute_value("name", Name()),
+			                Ident::from_node(node))
+		{ }
+
 	protected:
 
 		/**
@@ -141,17 +153,12 @@ class Genode::Vfs::Dir_file_system : public File_system, public Parent_fs
 		                Ident const &ident)
 		:
 			File_system(ident),
-			_env(env), _parent_fs(parent_fs), _name(name), _union(env, *this)
+			_env(env), _parent_fs(parent_fs), _name(name)
 		{ }
 
 		Dir_file_system(Env &env, Parent_fs &parent_fs, Name const &name)
 		:
 			Dir_file_system(env, parent_fs, name, Ident { { "dir ", name } })
-		{ }
-
-		Dir_file_system(Env &env, Parent_fs &parent_fs, Node const &node)
-		:
-			Dir_file_system(env, parent_fs, node.attribute_value("name", Name()))
 		{ }
 
 		Dataspace_capability dataspace(char const *path) override

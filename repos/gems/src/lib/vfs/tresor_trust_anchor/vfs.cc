@@ -1823,7 +1823,9 @@ struct Vfs_tresor_trust_anchor::File_system : Dir_file_system, Vfs::File_system:
 
 	File_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node)
 	:
-		Dir_file_system(vfs_env, parent_fs, Node(_config(node))),
+		Dir_file_system(vfs_env, parent_fs,
+		                node.attribute_value("name", Dir_file_system::Name()),
+		                Ident::from_node(node)),
 		_trust_anchor(vfs_env, _storage_path(node).string())
 	{
 		Dir_file_system::update(Node(_config(node)), *this);

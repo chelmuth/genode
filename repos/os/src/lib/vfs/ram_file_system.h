@@ -539,7 +539,7 @@ class Vfs_ram::File_system : public Vfs::File_system
 
 		File_system(Vfs::Env &env, Parent_fs &parent_fs, Genode::Node const &node)
 		:
-			Vfs::File_system(node), _env(env), _parent_fs(parent_fs)
+			Vfs::File_system(Ident::from_node(node)), _env(env), _parent_fs(parent_fs)
 		{ }
 
 		~File_system() { _root.empty(_env.alloc()); }

@@ -128,6 +128,7 @@ namespace Genode::Vfs {
 	enum class Write_ready_result { YES, RETRY, DENIED, OUT_OF_RAM, OUT_OF_CAPS };
 
 	struct Env;
+	struct Root;
 }
 
 #endif /* _INCLUDE__VFS__TYPES_H_ */

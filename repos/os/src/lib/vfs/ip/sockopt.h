@@ -233,7 +233,7 @@ struct Vfs_ip::Sockopt_file_system : Dir_file_system, File_system::Factory
 
 	Sockopt_file_system(Vfs::Env &env, Parent_fs &parent_fs, genode_socket_handle &sock)
 	:
-		Dir_file_system(env, parent_fs, Node(_config())),
+		Dir_file_system(env, parent_fs, type_name()),
 		_sock(sock)
 	{
 		Dir_file_system::update(Node(_config()), *this);

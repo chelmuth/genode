@@ -105,6 +105,7 @@ config | verbose: yes
       + any-child
 -}
 
+build { server/dynamic_rom lib/vfs server/vfs lib/vfs_lxip }
 build_boot_image [build_artifacts]
 
 append done_string ".*\"ping_.\" exited with exit value 0.*\n"

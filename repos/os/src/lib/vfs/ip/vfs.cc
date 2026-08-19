@@ -1690,7 +1690,8 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 
 		Ip_file_system(Vfs::Env &env, Parent_fs &parent_fs, Genode::Node const &node)
 		:
-			File_system(node), Directory(""), _env(env), _parent_fs(parent_fs)
+			File_system(Ident { node.type() }), Directory(""),
+			_env(env), _parent_fs(parent_fs)
 		{
 			_wakeup_remote.data     = this;
 			_wakeup_remote.callback = _schedule_wakeup;
@@ -1701,6 +1702,12 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 		~Ip_file_system() { }
 
 		char const *type() override { return Vfs_ip::ip_stack().string(); }
+
+		bool matches(Genode::Node const &node) const override
+		{
+			/* accept updated attributes w/o re-constructing the file system */
+			return node.type() == _ident.string;
+		}
 
 		/***************************
 		 ** File_system interface **

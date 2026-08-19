@@ -172,7 +172,7 @@ class Vfs_audit::File_system : public Vfs::File_system
 
 		File_system(Vfs::Env &env, Node const &config)
 		:
-			Vfs::File_system(config),
+			Vfs::File_system(Ident::from_node(config)),
 			_audit_log(env.env(), config.attribute_value("label", String<64>("audit")).string()),
 			_alloc(env.alloc()), _fs(env.fs()),
 			_audit_path(config.attribute_value(

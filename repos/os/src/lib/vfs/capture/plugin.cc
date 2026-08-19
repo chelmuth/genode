@@ -196,7 +196,7 @@ struct Vfs_capture::File_system : Union_file_system, Vfs::File_system::Factory
 
 	File_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node)
 	:
-		Union_file_system(vfs_env, parent_fs),
+		Union_file_system(vfs_env, parent_fs, Ident::from_node(node)),
 		_label(node.attribute_value("label", Label(""))),
 		_name(name(node)),
 		_env(vfs_env),

@@ -1496,7 +1496,7 @@ struct Vfs_oss::File_system : public Union_file_system,
 
 	File_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node)
 	:
-		Union_file_system { vfs_env, parent_fs },
+		Union_file_system { vfs_env, parent_fs, Ident::from_node(node) },
 		_env        { vfs_env },
 		_data_fs    { *this, _env.env().ep(), _env.user(), _audio, name(node) },
 		_dot_dir_fs { vfs_env, *this, Dir_file_system::Name(".", name(node)) },

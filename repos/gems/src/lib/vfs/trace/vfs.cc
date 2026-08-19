@@ -322,7 +322,9 @@ struct Vfs_trace::Subject : Dir_file_system, private Vfs::File_system::Factory
 	Subject(Vfs::Env &env, Parent_fs &parent_fs, Trace::Connection &trace,
 	        Trace::Policy_id policy, Node const &node)
 	:
-		Dir_file_system(env, parent_fs, Node(_config(node))),
+		Dir_file_system(env, parent_fs,
+		                node.attribute_value("name", Vfs_trace::Name()),
+		                Ident::from_node(Node(_config(node)))),
 		_env(env), _trace_fs(env, *this, trace, policy, { node.attribute_value("id", 0u) })
 	{
 		Dir_file_system::update(Node(_config(node)), *this);
@@ -416,7 +418,9 @@ struct Vfs_trace::File_system : Dir_file_system, private Vfs::File_system::Facto
 
 	File_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node)
 	:
-		Dir_file_system(vfs_env, parent_fs, Node(_config(vfs_env, _directory))),
+		Dir_file_system(vfs_env, parent_fs,
+		                Node(_config(vfs_env, _directory)).attribute_value("name", String<64>()),
+		                Ident::from_node(node)),
 		_env(vfs_env), _trace(vfs_env.env(), _config_session_ram(node), 512*1024)
 	{
 		Dir_file_system::update(Node(_config(vfs_env, _directory)), *this);

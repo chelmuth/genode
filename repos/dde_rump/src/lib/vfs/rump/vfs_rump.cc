@@ -390,7 +390,8 @@ class Vfs_rump::File_system : public Vfs::File_system
 
 		File_system(Vfs::Env &env, Parent_fs &parent_fs, Node const &config)
 		:
-			Vfs::File_system(config), _env(env), _parent_fs(parent_fs)
+			Vfs::File_system(Ident::from_node(config)),
+			_env(env), _parent_fs(parent_fs)
 		{
 			using Fs_type = String<16>;
 

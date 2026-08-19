@@ -56,14 +56,9 @@ struct Genode::Vfs::File_system : public Directory_service
 	} const _ident;
 
 	/**
-	 * Construct fs with specified identity string
+	 * Construct file system with the specified identity
 	 */
 	File_system(Ident const &ident) : _ident(ident) { }
-
-	/**
-	 * Construct fs with its identity defined by node type and attributes
-	 */
-	File_system(Node const &node) : File_system(Ident::from_node(node)) { }
 
 	/**
 	 * Adjust to configuration changes

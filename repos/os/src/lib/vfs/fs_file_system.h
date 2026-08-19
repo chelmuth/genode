@@ -583,7 +583,7 @@ class Vfs_fs::File_system : public Vfs::File_system, private Remote_io
 
 		File_system(Vfs::Env &env, Parent_fs &parent_fs, Node const &config)
 		:
-			Vfs::File_system(config),
+			Vfs::File_system(Ident::from_node(config)),
 			_env(env), _parent_fs(parent_fs),
 			_label(config.attribute_value("label", Label_string("/"))),
 			_fs(_env.env(), _fs_packet_alloc,

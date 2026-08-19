@@ -89,13 +89,13 @@ class Genode::Vfs::Root : public Env, private Env::Io, private Env::User
 
 		} _root_parent_fs { _watch_handles };
 
-		Union_file_system _fs;
+		Union_file_system _fs { *this, _root_parent_fs, File_system::Ident { "root" } };
 
 	public:
 
 		Root(Genode::Env &env, Allocator &alloc, Node const &config, Env::User &user)
 		:
-			_env(env), _alloc(alloc), _user(user), _fs(*this, _root_parent_fs)
+			_env(env), _alloc(alloc), _user(user)
 		{
 			apply_config(config);
 		}

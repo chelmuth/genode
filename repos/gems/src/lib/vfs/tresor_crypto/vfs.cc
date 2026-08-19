@@ -286,7 +286,7 @@ class Vfs_tresor_crypto::Key_file_system : public Dir_file_system,
 		                Tresor_crypto::Interface &crypto,
 		                uint32_t key_id)
 		:
-			Dir_file_system(vfs_env, parent_fs, Node(_config(key_id))),
+			Dir_file_system(vfs_env, parent_fs, key_id),
 			_key_id(key_id),
 			_encrypt_fs(*this, crypto, key_id),
 			_decrypt_fs(*this, crypto, key_id)
@@ -932,7 +932,9 @@ struct Vfs_tresor_crypto::File_system : Dir_file_system, Vfs::File_system::Facto
 
 		File_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node)
 		:
-			Dir_file_system(vfs_env, parent_fs, Node(_config(node))),
+			Dir_file_system(vfs_env, parent_fs,
+			                node.attribute_value("name", Dir_file_system::Name()),
+			                Ident::from_node(node)),
 			_crypto(Tresor_crypto::get_interface()),
 			_keys_fs(vfs_env, *this, _crypto),
 			_add_key_fs(*this, _crypto),

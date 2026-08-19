@@ -110,7 +110,7 @@ struct Vfs_import::File_system : Vfs::File_system
 
 	File_system(Vfs::Env &env, Node const &config)
 	:
-		Vfs::File_system(config),
+		Vfs::File_system(Ident::from_node(config)),
 		_env(env), _heap(env.env().ram(), env.env().rm()),
 		_config(env.alloc(), config)
 	{ }

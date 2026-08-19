@@ -251,9 +251,9 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 
 	public:
 
-		Union_file_system(Env &env, Parent_fs &parent_fs)
+		Union_file_system(Env &env, Parent_fs &parent_fs, Ident const &ident)
 		:
-			File_system(Ident { "union" }), _env(env), _parent_fs(parent_fs)
+			File_system(ident), _env(env), _parent_fs(parent_fs)
 		{ }
 
 		Dataspace_capability dataspace(char const *path) override

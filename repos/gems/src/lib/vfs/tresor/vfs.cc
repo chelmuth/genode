@@ -1386,7 +1386,7 @@ struct Vfs_tresor::Current_file_system : Dir_file_system, private Vfs::File_syst
 
 	Current_file_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Plugin &plugin)
 	:
-		Dir_file_system(vfs_env, parent_fs, Node(_config())),
+		Dir_file_system(vfs_env, parent_fs, "current"),
 		_data_fs(*this, plugin)
 	{
 		Dir_file_system::update(Node(_config()), *this);
@@ -1440,7 +1440,7 @@ struct Vfs_tresor::Control_file_system : Dir_file_system, private Vfs::File_syst
 
 	Control_file_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Plugin &plugin)
 	:
-		Dir_file_system(vfs_env, parent_fs, Node(_config())), _plugin(plugin)
+		Dir_file_system(vfs_env, parent_fs, "control"), _plugin(plugin)
 	{
 		Dir_file_system::update(Node(_config()), *this);
 	}
@@ -1494,7 +1494,7 @@ struct Vfs_tresor::File_system : Dir_file_system, private Vfs::File_system::Fact
 
 	File_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node, Plugin &plugin)
 	:
-		Dir_file_system(vfs_env, parent_fs, Node(_config(node))),
+		Dir_file_system(vfs_env, parent_fs, "tresor", Ident::from_node(node)),
 		_plugin(plugin),
 		_current_fs(vfs_env, *this, plugin),
 		_control_fs(vfs_env, *this, plugin)

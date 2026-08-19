@@ -333,7 +333,7 @@ struct Vfs_tap::Compound_file_system : Union_file_system,
 
 	Compound_file_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node)
 	:
-		Union_file_system(vfs_env, parent_fs),
+		Union_file_system(vfs_env, parent_fs, Ident::from_node(node)),
 		_name       (name(node)),
 		_label      (node.attribute_value("label", Label(""))),
 		_mode       (node.attribute_value("mode",  Uplink_mode::NIC_CLIENT)),
