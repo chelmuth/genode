@@ -303,6 +303,8 @@ struct Libc::Kernel final : Vfs::Read_ready_response_handler,
 
 		Constructible<Main_job> _main_monitor_job { };
 
+		Microseconds _last_us { 0 };
+
 		void _monitors_handler()
 		{
 			/* mark monitors for execution when running in kernel only */
@@ -614,7 +616,17 @@ struct Libc::Kernel final : Vfs::Read_ready_response_handler,
 		 */
 		Duration current_time() override
 		{
-			return _timer_accessor.timer().curr_time();
+			Microseconds const curr_us =
+				_timer_accessor.timer().curr_time().trunc_to_plain_us();
+
+			/*
+			 * Make time strictly monotonic, as some applications (e.g. curl) expect
+			 * two calls of clock_gettime() to return different timestamps.
+			 */
+			_last_us.value += 1;
+			_last_us = max(curr_us, _last_us);
+
+			return Duration { _last_us };
 		}
 
 		/**
