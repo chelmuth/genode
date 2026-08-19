@@ -15,6 +15,7 @@
 #define _GLYPHS_FILE_SYSTEM_H_
 
 /* Genode includes */
+#include <util/callable.h>
 #include <vfs/single_file_system.h>
 #include <nitpicker_gfx/text_painter.h>
 
@@ -35,13 +36,24 @@ namespace Vfs_glyphs {
 
 class Vfs_glyphs::File_system : public Single_file_system
 {
+	public:
+
+		struct Accessor : Interface
+		{
+			using With_font = Callable<void, Font const &>;
+
+			virtual void _with_font(With_font::Ft const &) = 0;
+
+			void with_font(auto const &fn) { this->_with_font( With_font::Fn { fn } ); }
+		};
+
 	private:
 
 		static constexpr unsigned  UNICODE_MAX = 0x10ffff;
 
 		static constexpr file_size FILE_SIZE = Vfs_font::GLYPH_SLOT_BYTES*(UNICODE_MAX + 1);
 
-		Font const &_font;
+		Accessor &_accessor;
 
 		struct Vfs_handle : Single_vfs_handle
 		{
@@ -108,12 +120,12 @@ class Vfs_glyphs::File_system : public Single_file_system
 
 	public:
 
-		File_system(Parent_fs &parent_fs, Font const &font)
+		File_system(Parent_fs &parent_fs, Accessor &accessor)
 		:
 			Single_file_system(parent_fs,
 			                   Node_type::TRANSACTIONAL_FILE, type(),
 			                   Node_rwx::ro(), Node()),
-			_font(font)
+			_accessor(accessor)
 		{ }
 
 		static char const *type_name() { return "glyphs"; }
@@ -130,7 +142,13 @@ class Vfs_glyphs::File_system : public Single_file_system
 				return OPEN_ERR_UNACCESSIBLE;
 
 			try {
-				*out_handle = new (alloc) Vfs_handle(*this, alloc, _font);
+				bool font_exists = false;
+				_accessor.with_font([&] (Font const &font) {
+					font_exists = true;
+					*out_handle = new (alloc) Vfs_handle(*this, alloc, font);
+				});
+				if (!font_exists)
+					error("Vfs_glyphs: font not available");
 				return OPEN_OK;
 			}
 			catch (Out_of_ram)  { return OPEN_ERR_OUT_OF_RAM; }

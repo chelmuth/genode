@@ -63,8 +63,10 @@ struct Vfs_ttf::Font_from_file
 };
 
 
-struct Vfs_ttf::File_system : Dir_file_system, Vfs::File_system::Factory,
-                              Watch_handle::Handler
+struct Vfs_ttf::File_system : Dir_file_system,
+                              private Vfs::File_system::Factory,
+                              Watch_handle::Handler,
+                              private Vfs_glyphs::File_system::Accessor
 {
 	Vfs::Env &_env;
 
@@ -88,7 +90,7 @@ struct Vfs_ttf::File_system : Dir_file_system, Vfs::File_system::Factory,
 			return path != other.path || size != other.size
 			    || cache_limit.value != other.cache_limit.value;
 		}
-	} _font_config;
+	} _font_config { };
 
 	struct Font
 	{
@@ -106,9 +108,18 @@ struct Vfs_ttf::File_system : Dir_file_system, Vfs::File_system::Factory,
 		{ }
 	};
 
-	Reconstructible<Font> _font;
+	Constructible<Font> _font { };
 
-	Vfs_glyphs::File_system _glyphs_fs { *this, _font->cached_font };
+	/**
+	 * Vfs_glyphs::File_system::Accessor
+	 */
+	void _with_font(With_font::Ft const &fn) override
+	{
+		if (_font.constructed())
+			fn(_font->cached_font);
+	}
+
+	Vfs_glyphs::File_system _glyphs_fs { *this, *this };
 
 	Readonly_value_file_system<unsigned> _baseline_fs   { *this, "baseline",   0 };
 	Readonly_value_file_system<unsigned> _height_fs     { *this, "height",     0 };
@@ -144,15 +155,17 @@ struct Vfs_ttf::File_system : Dir_file_system, Vfs::File_system::Factory,
 
 	Progress update(Node const &config, Vfs::File_system::Factory &) override
 	{
+		Dir_file_system::update(Node(_config(config)), *this);
+
 		Font_config const orig = _font_config;
 		_font_config = Font_config::from_node(config);
-		_font.construct(_env, _font_config);
-		_update_attributes();
 
 		bool const progressed = (orig != _font_config);
-		if (progressed)
+		if (progressed) {
+			_font.construct(_env, _font_config);
+			_update_attributes();
 			_glyphs_fs.notify_watchers();
-
+		}
 		return { progressed };
 	}
 
@@ -168,14 +181,16 @@ struct Vfs_ttf::File_system : Dir_file_system, Vfs::File_system::Factory,
 		_glyphs_fs.notify_watchers();
 	}
 
+	using Name = String<64>;
+	static Name _name(Node const &n) { return n.attribute_value("name", Name()); }
+
 	using Config = String<200>;
 	static Config _config(Node const &node)
 	{
 		char buf[Config::capacity()] { };
 
 		Generator::generate({ buf, sizeof(buf) }, "dir", [&] (Generator &g) {
-			using Name = String<64>;
-			g.attribute("name", node.attribute_value("name", Name()));
+			g.attribute("name", _name(node));
 			g.node("glyphs");
 			g.node("readonly_value", [&] { g.attribute("name", "baseline");   });
 			g.node("readonly_value", [&] { g.attribute("name", "height");     });
@@ -189,14 +204,10 @@ struct Vfs_ttf::File_system : Dir_file_system, Vfs::File_system::Factory,
 
 	File_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node)
 	:
-		Dir_file_system(vfs_env, parent_fs, Node(_config(node))),
+		Dir_file_system(vfs_env, parent_fs, node),
 		_env(vfs_env),
-		_font_config(Font_config::from_node(node)),
-		_font(vfs_env, _font_config),
 		_watch_handle(vfs_env.watch_handles(), vfs_env.fs(), _font_config.path, *this)
-	{
-		Dir_file_system::update(Node(_config(node)), *this);
-	}
+	{ }
 
 	char const *type() override { return "ttf"; }
 
