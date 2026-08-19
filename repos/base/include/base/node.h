@@ -307,6 +307,8 @@ struct Genode::Buffered_node : private Memory::Allocation::Attempt, Node
 		Memory::Allocation::Attempt(Alloc_error::DENIED),
 		Node(node, _allocated(alloc, *this, node.num_bytes()))
 	{ }
+
+	using Node::print;
 };
 
 
