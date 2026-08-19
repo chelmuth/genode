@@ -201,8 +201,11 @@ struct Vfs_capture::File_system : Union_file_system, Vfs::File_system::Factory
 		_name(name(node)),
 		_env(vfs_env),
 		_dot_dir_fs(_env, *this, Dir_file_system::Name(".", _name))
+	{ }
+
+	Progress update(Node const &, Vfs::File_system::Factory &) override
 	{
-		Union_file_system::update(Node(_config(name(node))), *this);
+		return Union_file_system::update(Node(_config(_name)), *this);
 	}
 
 	static const char *name() { return "capture"; }

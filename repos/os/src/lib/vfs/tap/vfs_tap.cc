@@ -339,8 +339,11 @@ struct Vfs_tap::Compound_file_system : Union_file_system,
 		_mode       (node.attribute_value("mode",  Uplink_mode::NIC_CLIENT)),
 		_default_mac(node.attribute_value("mac",   Net::Mac_address { 0x02 })),
 		_env(vfs_env)
+	{ }
+
+	Progress update(Node const &, Vfs::File_system::Factory &) override
 	{
-		Union_file_system::update(Node(_config(name(node))), *this);
+		return Union_file_system::update(Node(_config(_name)), *this);
 	}
 
 	static const char *name() { return "tap"; }

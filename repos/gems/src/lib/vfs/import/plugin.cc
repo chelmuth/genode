@@ -26,10 +26,16 @@ namespace Vfs_import {
 
 struct Vfs_import::File_system : Vfs::File_system
 {
+	Vfs::Env &_env;
+
 	/*
 	 * XXX: would be a temporary heap but destructing a VFS is not supported
 	 */
 	Heap _heap;
+
+	Buffered_node _config;
+
+	bool _done = false;
 
 	static void _copy_file(Directory const &src, Directory &dst,
 	                       Directory::Path const &path)
@@ -104,14 +110,29 @@ struct Vfs_import::File_system : Vfs::File_system
 
 	File_system(Vfs::Env &env, Node const &config)
 	:
-		Vfs::File_system(config), _heap(env.env().ram(), env.env().rm())
-	{
-		bool overwrite = config.attribute_value("overwrite", false);
+		Vfs::File_system(config),
+		_env(env), _heap(env.env().ram(), env.env().rm()),
+		_config(env.alloc(), config)
+	{ }
 
-		Root_directory src(env.env(), _heap, config);
-		Directory      dst(env);
+	Progress update(Node const &, Factory &) override
+	{
+		/* respond to the initial update only */
+		return _done ? STALLED : PROGRESSED;
+	}
+
+	void resume_after_update() override
+	{
+		if (_done) return;
+
+		bool overwrite = _config.attribute_value("overwrite", false);
+
+		Root_directory src(_env.env(), _heap, _config);
+		Directory      dst(_env);
 
 		_copy_dir(src, dst, Directory::Path(""), overwrite);
+
+		_done = true;
 	}
 
 	const char* type() override { return "import"; }

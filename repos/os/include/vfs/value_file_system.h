@@ -35,8 +35,6 @@ class Genode::Vfs::Value_file_system : public Single_file_system
 
 		using Buffer = String<BUF_SIZE + 1>;
 
-		Name const _file_name;
-
 		Buffer _buffer { };
 
 		struct Vfs_handle : Single_vfs_handle
@@ -100,7 +98,7 @@ class Genode::Vfs::Value_file_system : public Single_file_system
 			Generator::generate({ buf, sizeof(buf) }, type_name(),
 				[&] (Generator &g) { g.attribute("name", name); }
 			).with_error([&] (Buffer_error) {
-				warning("VFS value fs config failed (", _file_name, ")");
+				warning("VFS value fs config failed (", name, ")");
 			});
 			return Config(Cstring(buf));
 		}
@@ -112,8 +110,7 @@ class Genode::Vfs::Value_file_system : public Single_file_system
 		:
 			Single_file_system(parent_fs,
 			                   Node_type::TRANSACTIONAL_FILE, type(),
-			                   Node_rwx::rw(), Node(_config(name))),
-			_file_name(name)
+			                   Node_rwx::rw(), Node(_config(name)))
 		{
 			value(initial_value);
 		}
@@ -136,12 +133,6 @@ class Genode::Vfs::Value_file_system : public Single_file_system
 		}
 
 		Buffer buffer() const  { return _buffer; }
-
-		bool matches(Node const &node) const
-		{
-			return node.has_type(type_name()) &&
-			       node.attribute_value("name", Name()) == _file_name;
-		}
 
 		Open_result open(char const  *path, unsigned,
 		                 Vfs::Vfs_handle **out_handle,

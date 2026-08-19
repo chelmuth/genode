@@ -16,6 +16,7 @@
 
 #include <base/registry.h>
 #include <vfs/vfs_handle.h>
+#include <vfs/env.h>
 
 namespace Genode::Vfs { class Union_file_system; }
 
@@ -24,15 +25,56 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 {
 	private:
 
-		/*
-		 * Noncopyable
-		 */
-		Union_file_system(Union_file_system const &);
-		Union_file_system &operator = (Union_file_system const &);
-
 		Vfs::Env &_env;
 
 		Parent_fs &_parent_fs;
+
+		Constructible<Buffered_node> _config { };
+
+		using Fs = Vfs::File_system;
+
+		struct Child;
+
+		using Children = List_model<Child>;
+
+		struct Child : Children::Element
+		{
+			using Instance = Fs::Factory::Instance;
+
+			Instance::Attempt _attempt;
+
+			Child(Vfs::Env &env, Parent_fs &parent_fs, Factory &factory, Node const &node)
+			:
+				_attempt(factory.create(env, parent_fs, node))
+			{
+				if (_attempt.failed()) error("failed to create VFS node: ", node);
+			}
+
+			void with_fs(auto const &fn)
+			{
+				_attempt.with_result([&] (Instance &inst) { fn(inst.fs); },
+				                     [&] (Factory::Error) { });
+			}
+
+			static bool type_matches(Node const &)
+			{
+				return true; /* capture all node types */
+			}
+
+			bool matches(Node const &node) const
+			{
+				return _attempt.convert<bool>(
+					[&] (Instance const &inst) { return inst.fs.matches(node); },
+					[&] (Factory::Error)       { return false; });
+			}
+		};
+
+		Children _children { };
+
+		void _for_each_fs(auto const &fn)
+		{
+			_children.for_each([&] (Child &c) { c.with_fs(fn); });
+		}
 
 		struct Dir_vfs_handle : Vfs_handle
 		{
@@ -122,24 +164,6 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 			bool write_ready() const override { return false; }
 		};
 
-		/* pointer to first child file system */
-		File_system *_first_file_system = nullptr;
-
-		/* add new file system to the list of children */
-		void _append_file_system(File_system *fs)
-		{
-			if (!_first_file_system) {
-				_first_file_system = fs;
-				return;
-			}
-
-			File_system *curr = _first_file_system;
-			while (curr->next)
-				curr = curr->next;
-
-			curr->next = fs;
-		}
-
 		/**
 		 * Returns if path corresponds to top directory of file system
 		 */
@@ -177,30 +201,29 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 			 * this information after all file systems have been tried and
 			 * none could handle the request.
 			 */
-			RES error = ok;
+			RES result = no_entry;
 
 			/*
 			 * The given path refers to at least one of our sub directories.
 			 * Propagate the request into all of our file systems. If at least
 			 * one operation succeeds, we return success.
 			 */
-			for (File_system *fs = _first_file_system; fs; fs = fs->next) {
+			bool done = false;
+			_for_each_fs([&] (Fs &fs) {
+				if (done) return;
 
-				RES const err = fn(*fs, path);
+				RES const err = fn(fs, path);
 
-				if (err == ok)
-					return err;
+				if (err == ok) { done = true; result = ok; }
 
-				if (err != no_entry && err != no_perm) {
-					error = err;
-				}
+				if (err != no_entry && err != no_perm) result = err;
 
-				if (err == no_perm)
-					permission_denied = true;
-			}
+				if (err == no_perm) { permission_denied = true; };
+			});
 
-			/* none of our file systems could successfully operate on the path */
-			return error != ok ? error : permission_denied ? no_perm : no_entry;
+			if (done && result == ok) return ok;
+			if (permission_denied)    return no_perm;
+			return no_entry;
 		}
 
 		/*
@@ -210,10 +233,11 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 		unsigned _sum_dirents_of_file_systems(char const *path)
 		{
 			unsigned cnt = 0;
-			for (File_system *fs = _first_file_system; fs; fs = fs->next)
-				cnt += fs->num_dirent(path);
+			_for_each_fs([&] (Fs &fs) { cnt += fs.num_dirent(path); });
 			return cnt;
 		}
+
+		bool _update_in_progress = false; /* safeguard for error diagnostics */
 
 	protected:
 
@@ -234,27 +258,17 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 
 		Dataspace_capability dataspace(char const *path) override
 		{
-			if (!path)
-				return Dataspace_capability();
+			Dataspace_capability result { };
+			_for_each_fs([&] (Fs &fs) {
+				if (!result.valid())
+					result = fs.dataspace(path); });
 
-			/*
-			 * Query sub file systems for dataspace using the path local to
-			 * the respective file system
-			 */
-			File_system *fs = _first_file_system;
-			for (; fs; fs = fs->next) {
-				Dataspace_capability ds = fs->dataspace(path);
-				if (ds.valid())
-					return ds;
-			}
-
-			return Dataspace_capability();
+			return result;
 		}
 
 		void release(char const *path, Dataspace_capability ds_cap) override
 		{
-			for (File_system *fs = _first_file_system; fs; fs = fs->next)
-				fs->release(path, ds_cap);
+			_for_each_fs([&] (Fs &fs) { fs.release(path, ds_cap); });
 		}
 
 		Stat_result stat(char const *path, Stat &out) override
@@ -278,19 +292,12 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 			 * The given path refers to one of our sub directories.
 			 * Propagate the request into our file systems.
 			 */
-			for (File_system *fs = _first_file_system; fs; fs = fs->next) {
+			Stat_result result = STAT_ERR_NO_ENTRY;
+			_for_each_fs([&] (Fs &fs) {
+				if (result == STAT_ERR_NO_ENTRY)
+					result = fs.stat(path, out); });
 
-				Stat_result const err = fs->stat(path, out);
-
-				if (err == STAT_OK)
-					return err;
-
-				if (err != STAT_ERR_NO_ENTRY)
-					return err;
-			}
-
-			/* none of our file systems felt responsible for the path */
-			return STAT_ERR_NO_ENTRY;
+			return result;
 		}
 
 		unsigned num_dirent(char const *path) override
@@ -309,11 +316,11 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 			if (strlen(path) == 0)
 				return true;
 
-			for (File_system *fs = _first_file_system; fs; fs = fs->next)
-				if (fs->directory(path))
-					return true;
+			bool exists = false;
+			_for_each_fs([&] (Fs &fs) {
+				if (!exists) exists = fs.directory(path); });
 
-			return false;
+			return exists;
 		}
 
 		bool dir_entry_exists(char const *path) override
@@ -321,11 +328,11 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 			if (strlen(path) == 0)
 				return true;
 
-			for (File_system *fs = _first_file_system; fs; fs = fs->next)
-				if (fs->dir_entry_exists(path))
-					return true;
+			bool exists = false;
+			_for_each_fs([&] (Fs &fs) {
+				if (!exists) exists = fs.dir_entry_exists(path); });
 
-			return false;
+			return exists;
 		}
 
 		Open_result open(char const  *path,
@@ -333,14 +340,16 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 		                 Vfs_handle **out_handle,
 		                 Allocator   &alloc) override
 		{
-			for (File_system *fs = _first_file_system; fs; fs = fs->next) {
-				Open_result const res = fs->open(path, mode, out_handle, alloc);
-				if (res != OPEN_ERR_UNACCESSIBLE)
-					return res;
-			}
+			if (_update_in_progress)
+				error("attempt to access file '", path, "' during VFS update");
 
-			/* path does not match any existing file or directory */
-			return OPEN_ERR_UNACCESSIBLE;
+			Open_result result = OPEN_ERR_UNACCESSIBLE;
+
+			_for_each_fs([&] (Fs &fs) {
+				if (result == OPEN_ERR_UNACCESSIBLE)
+					result = fs.open(path, mode, out_handle, alloc); });
+
+			return result;
 		}
 
 		/**
@@ -349,45 +358,47 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 		 */
 		Opendir_result _open_composite_dirs(Dir_vfs_handle &dir_vfs_handle)
 		{
-			Opendir_result res = OPENDIR_OK;
-			try {
-				for (File_system *fs = _first_file_system; fs; fs = fs->next) {
-					Vfs_handle *child_handle = nullptr;
-					Opendir_result const r =
-						fs->opendir(dir_vfs_handle._path.string(), false,
-						            &child_handle, dir_vfs_handle.alloc());
-					switch (r) {
-					case OPENDIR_OK:
-						break;
-					case OPENDIR_ERR_OUT_OF_RAM:
-					case OPENDIR_ERR_OUT_OF_CAPS:
-						return r;
-					default:
-						continue;
-					}
+			auto quota_exceeded = [] (Opendir_result r)
+			{
+				return r == OPENDIR_ERR_OUT_OF_RAM || r == OPENDIR_ERR_OUT_OF_CAPS;
+			};
 
+			Opendir_result result = OPENDIR_OK;
+			bool at_least_one_ok = false;
+
+			_for_each_fs([&] (Fs &fs) {
+				if (quota_exceeded(result))
+					return;
+
+				Vfs_handle *child_handle_ptr = nullptr;
+				result = fs.opendir(dir_vfs_handle._path.string(), false,
+				                    &child_handle_ptr, dir_vfs_handle.alloc());
+				if (quota_exceeded(result))
+					return;
+
+				if (result == OPENDIR_OK && child_handle_ptr) {
+					at_least_one_ok = true;
 					try {
 						new (dir_vfs_handle.alloc())
 							Dir_vfs_handle::Child_handle_element(
-								dir_vfs_handle._child_handles, *fs, *child_handle);
+								dir_vfs_handle._child_handles, fs, *child_handle_ptr);
 					}
-					catch (...) {
-						child_handle->close();
-						throw;
-					}
-					/* return OK because at least one directory has been opened */
-					res = OPENDIR_OK;
-				}
-			}
-			catch (Out_of_ram)  { res = OPENDIR_ERR_OUT_OF_RAM; }
-			catch (Out_of_caps) { res = OPENDIR_ERR_OUT_OF_CAPS; }
+					catch (Out_of_ram)  { result = OPENDIR_ERR_OUT_OF_RAM; }
+					catch (Out_of_caps) { result = OPENDIR_ERR_OUT_OF_CAPS; }
 
-			return res;
+					if (quota_exceeded(result))
+						child_handle_ptr->close();
+				}
+			});
+			return at_least_one_ok ? OPENDIR_OK : result;
 		}
 
 		Opendir_result opendir(char const *path, bool create,
 		                       Vfs_handle **out_handle, Allocator &alloc) override
 		{
+			if (_update_in_progress)
+				error("attempt to access dir '", path, "' during VFS update");
+
 			Opendir_result result = OPENDIR_OK;
 
 			if (_top_dir(path)) {
@@ -483,11 +494,9 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 		{
 			Watch_result result = Ok();
 
-			for (File_system *fs = _first_file_system; fs; fs = fs->next) {
-				result = fs->watch(path);
-				if (result.failed())
-					break;
-			}
+			_for_each_fs([&] (Fs &fs) {
+				if (result.ok())
+					result = fs.watch(path); });
 
 			if (result.failed())
 				unwatch(path);
@@ -497,8 +506,7 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 
 		void unwatch(char const *path) override
 		{
-			for (File_system *fs = _first_file_system; fs; fs = fs->next)
-				fs->unwatch(path);
+			_for_each_fs([&] (Fs &fs) { fs.unwatch(path); });
 		}
 
 		Unlink_result unlink(char const *path) override
@@ -514,64 +522,53 @@ class Genode::Vfs::Union_file_system : public File_system, public Parent_fs
 
 		Rename_result rename(char const *from_path, char const *to_path) override
 		{
-			Rename_result final = RENAME_ERR_NO_ENTRY;
-			for (File_system *fs = _first_file_system; fs; fs = fs->next) {
-				switch (fs->rename(from_path, to_path)) {
-				case RENAME_OK:           return RENAME_OK;
-				case RENAME_ERR_NO_ENTRY: continue;
-				case RENAME_ERR_NO_PERM:  return RENAME_ERR_NO_PERM;
-				case RENAME_ERR_CROSS_FS: final = RENAME_ERR_CROSS_FS;
-				}
-			}
-			return final;
+			Rename_result result = RENAME_ERR_NO_ENTRY;
+			_for_each_fs([&] (Fs &fs) {
+				if (result == RENAME_ERR_NO_ENTRY)
+					result = fs.rename(from_path, to_path); });
+
+			return result;
 		}
 
 		char const *type() override { return "dir"; }
 
-		Progress update(Node const &node, File_system::Factory &factory) override
+		Progress update(Node const &node, Factory &factory) override
 		{
+			if (_config.constructed() && !_config->differs_from(node))
+				return STALLED;
+
+			_config.construct(_env.alloc(), node);
+
 			using namespace Genode;
+
 			Progress result = STALLED;
+			_update_in_progress = true;
 
-			/* construct child file systems only once */
-			if (!_first_file_system) {
-				node.for_each_sub_node([&] (Node const &sub_node) {
+			_children.update_from_node(node,
 
-					factory.create(_env, *this, sub_node).with_result(
-						[&] (Vfs::File_system::Factory::Instance &created) {
-							created.fs.update(sub_node, factory);
-							_append_file_system(&created.fs);
-							created.deallocate = false;
-						},
-						[&] (Vfs::File_system::Factory::Error) {
-							error("failed to create VFS node: ", sub_node);
-						});
+				[&] (Node const &node) -> Child & {
 					result = PROGRESSED;
-				});
-			} else {
-
-				/* propagate config parameter updates to child file systems */
-				File_system *curr = _first_file_system;
-				node.for_each_sub_node([&] (Node const &sub_node) {
-
-					if (!curr) {
-						error("VFS config update missed file system for ", sub_node);
-						return;
-					}
-
-					/* check if type of node matches current file-system type */
-					if (!curr || sub_node.has_type(curr->type()) == false) {
-						error("VFS config update failed (node type '",
-						      sub_node.type(), "' != fs type '", curr->type(),"')");
-						return;
-					}
-
-					if (curr->update(sub_node, factory).progressed)
-						result = PROGRESSED;
-					curr = curr->next;
-				});
-			}
+					return *new (_env.alloc()) Child(_env, *this, factory, node);
+				},
+				[&] (Child &child) {
+					child.with_fs([&] (Fs &fs) {
+						(void)fs.update(Node(), factory); });
+					destroy(_env.alloc(), &child);
+					result = PROGRESSED;
+				},
+				[&] (Child &child, Node const &node) {
+					child.with_fs([&] (Fs &fs) {
+						if (fs.update(node, factory).progressed)
+							result = PROGRESSED; });
+				}
+			);
+			_update_in_progress = false;
 			return result;
+		}
+
+		void resume_after_update() override
+		{
+			_for_each_fs([&] (Fs &fs) { fs.resume_after_update(); });
 		}
 };
 

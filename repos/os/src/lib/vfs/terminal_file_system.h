@@ -375,7 +375,11 @@ struct Vfs_terminal::File_system : Union_file_system,
 	{
 		_terminal.size_changed_sigh(_size_changed_handler);
 		_handle_size_changed();
-		Union_file_system::update(Node(_config(name(node))), *this);
+	}
+
+	Progress update(Node const &, Vfs::File_system::Factory &) override
+	{
+		return Union_file_system::update(Node(_config(_name)), *this);
 	}
 
 	static const char *name() { return "terminal"; }

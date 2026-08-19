@@ -74,6 +74,8 @@ class Genode::Vfs::Watch_handle : Noncopyable
 
 		~Watch_handle() { unwatch(); }
 
+		bool watching() const { return _watching; }
+
 		Watch_result watch()
 		{
 			Watch_result result = Ok();

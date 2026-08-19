@@ -118,12 +118,6 @@ class Vfs_ip::Error_file_system : public Single_file_system
 
 		char const *type() override { return type_name(); }
 
-		bool matches(Node const &) const
-		{
-			error("Error_file_system::matches");
-			return false;
-		}
-
 
 		/*********************************
 		 ** Directory-service interface **

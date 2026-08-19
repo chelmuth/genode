@@ -1501,8 +1501,11 @@ struct Vfs_oss::File_system : public Union_file_system,
 		_data_fs    { *this, _env.env().ep(), _env.user(), _audio, name(node) },
 		_dot_dir_fs { vfs_env, *this, Dir_file_system::Name(".", name(node)) },
 		_audio      { _env, _info, _info_fs, node }
+	{ }
+
+	Progress update(Node const &node, Vfs::File_system::Factory &) override
 	{
-		Union_file_system::update(Node(_config(name(node))), *this);
+		return Union_file_system::update(Node(_config(name(node))), *this);
 	}
 
 	static const char *name() { return "oss_next"; }

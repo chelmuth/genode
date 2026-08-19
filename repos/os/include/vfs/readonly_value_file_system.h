@@ -104,12 +104,6 @@ class Genode::Vfs::Readonly_value_file_system : public Single_file_system
 				Single_file_system::_notify_watchers();
 		}
 
-		bool matches(Node const &node) const
-		{
-			return node.has_type(type_name()) &&
-			       node.attribute_value("name", Name()) == _file_name;
-		}
-
 
 		/*********************************
 		 ** Directory-service interface **

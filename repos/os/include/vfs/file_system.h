@@ -17,86 +17,92 @@
 #include <vfs/directory_service.h>
 #include <vfs/types.h>
 
-namespace Genode::Vfs { class File_system; }
+namespace Genode::Vfs { struct File_system; }
 
 
-class Genode::Vfs::File_system : public Directory_service
+struct Genode::Vfs::File_system : public Directory_service
 {
-	public:
+	struct Factory : Interface
+	{
+		struct Attr { Vfs::File_system &fs; };
 
-		struct Factory : Interface
-		{
-			struct Attr { Vfs::File_system &fs; };
+		using Instance = Genode::Allocation<Vfs::File_system::Factory>;
 
-			using Instance = Genode::Allocation<Vfs::File_system::Factory>;
-
-			enum class Error { DENIED };
-
-			/**
-			 * Create and return a new file-system instance
-			 */
-			virtual Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &) = 0;
-
-			virtual void _free(Instance &) = 0;
-		};
+		enum class Error { DENIED };
 
 		/**
-		 * File-system identity used for updating the union fs via 'List_model'
+		 * Create and return a new file-system instance
 		 */
-		struct Ident
-		{
-			String<100> string;
+		virtual Instance::Attempt create(Vfs::Env &, Parent_fs &, Node const &) = 0;
 
-			/**
-			 * Return file-system ident string from node type and attribute
-			 *
-			 * This function composes identity from the note type and
-			 * attributes. Sub nodes are not part of the identity.
-			 */
-			inline static Ident from_node(Node const &node);
+		virtual void _free(Instance &) = 0;
+	};
 
-		} const _ident;
-
-	private:
-
-		/*
-		 * Noncopyable
-		 */
-		File_system(File_system const &);
-		File_system &operator = (File_system const &);
-
-	public:
+	/**
+	 * File-system identity used for updating the union fs via 'List_model'
+	 */
+	struct Ident
+	{
+		String<100> string;
 
 		/**
-		 * Our next sibling within the same 'Union_file_system'
-		 * Construct fs with its identity defined by node type and attributes
+		 * Return file-system ident string from node type and attribute
+		 *
+		 * This function composes identity from the note type and
+		 * attributes. Sub nodes are not part of the identity.
 		 */
-		struct File_system *next = nullptr;
+		inline static Ident from_node(Node const &node);
 
-		/**
-		 * Construct fs with specified identity string
-		 */
-		File_system(Ident const &ident) : _ident(ident) { }
+	} const _ident;
 
-		/**
-		 * Construct fs with its identity defined by node type and attributes
-		 */
-		File_system(Node const &node) : File_system(Ident::from_node(node)) { }
+	/**
+	 * Construct fs with specified identity string
+	 */
+	File_system(Ident const &ident) : _ident(ident) { }
 
-		/**
-		 * Adjust to configuration changes
-		 */
-		virtual Progress update(Node const &, Factory &) { return STALLED; }
+	/**
+	 * Construct fs with its identity defined by node type and attributes
+	 */
+	File_system(Node const &node) : File_system(Ident::from_node(node)) { }
 
-		/**
-		 * Return the file-system type
-		 */
-		virtual char const *type() = 0;
+	/**
+	 * Adjust to configuration changes
+	 *
+	 * Note that it is not possible to access files of the VFS during the
+	 * update. If a file system depends on files provided by anoher file
+	 * system, 'resume_after_update' can be used to interact with those
+	 * files when the VFS has reached a new consistent state.
+	 */
+	virtual Progress update(Node const &, Factory &) { return STALLED; }
 
-		/**
-		 * Hook for implementing 'Factory::_free' for VFS plugins
-		 */
-		virtual void destruct() { };
+	/**
+	 * Hook for plugins to reconnect to files after an update
+	 */
+	virtual void resume_after_update() { }
+
+	/**
+	 * Return the file-system type
+	 */
+	virtual char const *type() = 0;
+
+	/**
+	 * Hook for implementing 'Factory::_free' for VFS plugins
+	 */
+	virtual void destruct() { };
+
+	/**
+	 * Return true if the node corresponds to the file system's identity
+	 *
+	 * By default, the identity comprises the node's type, name, and all
+	 * attributes. Whenever any of those aspects change, the file system is
+	 * replaced by a new instance. In contrast, a file system that is able
+	 * to respond to updated attributes while keeping its identity intact
+	 * would implement 'matches' by excluding the parameter attributes.
+	 */
+	virtual bool matches(Node const &node) const
+	{
+		return Ident::from_node(node).string == _ident.string;
+	}
 };
 
 

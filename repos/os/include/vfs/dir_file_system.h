@@ -137,10 +137,16 @@ class Genode::Vfs::Dir_file_system : public File_system, public Parent_fs
 
 	public:
 
+		Dir_file_system(Env &env, Parent_fs &parent_fs, Name const &name,
+		                Ident const &ident)
+		:
+			File_system(ident),
+			_env(env), _parent_fs(parent_fs), _name(name), _union(env, *this)
+		{ }
+
 		Dir_file_system(Env &env, Parent_fs &parent_fs, Name const &name)
 		:
-			File_system( Ident { { "dir ", name } }),
-			_env(env), _parent_fs(parent_fs), _name(name), _union(env, *this)
+			Dir_file_system(env, parent_fs, name, Ident { { "dir ", name } })
 		{ }
 
 		Dir_file_system(Env &env, Parent_fs &parent_fs, Node const &node)
@@ -312,6 +318,8 @@ class Genode::Vfs::Dir_file_system : public File_system, public Parent_fs
 		{
 			return _union.update(node, factory);
 		}
+
+		void resume_after_update() override { _union.resume_after_update(); }
 };
 
 #endif /* _INCLUDE__VFS__DIR_FILE_SYSTEM_H_ */

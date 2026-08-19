@@ -126,7 +126,7 @@ struct Vfs_ttf::File_system : Dir_file_system,
 	Readonly_value_file_system<unsigned> _max_width_fs  { *this, "max_width",  0 };
 	Readonly_value_file_system<unsigned> _max_height_fs { *this, "max_height", 0 };
 
-	Watch_handle _watch_handle;
+	Constructible<Watch_handle> _watch_handle { };
 
 	void _update_attributes()
 	{
@@ -160,13 +160,15 @@ struct Vfs_ttf::File_system : Dir_file_system,
 		Font_config const orig = _font_config;
 		_font_config = Font_config::from_node(config);
 
-		bool const progressed = (orig != _font_config);
-		if (progressed) {
-			_font.construct(_env, _font_config);
-			_update_attributes();
-			_glyphs_fs.notify_watchers();
-		}
-		return { progressed };
+		return { .progressed = (orig != _font_config) };
+	}
+
+	void resume_after_update() override
+	{
+		_font.construct(_env, _font_config);
+		_update_attributes();
+		_glyphs_fs.notify_watchers();
+		_watch_handle.construct(_env.watch_handles(), _env.fs(), _font_config.path, *this);
 	}
 
 	/**
@@ -181,8 +183,8 @@ struct Vfs_ttf::File_system : Dir_file_system,
 		_glyphs_fs.notify_watchers();
 	}
 
-	using Name = String<64>;
-	static Name _name(Node const &n) { return n.attribute_value("name", Name()); }
+	using Name = Node::Type;
+	static Name node_name(Node const &n) { return n.attribute_value("name", n.type()); }
 
 	using Config = String<200>;
 	static Config _config(Node const &node)
@@ -190,7 +192,7 @@ struct Vfs_ttf::File_system : Dir_file_system,
 		char buf[Config::capacity()] { };
 
 		Generator::generate({ buf, sizeof(buf) }, "dir", [&] (Generator &g) {
-			g.attribute("name", _name(node));
+			g.attribute("name", node_name(node));
 			g.node("glyphs");
 			g.node("readonly_value", [&] { g.attribute("name", "baseline");   });
 			g.node("readonly_value", [&] { g.attribute("name", "height");     });
@@ -204,14 +206,24 @@ struct Vfs_ttf::File_system : Dir_file_system,
 
 	File_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Node const &node)
 	:
-		Dir_file_system(vfs_env, parent_fs, node),
-		_env(vfs_env),
-		_watch_handle(vfs_env.watch_handles(), vfs_env.fs(), _font_config.path, *this)
+		Dir_file_system(vfs_env, parent_fs, node_name(node), Ident::from_node(node)),
+		_env(vfs_env)
 	{ }
+
+	~File_system()
+	{
+		Dir_file_system::update(Node(), *this);
+	}
 
 	char const *type() override { return "ttf"; }
 
 	void destruct() override { destroy(_env.alloc(), this); }
+
+	bool matches(Node const &node) const override
+	{
+		/* accept updated attributes w/o re-constructing the file system */
+		return node.type() == "ttf" && node_name(node) == Dir_file_system::_name;
+	}
 };
 
 

@@ -141,6 +141,16 @@ class Genode::Vfs::Single_file_system : public File_system
 			_filename(config.attribute_value("name", Filename(type_name)))
 		{ }
 
+		Single_file_system(Parent_fs  &parent_fs,
+		                   Node_type   node_type,
+		                   char const *type_name,
+		                   Node_rwx    rwx)
+		:
+			File_system(Ident({ type_name })),
+			_parent_fs(parent_fs), _type(node_type), _rwx(rwx),
+			_filename(type_name)
+		{ }
+
 
 		/*********************************
 		 ** Directory-service interface **

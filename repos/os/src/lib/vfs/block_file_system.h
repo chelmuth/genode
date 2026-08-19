@@ -710,8 +710,11 @@ struct Vfs_block::File_system : Union_file_system, private Vfs::File_system::Fac
 		_info_fs       .value(Info { _block.info() });
 		_block_count_fs.value(_block.info().block_count);
 		_block_size_fs .value(_block.info().block_size);
+	}
 
-		Union_file_system::update(Node(_config(name(node))), *this);
+	Progress update(Node const &, Vfs::File_system::Factory &) override
+	{
+		return Union_file_system::update(Node(_config(_name)), *this);
 	}
 
 	static const char *name() { return "block"; }

@@ -97,7 +97,7 @@ class Genode::Vfs::Root : public Env, private Env::Io, private Env::User
 		:
 			_env(env), _alloc(alloc), _user(user), _fs(*this, _root_parent_fs)
 		{
-			_fs.update(config, _fs_factory);
+			apply_config(config);
 		}
 
 		Root(Genode::Env &env, Allocator &alloc, Node const &config)
@@ -105,9 +105,51 @@ class Genode::Vfs::Root : public Env, private Env::Io, private Env::User
 			Root(env, alloc, config, *this)
 		{ }
 
+		~Root() { apply_config(Node()); }
+
 		Progress apply_config(Node const &config)
 		{
-			return _fs.update(config, _fs_factory);
+			/* loop to conditionally visit each item outside the registry mutex */
+			auto for_each_watch_handle = [&] (auto const &cond_fn, auto const &fn)
+			{
+				for (;;) {
+					Watch_handle *ptr = nullptr;
+					_watch_handles.for_each([&] (Watch_handle &handle) {
+						if (!ptr && cond_fn(handle)) ptr = &handle; });
+
+					if (!ptr)
+						break;
+					fn(*ptr);
+				}
+			};
+
+			for_each_watch_handle(
+				[&] (Watch_handle &h) { return h.watching(); },
+				[&] (Watch_handle &h) { h.unwatch(); });
+
+			_dir_handles.for_each([&] (Dir_handle &handle) {
+				handle.detach(); });
+
+			_file_handles.for_each([&] (File_handle &handle) {
+				while (handle.detach() == File_handle::Detach_result::RETRY)
+					commit_and_wait(); });
+
+			Progress const result = _fs.update(config, _fs_factory);
+
+			if (result.progressed)
+				_fs.resume_after_update();
+
+			for_each_watch_handle(
+				[&] (Watch_handle &h) { return !h.watching(); },
+				[&] (Watch_handle &h) {
+					if (h.watch().failed())
+						warning("unable to re-watch ", h.path); });
+
+			_file_handles.for_each([&] (File_handle &handle) {
+				while (handle.attach() == File_handle::Attach_error::RETRY)
+					commit_and_wait(); });
+
+			return result;
 		}
 
 		Genode::Env      &env()              override { return _env; }

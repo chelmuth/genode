@@ -14,11 +14,10 @@
 #ifndef _INCLUDE__VFS__TYPES_H_
 #define _INCLUDE__VFS__TYPES_H_
 
-#include <util/list.h>
-#include <util/misc_math.h>
 #include <util/string.h>
 #include <util/progress.h>
 #include <util/allocation.h>
+#include <util/list_model.h>
 #include <base/node.h>
 #include <base/env.h>
 #include <base/signal.h>

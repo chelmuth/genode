@@ -1136,8 +1136,11 @@ struct Vfs_oss::File_system : Union_file_system, Vfs::File_system::Factory
 		_env     { vfs_env },
 		_data_fs { *this, vfs_env.env().ep(), vfs_env.user(), _audio, name(node) },
 		_dot_dir_fs { vfs_env, *this, Dir_file_system::Name(".", name(node)) }
+	{ }
+
+	Progress update(Node const &, Vfs::File_system::Factory &) override
 	{
-		Union_file_system::update(Node(_config(name(node))), *this);
+		return Union_file_system::update(Node(_config(_name)), *this);
 	}
 
 	static const char *name() { return "legacy_oss"; }

@@ -137,12 +137,6 @@ class Vfs_ip::Sockopt_value_file_system : public Single_file_system
 
 		char const *type() override { return type_name(); }
 
-		bool matches(Genode::Node const &node) const
-		{
-			return node.has_type(type_name()) &&
-			       node.attribute_value("name", Name()) == _file_name;
-		}
-
 
 		/*********************************
 		 ** Directory-service interface **
