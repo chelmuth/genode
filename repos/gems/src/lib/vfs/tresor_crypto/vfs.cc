@@ -576,13 +576,6 @@ class Vfs_tresor_crypto::Keys_file_system : public Vfs::File_system, public Vfs:
 		 ** Directory service interface **
 		 *********************************/
 
-		Dataspace_capability dataspace(char const *) override
-		{
-			return Dataspace_capability();
-		}
-
-		void release(char const *, Dataspace_capability) override { }
-
 		Open_result open(char const  *path,
 		                 unsigned     mode,
 		                 Vfs_handle **out_handle,

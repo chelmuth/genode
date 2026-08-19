@@ -370,11 +370,6 @@ class Vfs_pipe::File_system : public Vfs::File_system
 		 ** Directory service **
 		 ***********************/
 
-		Dataspace_capability dataspace(char const*) override {
-			return Dataspace_capability(); }
-
-		void release(char const*, Dataspace_capability) override { }
-
 		Open_result open(const char *cpath, unsigned mode,
 		                 Vfs::Vfs_handle **handle,
 		                 Allocator &alloc) override
@@ -522,14 +517,6 @@ class Vfs_pipe::File_system : public Vfs::File_system
 
 			return result;
 		}
-
-		Unlink_result unlink(const char*) override {
-			return UNLINK_ERR_NO_ENTRY; }
-
-		Rename_result rename(const char*, const char*) override {
-			return RENAME_ERR_NO_ENTRY; }
-
-		unsigned num_dirent(char const *) override { return 0; }
 
 		bool dir_entry_exists(const char *cpath) override
 		{

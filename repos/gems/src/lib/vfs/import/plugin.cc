@@ -115,33 +115,6 @@ struct Vfs_import::File_system : Vfs::File_system
 	}
 
 	const char* type() override { return "import"; }
-
-	Dataspace_capability dataspace(char const*) override { return { }; }
-
-	void release(char const*, Dataspace_capability) override { }
-
-	Open_result open(const char*, unsigned, Vfs::Vfs_handle**, Allocator&) override {
-		return Open_result::OPEN_ERR_UNACCESSIBLE; }
-
-	Opendir_result opendir(char const*, bool,
-	                       Vfs_handle**, Allocator&) override {
-		return OPENDIR_ERR_LOOKUP_FAILED; }
-
-	void close(Vfs_handle*) override { }
-
-	Stat_result stat(const char*, Directory_service::Stat&) override {
-		return STAT_ERR_NO_ENTRY; }
-
-	Unlink_result unlink(const char*) override { return UNLINK_ERR_NO_ENTRY; }
-
-	Rename_result rename(const char*, const char*) override {
-		return RENAME_ERR_NO_ENTRY; }
-
-	unsigned num_dirent(const char*) override { return 0; }
-
-	bool directory(char const*) override { return false; }
-
-	bool dir_entry_exists(const char *) override { return false; }
 };
 
 

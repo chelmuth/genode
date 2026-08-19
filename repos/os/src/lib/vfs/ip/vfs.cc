@@ -1810,11 +1810,6 @@ class Vfs_ip::Ip_file_system : public  Vfs::File_system,
 		 ** Directory-service interface **
 		 *********************************/
 
-		Dataspace_capability dataspace(char const *) override {
-			return Dataspace_capability(); }
-
-		void release(char const *, Dataspace_capability) override { }
-
 		Stat_result stat(char const *path, Stat &out) override
 		{
 			Node *node = _lookup(path);

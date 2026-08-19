@@ -24,8 +24,12 @@ namespace Genode::Vfs {
 
 struct Genode::Vfs::Directory_service : Interface
 {
-	virtual Dataspace_capability dataspace(char const *path) = 0;
-	virtual void release(char const *path, Dataspace_capability) = 0;
+	virtual Dataspace_capability dataspace(char const *path)
+	{
+		(void)path; return { };
+	}
+
+	virtual void release(char const *path, Dataspace_capability) { (void)path; }
 
 
 	enum General_error { ERR_FD_INVALID, NUM_GENERAL_ERRORS };
@@ -58,10 +62,11 @@ struct Genode::Vfs::Directory_service : Interface
 		OPEN_OK
 	};
 
-	virtual Open_result open(char const  *path,
-	                         unsigned     mode,
-	                         Vfs_handle **handle,
-	                         Allocator   &alloc) = 0;
+	virtual Open_result open(char const *path, unsigned mode,
+	                         Vfs_handle **, Allocator &)
+	{
+		(void)path; (void)mode; return OPEN_ERR_UNACCESSIBLE;
+	}
 
 	enum Opendir_result
 	{
@@ -75,10 +80,10 @@ struct Genode::Vfs::Directory_service : Interface
 		OPENDIR_OK
 	};
 
-	virtual Opendir_result opendir(char const * /* path */, bool /* create */,
+	virtual Opendir_result opendir(char const * path, bool create,
 	                               Vfs_handle **, Allocator &)
 	{
-		return OPENDIR_ERR_LOOKUP_FAILED;
+		(void)path; (void)create; return OPENDIR_ERR_LOOKUP_FAILED;
 	}
 
 	enum Openlink_result
@@ -93,10 +98,10 @@ struct Genode::Vfs::Directory_service : Interface
 		OPENLINK_OK
 	};
 
-	virtual Openlink_result openlink(char const * /* path */, bool /* create */,
+	virtual Openlink_result openlink(char const *path, bool create,
 	                                 Vfs_handle **, Allocator &)
 	{
-		return OPENLINK_ERR_PERMISSION_DENIED;
+		(void)path; (void)create; return OPENLINK_ERR_PERMISSION_DENIED;
 	}
 
 	/**
@@ -106,7 +111,7 @@ struct Genode::Vfs::Directory_service : Interface
 	 *       to ensure that previously written data has been completely
 	 *       processed.
 	 */
-	virtual void close(Vfs_handle *handle) = 0;
+	virtual void close(Vfs_handle *) { }
 
 	/**
 	 * Subscribe to watch notifications for the given relative path
@@ -117,12 +122,12 @@ struct Genode::Vfs::Directory_service : Interface
 	 * If the file or directory exists at 'watch' time, 'notify_watchers'
 	 * is expected to be called immediately.
 	 */
-	virtual Watch_result watch(char const *) { return Ok(); }
+	virtual Watch_result watch(char const *path) { (void)path; return Ok(); }
 
 	/**
 	 * Unsubscribe from watch notifications for the given relative path
 	 */
-	virtual void unwatch(char const *) { }
+	virtual void unwatch(char const *path) { (void)path; }
 
 
 	/**********
@@ -141,11 +146,10 @@ struct Genode::Vfs::Directory_service : Interface
 	enum Stat_result { STAT_ERR_NO_ENTRY = NUM_GENERAL_ERRORS,
 	                   STAT_ERR_NO_PERM, STAT_OK };
 
-	/*
-	 * Note: it might be necessary to call 'sync()' before 'stat()'
-	 *       to get the correct file size.
-	 */
-	virtual Stat_result stat(char const *path, Stat &) = 0;
+	virtual Stat_result stat(char const *path, Stat &)
+	{
+		(void)path; return STAT_ERR_NO_ENTRY;
+	}
 
 
 	/************
@@ -197,7 +201,10 @@ struct Genode::Vfs::Directory_service : Interface
 	enum Unlink_result { UNLINK_ERR_NO_ENTRY,  UNLINK_ERR_NO_PERM,
 	                     UNLINK_ERR_NOT_EMPTY, UNLINK_OK };
 
-	virtual Unlink_result unlink(char const *path) = 0;
+	virtual Unlink_result unlink(char const *path)
+	{
+		(void)path; return UNLINK_ERR_NO_ENTRY;
+	}
 
 
 	/************
@@ -207,20 +214,23 @@ struct Genode::Vfs::Directory_service : Interface
 	enum Rename_result { RENAME_ERR_NO_ENTRY, RENAME_ERR_CROSS_FS,
 	                     RENAME_ERR_NO_PERM,  RENAME_OK };
 
-	virtual Rename_result rename(char const *from, char const *to) = 0;
+	virtual Rename_result rename(char const *from, char const *to)
+	{
+		(void)from; (void)to; return RENAME_ERR_NO_ENTRY;
+	}
 
 
 	/**
 	 * Return number of directory entries located at given path
 	 */
-	virtual unsigned num_dirent(char const *path) = 0;
+	virtual unsigned num_dirent(char const *path) { (void)path; return 0; }
 
-	virtual bool directory(char const *path) = 0;
+	virtual bool directory(char const *path) { (void)path; return false; }
 
 	/**
 	 * Return leaf path or nullptr if the path does not exist
 	 */
-	virtual bool dir_entry_exists(char const *path) = 0;
+	virtual bool dir_entry_exists(char const *path) { (void)path; return false; }
 };
 
 #endif /* _INCLUDE__VFS__DIRECTORY_SERVICE_H_ */

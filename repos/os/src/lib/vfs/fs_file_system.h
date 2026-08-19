@@ -603,14 +603,6 @@ class Vfs_fs::File_system : public Vfs::File_system, private Remote_io
 		 ** Directory-service interface **
 		 *********************************/
 
-		Dataspace_capability dataspace(char const *) override
-		{
-			/* cannot be implemented without blocking */
-			return Dataspace_capability();
-		}
-
-		void release(char const *, Dataspace_capability) override { }
-
 		Stat_result stat(char const *path, Stat &out) override
 		{
 			::File_system::Status status;
