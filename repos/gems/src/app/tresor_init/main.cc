@@ -38,8 +38,14 @@ class Tresor_init::Main : private Vfs::Env::User, private Crypto_key_files_inter
 		struct Crypto_key
 		{
 			Key_id const key_id;
-			Vfs::Vfs_handle &encrypt_file;
-			Vfs::Vfs_handle &decrypt_file;
+			Tresor::File_handle encrypt_file, decrypt_file;
+
+			Crypto_key(Vfs::Env &env, Tresor::Path const &dir, Key_id const key_id)
+			:
+				key_id(key_id),
+				encrypt_file(env, { dir, "/", key_id, "/encrypt" }),
+				decrypt_file(env, { dir, "/", key_id, "/decrypt" })
+			{ }
 		};
 
 		Env  &_env;
@@ -65,14 +71,16 @@ class Tresor_init::Main : private Vfs::Env::User, private Crypto_key_files_inter
 		Tresor::Path const _block_io_path     = _path_from_config("block-io");
 		Tresor::Path const _trust_anchor_path = _path_from_config("trust-anchor");
 
-		Vfs::Vfs_handle &_block_io_file { open_file(_vfs_env, _block_io_path, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_crypto_add_key_file { open_file(_vfs_env, { _crypto_path, "/add_key" }, Vfs::Directory_service::OPEN_MODE_WRONLY) };
-		Vfs::Vfs_handle &_crypto_remove_key_file { open_file(_vfs_env, { _crypto_path, "/remove_key" }, Vfs::Directory_service::OPEN_MODE_WRONLY) };
-		Vfs::Vfs_handle &_ta_decrypt_file { open_file(_vfs_env, { _trust_anchor_path, "/decrypt" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_ta_encrypt_file { open_file(_vfs_env, { _trust_anchor_path, "/encrypt" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_ta_generate_key_file { open_file(_vfs_env, { _trust_anchor_path, "/generate_key" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_ta_initialize_file { open_file(_vfs_env, { _trust_anchor_path, "/initialize" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_ta_hash_file { open_file(_vfs_env, { _trust_anchor_path, "/hash" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
+		Tresor::File_handle
+			_block_io_file          { _vfs_env, _block_io_path },
+			_crypto_add_key_file    { _vfs_env, { _crypto_path, "/add_key" } },
+			_crypto_remove_key_file { _vfs_env, { _crypto_path, "/remove_key" } },
+			_ta_decrypt_file        { _vfs_env, { _trust_anchor_path, "/decrypt" } },
+			_ta_encrypt_file        { _vfs_env, { _trust_anchor_path, "/encrypt" } },
+			_ta_generate_key_file   { _vfs_env, { _trust_anchor_path, "/generate_key" } },
+			_ta_initialize_file     { _vfs_env, { _trust_anchor_path, "/initialize" } },
+			_ta_hash_file           { _vfs_env, { _trust_anchor_path, "/hash" } };
+
 		Trust_anchor _trust_anchor { { _ta_decrypt_file, _ta_encrypt_file, _ta_generate_key_file, _ta_initialize_file, _ta_hash_file } };
 		Crypto _crypto { {*this, _crypto_add_key_file, _crypto_remove_key_file} };
 		Block_io _block_io { _block_io_file };
@@ -108,10 +116,7 @@ class Tresor_init::Main : private Vfs::Env::User, private Crypto_key_files_inter
 		{
 			for (Constructible<Crypto_key> &key : _crypto_keys)
 				if (!key.constructed()) {
-					key.construct(key_id,
-						open_file(_vfs_env, { _crypto_path, "/keys/", key_id, "/encrypt" }, Vfs::Directory_service::OPEN_MODE_RDWR),
-						open_file(_vfs_env, { _crypto_path, "/keys/", key_id, "/decrypt" }, Vfs::Directory_service::OPEN_MODE_RDWR)
-					);
+					key.construct(_vfs_env, Tresor::Path { _crypto_path, "/keys" }, key_id);
 					return;
 				}
 			ASSERT_NEVER_REACHED;
@@ -119,14 +124,11 @@ class Tresor_init::Main : private Vfs::Env::User, private Crypto_key_files_inter
 
 		void remove_crypto_key(Key_id key_id) override
 		{
-			Constructible<Crypto_key> &crypto_key = _crypto_key(key_id);
-			_vfs_env.fs().close(&crypto_key->encrypt_file);
-			_vfs_env.fs().close(&crypto_key->decrypt_file);
-			crypto_key.destruct();
+			_crypto_key(key_id).destruct();
 		}
 
-		Vfs::Vfs_handle &encrypt_file(Key_id key_id) override { return _crypto_key(key_id)->encrypt_file; }
-		Vfs::Vfs_handle &decrypt_file(Key_id key_id) override { return _crypto_key(key_id)->decrypt_file; }
+		Vfs::File_handle &encrypt_file(Key_id key_id) override { return _crypto_key(key_id)->encrypt_file; }
+		Vfs::File_handle &decrypt_file(Key_id key_id) override { return _crypto_key(key_id)->decrypt_file; }
 
 		/********************
 		 ** Vfs::Env::User **

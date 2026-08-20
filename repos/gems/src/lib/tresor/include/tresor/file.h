@@ -18,7 +18,7 @@
 #include <util/string.h>
 
 /* os includes */
-#include <vfs/vfs_handle.h>
+#include <vfs/file_handle.h>
 #include <vfs/root.h>
 
 /* tresor includes */
@@ -34,13 +34,14 @@ namespace Tresor {
 	template <typename> class Read_write_file;
 	template <typename> class Write_only_file;
 
-	inline Vfs::Vfs_handle &open_file(Vfs::Env &env, Tresor::Path const &path, Vfs::Directory_service::Open_mode mode)
+	struct File_handle : Vfs::File_handle
 	{
-		using Open_result = Vfs::Directory_service::Open_result;
-		Vfs::Vfs_handle *handle { nullptr };
-		ASSERT(env.fs().open(path.string(), mode, &handle, env.alloc()) == Open_result::OPEN_OK);
-		return *handle;
-	}
+		File_handle(Vfs::Env &env, Vfs::File_handle::Path const &path)
+		:
+			Vfs::File_handle(env.file_handles(), env.fs(), env.alloc(),
+			                 { .path = path, .writeable = true })
+		{ }
+	};
 }
 
 
@@ -55,7 +56,8 @@ class Tresor::File
 		Tresor::Path const *_path { };
 		HOST_STATE &_host_state;
 		State _state { IDLE };
-		Vfs::Vfs_handle &_handle;
+		bool const _owned; /* true if '_handle' is allocated by 'File' */
+		Vfs::File_handle &_handle;
 		size_t _num_processed_bytes { 0 };
 
 		/*
@@ -66,16 +68,27 @@ class Tresor::File
 
 	public:
 
-		File(HOST_STATE &host_state, Vfs::Vfs_handle &handle) : _host_state(host_state), _handle(handle) { }
+		File(HOST_STATE &host_state, Vfs::File_handle &handle)
+		:
+			_host_state(host_state), _owned(false), _handle(handle)
+		{ }
 
-		File(HOST_STATE &host_state, Vfs::Env &env, Tresor::Path const &path, Vfs::Directory_service::Open_mode mode)
-		: _env(&env), _path(&path), _host_state(host_state), _handle(open_file(*_env, *_path, mode)) { }
+		File(HOST_STATE &host_state, Vfs::Env &env, Tresor::Path const &path)
+		:
+			_env(&env), _path(&path), _host_state(host_state),
+			_owned(true), _handle(*new (env.alloc()) File_handle (env, path))
+		{ }
 
 		~File()
 		{
 			ASSERT(_state == IDLE);
-			if (_env)
-				_env->fs().close(&_handle);
+			if (_owned && _env) {
+
+				while (_handle.detach() == Vfs::File_handle::Detach_result::RETRY)
+					_env->io().commit_and_wait();
+
+				destroy(_env->alloc(), &_handle);
+			}
 		}
 
 		void read(HOST_STATE succeeded, HOST_STATE failed, Vfs::file_size off, Byte_range_ptr dst, bool &progress)
@@ -95,8 +108,8 @@ class Tresor::File
 					                          dst.num_bytes - _num_processed_bytes };
 					Vfs::At const at { .pos = off + _num_processed_bytes };
 
-					Vfs::Vfs_handle::Read_result result = _handle.read(at, curr_dst);
-					if (result == Vfs::Vfs_handle::Read_error::RETRY)
+					Vfs::Read_result result = _handle.read(at, curr_dst);
+					if (result == Vfs::Read_error::RETRY)
 						break;
 
 					progress = true;
@@ -109,7 +122,7 @@ class Tresor::File
 								_state      = IDLE;
 							}
 						},
-						[&] (Vfs::Vfs_handle::Read_error) {
+						[&] (Vfs::Read_error) {
 							error("file: read failed");
 							_host_state = failed;
 							_state      = IDLE;
@@ -148,8 +161,8 @@ class Tresor::File
 						_host_state = succeeded;
 						progress = true;
 					},
-					[&] (Vfs::Vfs_handle::Write_error e) {
-						if (e == Vfs::Vfs_handle::Write_error::RETRY)
+					[&] (Vfs::Write_error e) {
+						if (e == Vfs::Write_error::RETRY)
 							return;
 
 						error("file: write failed");

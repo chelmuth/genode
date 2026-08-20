@@ -57,12 +57,15 @@ class Tresor_check::Main : private Vfs::Env::User
 
 		Tresor::Path const _block_io_path     = _path_from_config("block-io");
 		Tresor::Path const _trust_anchor_path = _path_from_config("trust-anchor");
-		Vfs::Vfs_handle &_block_io_file { open_file(_vfs_env, _block_io_path, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_ta_decrypt_file { open_file(_vfs_env, { _trust_anchor_path, "/decrypt" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_ta_encrypt_file { open_file(_vfs_env, { _trust_anchor_path, "/encrypt" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_ta_generate_key_file { open_file(_vfs_env, { _trust_anchor_path, "/generate_key" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_ta_initialize_file { open_file(_vfs_env, { _trust_anchor_path, "/initialize" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
-		Vfs::Vfs_handle &_ta_hash_file { open_file(_vfs_env, { _trust_anchor_path, "/hash" }, Vfs::Directory_service::OPEN_MODE_RDWR) };
+
+		Tresor::File_handle
+			_block_io_file        { _vfs_env, _block_io_path },
+			_ta_decrypt_file      { _vfs_env, { _trust_anchor_path, "/decrypt" } },
+			_ta_encrypt_file      { _vfs_env, { _trust_anchor_path, "/encrypt" } },
+			_ta_generate_key_file { _vfs_env, { _trust_anchor_path, "/generate_key" } },
+			_ta_initialize_file   { _vfs_env, { _trust_anchor_path, "/initialize" } },
+			_ta_hash_file         { _vfs_env, { _trust_anchor_path, "/hash" } };
+
 		Block_io _block_io { _block_io_file };
 		Vbd_check _vbd_check { };
 		Ft_check _ft_check { };

@@ -30,9 +30,9 @@ struct Tresor::Crypto_key_files_interface : Interface
 
 	virtual void remove_crypto_key(Key_id) = 0;
 
-	virtual Vfs::Vfs_handle &encrypt_file(Key_id) = 0;
+	virtual Vfs::File_handle &encrypt_file(Key_id) = 0;
 
-	virtual Vfs::Vfs_handle &decrypt_file(Key_id) = 0;
+	virtual Vfs::File_handle &decrypt_file(Key_id) = 0;
 };
 
 class Tresor::Crypto : Noncopyable
@@ -42,8 +42,8 @@ class Tresor::Crypto : Noncopyable
 		struct Attr
 		{
 			Crypto_key_files_interface &key_files;
-			Vfs::Vfs_handle &add_key_file;
-			Vfs::Vfs_handle &remove_key_file;
+			Vfs::File_handle &add_key_file;
+			Vfs::File_handle &remove_key_file;
 		};
 
 	private:

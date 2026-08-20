@@ -510,12 +510,12 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 			return false;
 		}
 
-		void _close_handle(Vfs::Vfs_handle **handle)
+		void _close_handle(Vfs::File_handle **handle)
 		{
 			if (*handle == nullptr)
 				return;
 
-			(*handle)->close();
+			destroy(_vfs_env.alloc(), *handle);
 			(*handle) = nullptr;
 		}
 
@@ -530,7 +530,7 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 			}
 		};
 
-		Vfs::Vfs_handle *_jitterentropy_handle  { nullptr };
+		Vfs::File_handle *_jitterentropy_handle  { nullptr };
 		Constructible<Util::Io_job> _jitterentropy_io_job { };
 		Jitterentropy_io_job_buffer _jitterentropy_io_job_buffer { };
 
@@ -549,13 +549,13 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 			uint64_t *u64_ptr() { return (uint64_t *)buffer; }
 		};
 
-		Vfs::Vfs_handle *_private_key_handle { nullptr };
+		Vfs::File_handle *_private_key_handle { nullptr };
 		Constructible<Util::Io_job> _private_key_io_job { };
 		Private_key_io_job_buffer _private_key_io_job_buffer { };
 
 		/* key */
 
-		Vfs::Vfs_handle *_key_handle  { nullptr };
+		Vfs::File_handle *_key_handle  { nullptr };
 		Constructible<Util::Io_job> _key_io_job { };
 
 		struct Key_io_job_buffer : Util::Io_job::Buffer
@@ -611,25 +611,19 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 
 		bool _open_private_key_file_and_queue_read()
 		{
-			Path file_path = "/dev/jitterentropy";
-			using Result = Vfs::Directory_service::Open_result;
-
-			Result const res =
-				_vfs_env.fs().open(file_path.string(),
-				                   Vfs::Directory_service::OPEN_MODE_RDONLY,
-				                   (Vfs::Vfs_handle **)&_private_key_handle,
-				                   _vfs_env.alloc());
-			if (res != Result::OPEN_OK) {
-				error("could not open '", file_path.string(), "'");
-				return false;
-			}
+			_private_key_handle = new (_vfs_env.alloc())
+				Vfs::File_handle(_vfs_env.file_handles(),
+				                 _vfs_env.fs(),
+				                 _vfs_env.alloc(),
+				                 { .path = "/dev/jitterentropy", .writeable = false });
 
 			_private_key_io_job.construct(*_private_key_handle, Util::Io_job::Operation::READ,
 			                      _private_key_io_job_buffer, 0,
 			                      Util::Io_job::Partial_result::ALLOW);
 
 			if (_private_key_io_job->execute() && _private_key_io_job->completed()) {
-				_close_handle(&_private_key_handle);
+				destroy(_vfs_env.alloc(), _private_key_handle);
+				_private_key_handle = nullptr;
 				_private_key_io_job_buffer.size = _private_key_io_job->current_offset();
 				_private_key_io_job.destruct();
 				return true;
@@ -639,25 +633,19 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 
 		bool _open_jitterentropy_file_and_queue_read()
 		{
-			Path file_path = "/dev/jitterentropy";
-			using Result = Vfs::Directory_service::Open_result;
-
-			Result const res =
-				_vfs_env.fs().open(file_path.string(),
-				                   Vfs::Directory_service::OPEN_MODE_RDONLY,
-				                   (Vfs::Vfs_handle **)&_jitterentropy_handle,
-				                   _vfs_env.alloc());
-			if (res != Result::OPEN_OK) {
-				error("could not open '", file_path.string(), "'");
-				return false;
-			}
+			_jitterentropy_handle = new (_vfs_env.alloc())
+				Vfs::File_handle(_vfs_env.file_handles(),
+				                 _vfs_env.fs(),
+				                 _vfs_env.alloc(),
+				                 { .path = "/dev/jitterentropy", .writeable = false });
 
 			_jitterentropy_io_job.construct(*_jitterentropy_handle, Util::Io_job::Operation::READ,
 			                      _jitterentropy_io_job_buffer, 0,
 			                      Util::Io_job::Partial_result::ALLOW);
 
 			if (_jitterentropy_io_job->execute() && _jitterentropy_io_job->completed()) {
-				_close_handle(&_jitterentropy_handle);
+				destroy(_vfs_env.alloc(), _jitterentropy_handle);
+				_jitterentropy_handle = nullptr;
 				_jitterentropy_io_job_buffer.size = _jitterentropy_io_job->current_offset();
 				_jitterentropy_io_job.destruct();
 				return true;
@@ -670,24 +658,19 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 			Path file_path = path;
 			file_path.append_element(key_file_name.string());
 
-			using Result = Vfs::Directory_service::Open_result;
-
-			Result const res =
-				_vfs_env.fs().open(file_path.string(),
-				                   Vfs::Directory_service::OPEN_MODE_RDONLY,
-				                   (Vfs::Vfs_handle **)&_key_handle,
-				                   _vfs_env.alloc());
-			if (res != Result::OPEN_OK) {
-				error("could not open '", file_path.string(), "'");
-				return false;
-			}
+			_key_handle = new (_vfs_env.alloc())
+				Vfs::File_handle(_vfs_env.file_handles(),
+				                 _vfs_env.fs(),
+				                 _vfs_env.alloc(),
+				                 { .path = file_path.string(), .writeable = false });
 
 			_key_io_job.construct(*_key_handle, Util::Io_job::Operation::READ,
 			                      _key_io_job_buffer, 0,
 			                      Util::Io_job::Partial_result::ALLOW);
 			if (_key_io_job->execute() && _key_io_job->completed()) {
 				_state = State::INITIALIZED;
-				_close_handle(&_key_handle);
+				destroy(_vfs_env.alloc(), _key_handle);
+				_key_handle = nullptr;
 				return true;
 			}
 			return true;
@@ -753,21 +736,14 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 
 		bool _open_key_file_and_write(Path const &path)
 		{
-			using Result = Vfs::Directory_service::Open_result;
-
 			Path file_path = path;
 			file_path.append_element(key_file_name.string());
 
-			unsigned const mode =
-				Vfs::Directory_service::OPEN_MODE_WRONLY | Vfs::Directory_service::OPEN_MODE_CREATE;
-
-			Result const res =
-				_vfs_env.fs().open(file_path.string(), mode,
-				                   (Vfs::Vfs_handle **)&_key_handle,
-				                   _vfs_env.alloc());
-			if (res != Result::OPEN_OK) {
-				return false;
-			}
+			_key_handle = new (_vfs_env.alloc())
+				Vfs::File_handle(_vfs_env.file_handles(),
+				                 _vfs_env.fs(),
+				                 _vfs_env.alloc(),
+				                 { .path = file_path.string(), .writeable = true });
 
 			_key_io_job.construct(*_key_handle, Util::Io_job::Operation::WRITE,
 			                      _key_io_job_buffer, 0);
@@ -780,7 +756,7 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 
 		/* hash */
 
-		Vfs::Vfs_handle *_hash_handle { nullptr };
+		Vfs::File_handle *_hash_handle { nullptr };
 
 		Constructible<Util::Io_job> _hash_io_job { };
 
@@ -799,25 +775,21 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 
 		bool _open_hash_file_and_queue_read(Path const &path)
 		{
-			using Result = Vfs::Directory_service::Open_result;
-
 			Path file_path = path;
 			file_path.append_element(hash_file_name.string());
 
-			Result const res =
-				_vfs_env.fs().open(file_path.string(),
-				                   Vfs::Directory_service::OPEN_MODE_RDONLY,
-				                   (Vfs::Vfs_handle **)&_hash_handle,
-				                   _vfs_env.alloc());
-			if (res != Result::OPEN_OK) {
-				return false;
-			}
+			_hash_handle = new (_vfs_env.alloc())
+				Vfs::File_handle(_vfs_env.file_handles(),
+				                 _vfs_env.fs(),
+				                 _vfs_env.alloc(),
+				                 { .path = file_path.string(), .writeable = false });
 
 			_hash_io_job.construct(*_hash_handle, Util::Io_job::Operation::READ,
 			                       _hash_io_job_buffer, 0,
 			                       Util::Io_job::Partial_result::ALLOW);
 			if (_hash_io_job->execute() && _hash_io_job->completed()) {
-				_close_handle(&_hash_handle);
+				destroy(_vfs_env.alloc(), _hash_handle);
+				_hash_handle = nullptr;
 				_hash_io_job.destruct();
 				return true;
 			}
@@ -853,31 +825,14 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 
 		bool _open_hash_file_and_write(Path const &path)
 		{
-			using Result = Vfs::Directory_service::Open_result;
-
 			Path file_path = path;
 			file_path.append_element(hash_file_name.string());
 
-			using Stat_result = Vfs::Directory_service::Stat_result;
-
-			Vfs::Directory_service::Stat out_stat { };
-			Stat_result const stat_res =
-				_vfs_env.fs().stat(file_path.string(), out_stat);
-
-			bool const file_exists = stat_res == Stat_result::STAT_OK;
-
-			unsigned const mode =
-				Vfs::Directory_service::OPEN_MODE_WRONLY |
-				(file_exists ? 0 : Vfs::Directory_service::OPEN_MODE_CREATE);
-
-			Result const res =
-				_vfs_env.fs().open(file_path.string(), mode,
-				                   (Vfs::Vfs_handle **)&_hash_handle,
-				                   _vfs_env.alloc());
-			if (res != Result::OPEN_OK) {
-				error("could not open '", file_path.string(), "'");
-				return false;
-			}
+			_hash_handle = new (_vfs_env.alloc())
+				Vfs::File_handle(_vfs_env.file_handles(),
+				                 _vfs_env.fs(),
+				                 _vfs_env.alloc(),
+				                 { .path = file_path.string(), .writeable = true });
 
 			_hash_io_job.construct(*_hash_handle, Util::Io_job::Operation::WRITE,
 			                      _hash_io_job_buffer, 0);

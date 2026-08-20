@@ -24,7 +24,7 @@ class Tresor::Block_io : Noncopyable
 {
 	private:
 
-		Vfs::Vfs_handle &_file;
+		Vfs::File_handle &_file;
 		addr_t _user { };
 
 	public:
@@ -33,7 +33,7 @@ class Tresor::Block_io : Noncopyable
 		class Write;
 		class Sync;
 
-		Block_io(Vfs::Vfs_handle &file) : _file(file) { }
+		Block_io(Vfs::File_handle &file) : _file(file) { }
 
 		template <typename REQ>
 		bool execute(REQ &req)
@@ -80,7 +80,7 @@ class Tresor::Block_io::Read : Noncopyable
 
 		void print(Output &out) const { Genode::print(out, "read pba ", _attr.in_pba); }
 
-		bool execute(Vfs::Vfs_handle &);
+		bool execute(Vfs::File_handle &);
 
 		bool complete() const { return _helper.complete(); }
 		bool success() const { return _helper.success(); }
@@ -112,7 +112,7 @@ class Tresor::Block_io::Write : Noncopyable
 
 		void print(Output &out) const { Genode::print(out, "write pba ", _attr.in_pba); }
 
-		bool execute(Vfs::Vfs_handle &);
+		bool execute(Vfs::File_handle &);
 
 		bool complete() const { return _helper.complete(); }
 		bool success() const { return _helper.success(); }
@@ -140,7 +140,7 @@ class Tresor::Block_io::Sync : Noncopyable
 
 		void print(Output &out) const { Genode::print(out, "sync"); }
 
-		bool execute(Vfs::Vfs_handle &);
+		bool execute(Vfs::File_handle &);
 
 		bool complete() const { return _helper.complete(); }
 		bool success() const { return _helper.success(); }

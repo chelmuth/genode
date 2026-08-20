@@ -559,23 +559,34 @@ class Vfs_tresor::Plugin : private Noncopyable, private Client_data_interface, p
 		struct Crypto_key
 		{
 			Key_id const key_id;
-			Vfs_handle &encrypt_file;
-			Vfs_handle &decrypt_file;
+			Tresor::File_handle encrypt_file, decrypt_file;
+
+			Crypto_key(Vfs::Env &env, Tresor::Path const &dir, Key_id const key_id)
+			:
+				key_id(key_id),
+				encrypt_file(env, { dir, "/", key_id, "/encrypt" }),
+				decrypt_file(env, { dir, "/", key_id, "/decrypt" })
+			{ }
 		};
 
 		Vfs::Env &_vfs_env;
+
 		bool const _verbose;
+
 		Tresor::Path const _crypto_path;
 		Tresor::Path const _block_io_path;
 		Tresor::Path const _trust_anchor_path;
-		Vfs_handle &_block_io_file { open_file(_vfs_env, _block_io_path, Directory_service::OPEN_MODE_RDWR) };
-		Vfs_handle &_crypto_add_key_file { open_file(_vfs_env, { _crypto_path, "/add_key" }, Directory_service::OPEN_MODE_WRONLY) };
-		Vfs_handle &_crypto_remove_key_file { open_file(_vfs_env, { _crypto_path, "/remove_key" }, Directory_service::OPEN_MODE_WRONLY) };
-		Vfs_handle &_ta_decrypt_file { open_file(_vfs_env, { _trust_anchor_path, "/decrypt" }, Directory_service::OPEN_MODE_RDWR) };
-		Vfs_handle &_ta_encrypt_file { open_file(_vfs_env, { _trust_anchor_path, "/encrypt" }, Directory_service::OPEN_MODE_RDWR) };
-		Vfs_handle &_ta_generate_key_file { open_file(_vfs_env, { _trust_anchor_path, "/generate_key" }, Directory_service::OPEN_MODE_RDWR) };
-		Vfs_handle &_ta_initialize_file { open_file(_vfs_env, { _trust_anchor_path, "/initialize" }, Directory_service::OPEN_MODE_RDWR) };
-		Vfs_handle &_ta_hash_file { open_file(_vfs_env, { _trust_anchor_path, "/hash" }, Directory_service::OPEN_MODE_RDWR) };
+
+		Tresor::File_handle
+			_block_io_file          { _vfs_env, _block_io_path },
+			_crypto_add_key_file    { _vfs_env, { _crypto_path, "/add_key" } },
+			_crypto_remove_key_file { _vfs_env, { _crypto_path, "/remove_key" } },
+			_ta_decrypt_file        { _vfs_env, { _trust_anchor_path, "/decrypt" } },
+			_ta_encrypt_file        { _vfs_env, { _trust_anchor_path, "/encrypt" } },
+			_ta_generate_key_file   { _vfs_env, { _trust_anchor_path, "/generate_key" } },
+			_ta_initialize_file     { _vfs_env, { _trust_anchor_path, "/initialize" } },
+			_ta_hash_file           { _vfs_env, { _trust_anchor_path, "/hash" } };
+
 		Tresor::Free_tree _free_tree { };
 		Tresor::Virtual_block_device _vbd { };
 		Superblock_control _sb_control { };
@@ -751,10 +762,7 @@ class Vfs_tresor::Plugin : private Noncopyable, private Client_data_interface, p
 		{
 			for (Constructible<Crypto_key> &key : _crypto_keys)
 				if (!key.constructed()) {
-					key.construct(key_id,
-						open_file(_vfs_env, { _crypto_path, "/keys/", key_id, "/encrypt" }, Directory_service::OPEN_MODE_RDWR),
-						open_file(_vfs_env, { _crypto_path, "/keys/", key_id, "/decrypt" }, Directory_service::OPEN_MODE_RDWR)
-					);
+					key.construct(_vfs_env, Tresor::Path { _crypto_path, "/keys" }, key_id);
 					return;
 				}
 			ASSERT_NEVER_REACHED;
@@ -762,14 +770,11 @@ class Vfs_tresor::Plugin : private Noncopyable, private Client_data_interface, p
 
 		void remove_crypto_key(Key_id key_id) override
 		{
-			Constructible<Crypto_key> &crypto_key = _crypto_key(key_id);
-			_vfs_env.fs().close(&crypto_key->encrypt_file);
-			_vfs_env.fs().close(&crypto_key->decrypt_file);
-			crypto_key.destruct();
+			_crypto_key(key_id).destruct();
 		}
 
-		Vfs_handle &encrypt_file(Key_id key_id) override { return _crypto_key(key_id)->encrypt_file; }
-		Vfs_handle &decrypt_file(Key_id key_id) override { return _crypto_key(key_id)->decrypt_file; }
+		Vfs::File_handle &encrypt_file(Key_id key_id) override { return _crypto_key(key_id)->encrypt_file; }
+		Vfs::File_handle &decrypt_file(Key_id key_id) override { return _crypto_key(key_id)->decrypt_file; }
 
 		/***************************
 		 ** Client_data_interface **

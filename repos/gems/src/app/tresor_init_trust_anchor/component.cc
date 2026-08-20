@@ -70,6 +70,8 @@ class Main : Vfs::Env::User
 
 		struct File
 		{
+			Vfs::Env &_env;
+
 			struct Could_not_open_file : Genode::Exception { };
 
 			struct Completed
@@ -81,39 +83,31 @@ class Main : Vfs::Env::User
 			File(File const &) = delete;
 			File &operator=(File const&) = delete;
 
-			Vfs::File_system &_vfs;
-			Vfs::Vfs_handle  *_vfs_handle;
+			Vfs::File_handle _handle;
 
 			Genode::Constructible<Util::Io_job> _io_job { };
 			Util::Io_job::Buffer                _io_buffer { };
 
 			Tresor::Passphrase _initialize_file_buf { };
 
-			File(char          const *base_path,
-				 char          const *name,
-				 Vfs::File_system    &vfs,
-				 Genode::Allocator   &alloc)
-			:
-				_vfs(vfs), _vfs_handle(nullptr)
+			static Genode::String<256> _joined(char const *base_path, char const *name)
 			{
-				using Result = Vfs::Directory_service::Open_result;
-
 				Genode::Path<256> file_path = base_path;
 				file_path.append_element(name);
-
-				Result const res =
-					_vfs.open(file_path.string(),
-					          Vfs::Directory_service::OPEN_MODE_RDWR,
-					          (Vfs::Vfs_handle **)&_vfs_handle, alloc);
-				if (res != Result::OPEN_OK) {
-					error("could not open '", file_path.string(), "'");
-					throw Could_not_open_file();
-				}
+				return { file_path.string() };
 			}
+
+			File(Vfs::Env &env, char const *base_path, char const *name)
+			:
+				_env(env),
+				_handle(env.file_handles(), env.fs(), env.alloc(),
+				        { .path = _joined(base_path, name), .writeable = true })
+			{ }
 
 			~File()
 			{
-				_vfs.close(_vfs_handle);
+				while (_handle.detach() == Vfs::File_handle::Detach_result::RETRY)
+					_env.io().commit_and_wait();
 			}
 
 			void write_passphrase(Tresor::Passphrase const &passphrase)
@@ -126,7 +120,7 @@ class Main : Vfs::Env::User
 					.size = _initialize_file_buf.length()
 				};
 
-				_io_job.construct(*_vfs_handle, Util::Io_job::Operation::WRITE,
+				_io_job.construct(_handle, Util::Io_job::Operation::WRITE,
 				                  _io_buffer, 0);
 			}
 
@@ -137,7 +131,7 @@ class Main : Vfs::Env::User
 					.size = _initialize_file_buf.length()
 				};
 
-				_io_job.construct(*_vfs_handle, Util::Io_job::Operation::READ,
+				_io_job.construct(_handle, Util::Io_job::Operation::READ,
 				                  _io_buffer, 0);
 			}
 
@@ -224,8 +218,7 @@ class Main : Vfs::Env::User
 
 			String_path ta_dir = _config_ta_dir(_config_rom.node());
 
-			_init_file.construct(ta_dir.string(), "initialize",
-			                     _vfs, _vfs_root.alloc());
+			_init_file.construct(_vfs_root, ta_dir.string(), "initialize");
 
 			/* kick-off writing */
 			_init_file->write_passphrase(passphrase.string());

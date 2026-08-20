@@ -26,11 +26,11 @@ class Tresor::Trust_anchor : Noncopyable
 
 		struct Attr
 		{
-			Vfs::Vfs_handle &decrypt_file;
-			Vfs::Vfs_handle &encrypt_file;
-			Vfs::Vfs_handle &generate_key_file;
-			Vfs::Vfs_handle &initialize_file;
-			Vfs::Vfs_handle &hash_file;
+			Vfs::File_handle &decrypt_file;
+			Vfs::File_handle &encrypt_file;
+			Vfs::File_handle &generate_key_file;
+			Vfs::File_handle &initialize_file;
+			Vfs::File_handle &hash_file;
 		};
 
 	private:

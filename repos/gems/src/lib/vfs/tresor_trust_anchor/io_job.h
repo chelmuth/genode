@@ -17,7 +17,7 @@
 
 /* base includes */
 #include <vfs/types.h>
-#include <vfs/vfs_handle.h>
+#include <vfs/file_handle.h>
 
 namespace Util {
 
@@ -75,7 +75,7 @@ namespace Util {
 
 		enum class Partial_result { ALLOW, DENY };
 
-		Vfs::Vfs_handle        &_handle;
+		Vfs::File_handle       &_handle;
 		Operation        const  _op;
 		State                   _state;
 		char                   *_data;
@@ -101,9 +101,9 @@ namespace Util {
 					Byte_range_ptr const dst { _data + _current_offset, _current_count };
 					Vfs::At const at { .pos = _base_offset + _current_offset };
 
-					Vfs::Vfs_handle::Read_result const result = _handle.read(at, dst);
+					Vfs::Read_result const result = _handle.read(at, dst);
 
-					if (result == Vfs::Vfs_handle::Read_error::RETRY)
+					if (result == Vfs::Read_error::RETRY)
 						return progress;
 
 					result.with_result(
@@ -114,7 +114,7 @@ namespace Util {
 							if (_current_count == 0 || (num_bytes == 0 && _allow_partial))
 								_state = State::COMPLETE;
 						},
-						[&] (Vfs::Vfs_handle::Read_error) {
+						[&] (Vfs::Read_error) {
 							_success = false;
 						});
 				}
@@ -145,8 +145,8 @@ namespace Util {
 				Const_byte_range_ptr const src { _data + _current_offset, _current_count };
 				Vfs::At const at { .pos = _base_offset + _current_offset };
 
-				Vfs::Vfs_handle::Write_result result = _handle.write(at, src);
-				if (result == Vfs::Vfs_handle::Write_error::RETRY) {
+				Vfs::Write_result result = _handle.write(at, src);
+				if (result == Vfs::Write_error::RETRY) {
 					if (_allow_partial) {
 						_state = State::COMPLETE;
 						return true;
@@ -163,7 +163,7 @@ namespace Util {
 						       ? State::COMPLETE
 						       : State::PENDING; /* partial write, keep trying */
 					},
-					[&] (Vfs::Vfs_handle::Write_error) {
+					[&] (Vfs::Write_error) {
 						_success = false;
 						_state = State::COMPLETE;
 					});
@@ -216,7 +216,7 @@ namespace Util {
 			return progress;
 		}
 
-		Io_job(Vfs::Vfs_handle &handle,
+		Io_job(Vfs::File_handle &handle,
 		       Operation        op,
 		       Buffer          &buffer,
 		       Vfs::file_size   base_offset,
