@@ -52,6 +52,8 @@ class Genode::Vfs::File_handle : Noncopyable
 
 		bool _need_sync = writeable; /* might be a new file */
 
+		bool _read_ready_requested = false;
+
 		struct { Channel *_channel_ptr = nullptr; };
 
 		template <typename ERR>
@@ -79,6 +81,8 @@ class Genode::Vfs::File_handle : Noncopyable
 		auto _with_channel(auto const &fn, ERR_FN const &err_fn)
 		-> typename Trait::Functor<decltype(&ERR_FN::operator())>::Return_type
 		{
+			bool const orig_detached = _channel_ptr == nullptr;
+
 			if (!_channel_ptr) {
 				Directory_service::Open_result result =
 					_root_dir.open(path.string(), _mode(), &_channel_ptr, _alloc);
@@ -101,8 +105,19 @@ class Genode::Vfs::File_handle : Noncopyable
 			}
 
 			if (_channel_ptr) {
+
 				if (response_handler_ptr)
 					_channel_ptr->handler(response_handler_ptr);
+
+				if (orig_detached && _read_ready_requested) {
+
+					/* re-subscribe after detach */
+					(void)_channel_ptr->read_ready();
+
+					/* trigger artificial read-ready wakeup */
+					response_handler_ptr->read_ready_response();
+				}
+
 				return fn(*_channel_ptr);
 			}
 
@@ -296,6 +311,8 @@ Genode::Vfs::Sync_result Genode::Vfs::File_handle::sync()
 
 Genode::Vfs::Read_ready_result Genode::Vfs::File_handle::read_ready()
 {
+	_read_ready_requested = true;
+
 	return _with_channel(
 		[&] (Channel &channel) {
 			if (channel.read_ready())
