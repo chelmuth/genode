@@ -1393,8 +1393,13 @@ struct Vfs_tresor::Current_file_system : Dir_file_system, private Vfs::File_syst
 	:
 		Dir_file_system(vfs_env, parent_fs, "current"),
 		_data_fs(*this, plugin)
+	{ }
+
+	~Current_file_system() { Dir_file_system::update(Node(), *this); }
+
+	Progress update(Node const &, Vfs::File_system::Factory &) override
 	{
-		Dir_file_system::update(Node(_config()), *this);
+		return Dir_file_system::update(Node(_config()), *this);
 	}
 
 	static char const *type_name() { return "current"; }
@@ -1446,15 +1451,19 @@ struct Vfs_tresor::Control_file_system : Dir_file_system, private Vfs::File_syst
 	Control_file_system(Vfs::Env &vfs_env, Parent_fs &parent_fs, Plugin &plugin)
 	:
 		Dir_file_system(vfs_env, parent_fs, "control"), _plugin(plugin)
-	{
-		Dir_file_system::update(Node(_config()), *this);
-	}
+	{ }
 
 	~Control_file_system()
 	{
 		_plugin.dissolve_rekey_file_system(_rekey_fs);
 		_plugin.dissolve_deinit_file_system(_deinitialize_fs);
 		_plugin.dissolve_extend_file_system(_extend_fs);
+		Dir_file_system::update(Node(), *this);
+	}
+
+	Progress update(Node const &, Vfs::File_system::Factory &) override
+	{
+		return Dir_file_system::update(Node(_config()), *this);
 	}
 
 	static char const *type_name() { return "control"; }
@@ -1503,8 +1512,13 @@ struct Vfs_tresor::File_system : Dir_file_system, private Vfs::File_system::Fact
 		_plugin(plugin),
 		_current_fs(vfs_env, *this, plugin),
 		_control_fs(vfs_env, *this, plugin)
+	{ }
+
+	~File_system() { Dir_file_system::update(Node(), *this); }
+
+	Progress update(Node const &config, Vfs::File_system::Factory &) override
 	{
-		Dir_file_system::update(Node(_config(node)), *this);
+		return Dir_file_system::update(Node(_config(config)), *this);
 	}
 
 	void destruct() override { destroy(_env.alloc(), this); }

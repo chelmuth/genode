@@ -939,8 +939,13 @@ struct Vfs_tresor_crypto::File_system : Dir_file_system, Vfs::File_system::Facto
 			_keys_fs(vfs_env, *this, _crypto),
 			_add_key_fs(*this, _crypto),
 			_remove_key_fs(*this, _crypto)
+		{ }
+
+		~File_system() { Dir_file_system::update(Node(), *this); }
+
+		Progress update(Node const &config, Vfs::File_system::Factory &) override
 		{
-			Dir_file_system::update(Node(_config(node)), *this);
+			return Dir_file_system::update(Node(_config(config)), *this);
 		}
 
 		void destruct() override { destroy(_env.alloc(), this); }

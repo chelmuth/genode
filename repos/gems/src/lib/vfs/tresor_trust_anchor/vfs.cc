@@ -902,7 +902,10 @@ class Vfs_tresor_trust_anchor::Trust_anchor
 
 	public:
 
-		Trust_anchor(Vfs::Env &vfs_env, Path const &path) : _vfs_env(vfs_env), _base_path(path)
+		Trust_anchor(Vfs::Env &vfs_env, Path const &path)
+		: _vfs_env(vfs_env), _base_path(path) { }
+
+		void resume_after_update()
 		{
 			if (_check_key_file(_base_path)) {
 
@@ -1782,8 +1785,18 @@ struct Vfs_tresor_trust_anchor::File_system : Dir_file_system, Vfs::File_system:
 		                node.attribute_value("name", Dir_file_system::Name()),
 		                Ident::from_node(node)),
 		_trust_anchor(vfs_env, _storage_path(node).string())
+	{ }
+
+	~File_system() { Dir_file_system::update(Node(), *this); }
+
+	Progress update(Node const &config, Vfs::File_system::Factory &) override
 	{
-		Dir_file_system::update(Node(_config(node)), *this);
+		return Dir_file_system::update(Node(_config(config)), *this);
+	}
+
+	void resume_after_update() override
+	{
+		_trust_anchor.resume_after_update();
 	}
 
 	void destruct() override { destroy(_env.alloc(), this); }
