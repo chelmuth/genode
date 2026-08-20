@@ -93,17 +93,22 @@ class Genode::Vfs::Root : public Env, private Env::Io, private Env::User
 
 	public:
 
-		Root(Genode::Env &env, Allocator &alloc, Node const &config, Env::User &user)
+		Root(Genode::Env &env, Allocator &alloc)
+		:
+			_env(env), _alloc(alloc), _user(*this)
+		{ }
+
+		Root(Genode::Env &env, Allocator &alloc, Env::User &user)
 		:
 			_env(env), _alloc(alloc), _user(user)
-		{
-			apply_config(config);
-		}
+		{ }
 
 		Root(Genode::Env &env, Allocator &alloc, Node const &config)
 		:
-			Root(env, alloc, config, *this)
-		{ }
+			Root(env, alloc)
+		{
+			apply_config(config);
+		}
 
 		~Root() { apply_config(Node()); }
 

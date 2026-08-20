@@ -235,14 +235,7 @@ struct Fs_query::Main : Watched_file::Action
 		Signal_transmitter(_config_handler).submit();
 	}
 
-	Vfs::Root _vfs_root = _config.node().with_sub_node("vfs",
-		[&] (Node const &config) -> Vfs::Root {
-			return { _env, _heap, config }; },
-		[&] () -> Vfs::Root {
-			error("VFS not configured");
-			return { _env, _heap, Node() }; });
-
-	Directory _root_dir { _vfs_root };
+	Root_directory _root_dir { _env, _heap };
 
 	Signal_handler<Main> _config_handler {
 		_env.ep(), *this, &Main::_handle_config };
@@ -268,8 +261,9 @@ struct Fs_query::Main : Watched_file::Action
 
 		Node const config = _config.node();
 
-		_config.node().with_optional_sub_node("vfs", [&] (Node const &vfs_config) {
-			_vfs_root.apply_config(vfs_config); });
+		config.with_sub_node("vfs",
+			[&] (Node const &config) { _root_dir.apply_config(config); },
+			[&]                      { error("VFS not configured"); });
 
 		_dirs.for_each([&] (Registered<Watched_directory> &dir) {
 			destroy(_heap, &dir); });

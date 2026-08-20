@@ -40,14 +40,13 @@ class Main : Vfs::Env::User
 		Env   &_env;
 		Heap  _heap { _env.ram(), _env.rm() };
 
+		Vfs::Root _vfs_root { _env, _heap, *this };
+
 		Attached_rom_dataspace _config_rom { _env, "config" };
 
-		Vfs::Root _vfs_root = _config_rom.node().with_sub_node("vfs",
-			[&] (Node const &config) -> Vfs::Root {
-				return { _env, _heap, config, *this }; },
-			[&] () -> Vfs::Root {
-				error("VFS not configured");
-				return { _env, _heap, Node() }; });
+		bool const _vfs_configured = _config_rom.node().with_sub_node("vfs",
+			[&] (Node const &config) { _vfs_root.apply_config(config); return true; },
+			[&]                      { error("VFS not configured");   return false; });
 
 		Vfs::File_system &_vfs { _vfs_root.fs() };
 

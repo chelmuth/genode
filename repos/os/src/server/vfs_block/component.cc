@@ -358,15 +358,11 @@ struct Main : Rpc_object<Typed_root<Block::Session>>,
 	Signal_handler<Main> _request_handler {
 		_env.ep(), *this, &Main::_handle_requests };
 
-	Heap                    _heap       { _env.ram(), _env.rm() };
-	Attached_rom_dataspace  _config_rom { _env, "config" };
+	Heap _heap { _env.ram(), _env.rm() };
 
-	Vfs::Root _vfs_root = _config_rom.node().with_sub_node("vfs",
-		[&] (Node const &config) -> Vfs::Root {
-			return { _env, _heap, config, *this }; },
-		[&] () -> Vfs::Root {
-			error("VFS not configured");
-			return { _env, _heap, Node() }; });
+	Vfs::Root _vfs_root { _env, _heap, *this };
+
+	Attached_rom_dataspace _config_rom { _env, "config" };
 
 	struct Block_session : Genode::Registry<Block_session>::Element
 	{
@@ -479,6 +475,10 @@ struct Main : Rpc_object<Typed_root<Block::Session>>,
 
 	Main(Env &env) : _env(env)
 	{
+		_config_rom.node().with_sub_node("vfs",
+			[&] (Node const &node) { _vfs_root.apply_config(node); },
+			[&]                    { error("VFS not configured"); });
+
 		_env.parent().announce(_env.ep().manage(*this));
 	}
 };

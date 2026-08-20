@@ -958,17 +958,11 @@ struct Vfs_server::Main : Entrypoint::Io_progress_handler
 
 	Attached_rom_dataspace _config { _env, "config" };
 
-	Signal_handler<Main> _config_handler {
-		_env.ep(), *this, &Main::_handle_config };
+	Signal_handler<Main> _config_handler { _env.ep(), *this, &Main::_handle_config };
 
 	Heap _vfs_heap { &_env.ram(), &_env.rm() };
 
-	Vfs::Root _vfs_root = _config.node().with_sub_node("vfs",
-		[&] (Node const &config) -> Vfs::Root {
-			return { _env, _vfs_heap, config }; },
-		[&] () -> Vfs::Root {
-			error("VFS not configured");
-			return { _env, _vfs_heap, Node() }; });
+	Vfs::Root _vfs_root { _env, _vfs_heap };
 
 	Vfs_server::Root _root { _env, _vfs_root, _config, _sliced_heap, *this };
 

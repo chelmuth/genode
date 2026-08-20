@@ -529,14 +529,13 @@ void Component::construct(Genode::Env &env)
 
 	Genode::Heap heap(env.ram(), env.rm());
 
+	Vfs::Root vfs_root { env, heap };
+
 	Attached_rom_dataspace config_rom(env, "config");
 
-	Vfs::Root vfs_root = config_rom.node().with_sub_node("vfs",
-		[&] (Node const &config) -> Vfs::Root {
-			return { env, heap, config }; },
-		[&] () -> Vfs::Root {
-			error("VFS not configured");
-			return { env, heap, Node() }; });
+	config_rom.node().with_sub_node("vfs",
+		[&] (Node const &config) { vfs_root.apply_config(config); },
+		[&]                      { error("VFS not configured"); });
 
 	String<Vfs::MAX_PATH_LEN> path { };
 

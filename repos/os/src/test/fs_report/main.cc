@@ -32,16 +32,11 @@ struct Test::Main
 
 	Genode::Heap _heap { _env.ram(), _env.rm() };
 
+	Vfs::Root _vfs_root { _env, _heap };
+
 	Timer::Connection _timer { _env };
 
 	Genode::Attached_rom_dataspace _config_rom { _env, "config" };
-
-	Vfs::Root _vfs_root = _config_rom.node().with_sub_node("vfs",
-		[&] (Node const &config) -> Vfs::Root {
-			return { _env, _heap, config }; },
-		[&] () -> Vfs::Root {
-			error("VFS not configured");
-			return { _env, _heap, Node() }; });
 
 	Constructible<Expanding_reporter> _devices_reporter { };
 	Constructible<Expanding_reporter> _focus_reporter   { };
@@ -159,6 +154,10 @@ struct Test::Main
 
 	Main(Env &env) : _env(env)
 	{
+		_config_rom.node().with_sub_node("vfs",
+			[&] (Node const &config) { _vfs_root.apply_config(config); },
+			[&]                      { error("VFS not configured"); });
+
 		log("--- test-fs_report started ---");
 
 		_handle_init();

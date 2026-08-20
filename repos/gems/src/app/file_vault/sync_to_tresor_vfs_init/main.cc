@@ -18,26 +18,19 @@
 
 using namespace Genode;
 
-struct Main : Vfs::Env::User
+void Component::construct(Env &env)
 {
-	Env &env;
 	Heap heap { env.ram(), env.rm() };
-	Attached_rom_dataspace config_rom { env, "config" };
-	Vfs::Root vfs_env = config_rom.node().with_sub_node("vfs",
-		[&] (Node const &config) -> Vfs::Root {
-			return { env, heap, config, *this }; },
-		[&] () -> Vfs::Root {
-			error("VFS not configured");
-			return { env, heap, Node() }; });
-	Directory root { vfs_env };
 
-	void wakeup_vfs_user() override { }
+	Root_directory root { env, heap };
 
-	Main(Env &env) : env(env)
-	{
-		{ Append_file { root, Directory::Path("/tresor/tresor/current/data") }; }
-		env.parent().exit(0);
-	}
-};
+	Attached_rom_dataspace config { env, "config" };
 
-void Component::construct(Env &env) { static Main main(env); }
+	config.node().with_sub_node("vfs",
+		[&] (Node const &config) { root.apply_config(config); },
+		[&]                      { error("VFS not configured"); });
+
+	{ Append_file { root, Directory::Path("/tresor/tresor/current/data") }; }
+
+	env.parent().exit(0);
+}

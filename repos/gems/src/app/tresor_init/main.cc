@@ -48,15 +48,17 @@ class Tresor_init::Main : private Vfs::Env::User, private Crypto_key_files_inter
 			{ }
 		};
 
-		Env  &_env;
-		Heap  _heap { _env.ram(), _env.rm() };
+		Env &_env;
+		Heap _heap { _env.ram(), _env.rm() };
+
+		Vfs::Root _vfs_env { _env, _heap, *this };
+
 		Attached_rom_dataspace _config_rom { _env, "config" };
-		Vfs::Root _vfs_env = _config_rom.node().with_sub_node("vfs",
-			[&] (Node const &config) -> Vfs::Root {
-				return { _env, _heap, config, *this }; },
-			[&] () -> Vfs::Root {
-				error("VFS not configured");
-				return { _env, _heap, Node() }; });
+
+		bool const _vfs_configured = _config_rom.node().with_sub_node("vfs",
+			[&] (Node const &config) { _vfs_env.apply_config(config); return true; },
+			[&]                      { error("VFS not configured");   return false; });
+
 		Signal_handler<Main> _sigh { _env.ep(), *this, &Main::_handle_signal };
 		Superblock_configuration _sb_config { _config_rom.node() };
 

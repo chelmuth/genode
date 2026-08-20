@@ -430,10 +430,17 @@ struct Genode::Directory : Noncopyable, Interface
 
 struct Genode::Root_directory : Vfs::Root, Directory
 {
+	Root_directory(Genode::Env &env, Allocator &alloc)
+	:
+		Vfs::Root(env, alloc), Directory((Vfs::Root &)*this)
+	{ }
+
 	Root_directory(Genode::Env &env, Allocator &alloc, Node const &config)
 	:
-		Vfs::Root(env, alloc, config), Directory((Vfs::Root &)*this)
-	{ }
+		Root_directory(env, alloc)
+	{
+		Vfs::Root::apply_config(config);
+	}
 };
 
 

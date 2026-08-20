@@ -37,15 +37,17 @@ class Tresor_check::Main : private Vfs::Env::User
 
 		enum State { INIT, CHECK_SB, CHECK_SB_SUCCEEDED };
 
-		Env  &_env;
-		Heap  _heap { _env.ram(), _env.rm() };
+		Env &_env;
+		Heap _heap { _env.ram(), _env.rm() };
+
+		Vfs::Root _vfs_root { _env, _heap, *this };
+
 		Attached_rom_dataspace _config_rom { _env, "config" };
-		Vfs::Root _vfs_env = _config_rom.node().with_sub_node("vfs",
-			[&] (Node const &config) -> Vfs::Root {
-				return { _env, _heap, config, *this }; },
-			[&] () -> Vfs::Root {
-				error("VFS not configured");
-				return { _env, _heap, Node() }; });
+
+		bool const _vfs_configured = _config_rom.node().with_sub_node("vfs",
+			[&] (Node const &config) { _vfs_root.apply_config(config); return true; },
+			[&]                      { error("VFS not configured");   return false; });
+
 		Signal_handler<Main> _sigh { _env.ep(), *this, &Main::_handle_signal };
 
 		Tresor::Path _path_from_config(auto const &node_name) const
@@ -59,12 +61,12 @@ class Tresor_check::Main : private Vfs::Env::User
 		Tresor::Path const _trust_anchor_path = _path_from_config("trust-anchor");
 
 		Tresor::File_handle
-			_block_io_file        { _vfs_env, _block_io_path },
-			_ta_decrypt_file      { _vfs_env, { _trust_anchor_path, "/decrypt" } },
-			_ta_encrypt_file      { _vfs_env, { _trust_anchor_path, "/encrypt" } },
-			_ta_generate_key_file { _vfs_env, { _trust_anchor_path, "/generate_key" } },
-			_ta_initialize_file   { _vfs_env, { _trust_anchor_path, "/initialize" } },
-			_ta_hash_file         { _vfs_env, { _trust_anchor_path, "/hash" } };
+			_block_io_file        { _vfs_root, _block_io_path },
+			_ta_decrypt_file      { _vfs_root, { _trust_anchor_path, "/decrypt" } },
+			_ta_encrypt_file      { _vfs_root, { _trust_anchor_path, "/encrypt" } },
+			_ta_generate_key_file { _vfs_root, { _trust_anchor_path, "/generate_key" } },
+			_ta_initialize_file   { _vfs_root, { _trust_anchor_path, "/initialize" } },
+			_ta_hash_file         { _vfs_root, { _trust_anchor_path, "/hash" } };
 
 		Block_io _block_io { _block_io_file };
 		Vbd_check _vbd_check { };
@@ -73,7 +75,7 @@ class Tresor_check::Main : private Vfs::Env::User
 		Trust_anchor _trust_anchor { { _ta_decrypt_file, _ta_encrypt_file, _ta_generate_key_file, _ta_initialize_file, _ta_hash_file } };
 		Sb_check::Check _check_superblocks { };
 
-		void _wakeup_back_end_services() { _vfs_env.io().commit(); }
+		void _wakeup_back_end_services() { _vfs_root.io().commit(); }
 
 		void _handle_signal()
 		{

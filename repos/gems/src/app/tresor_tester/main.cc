@@ -417,15 +417,17 @@ class Tresor_tester::Main : Vfs::Env::User, Client_data_interface, Crypto_key_fi
 			{ }
 		};
 
-		Genode::Env &_env;
-		Attached_rom_dataspace _config_rom { _env, "config" };
+		Env &_env;
 		Heap _heap { _env.ram(), _env.rm() };
-		Vfs::Root _vfs_env = _config_rom.node().with_sub_node("vfs",
-			[&] (Node const &config) -> Vfs::Root {
-				return { _env, _heap, config, *this }; },
-			[&] () -> Vfs::Root {
-				error("VFS not configured");
-				return { _env, _heap, Node() }; });
+
+		Vfs::Root _vfs_root { _env, _heap, *this };
+
+		Attached_rom_dataspace _config_rom { _env, "config" };
+
+		bool const _vfs_configured = _config_rom.node().with_sub_node("vfs",
+			[&] (Node const &config) { _vfs_root.apply_config(config); return true; },
+			[&]                      { error("VFS not configured");    return false; });
+
 		Signal_handler<Main> _signal_handler { _env.ep(), *this, &Main::_handle_signal };
 
 		Tresor::Path _path_from_config(auto const &node_name) const
@@ -440,14 +442,14 @@ class Tresor_tester::Main : Vfs::Env::User, Client_data_interface, Crypto_key_fi
 		Tresor::Path const _trust_anchor_path = _path_from_config("trust-anchor");
 
 		Tresor::File_handle
-			_block_io_file          { _vfs_env, _block_io_path },
-			_crypto_add_key_file    { _vfs_env, { _crypto_path, "/add_key" } },
-			_crypto_remove_key_file { _vfs_env, { _crypto_path, "/remove_key" } },
-			_ta_decrypt_file        { _vfs_env, { _trust_anchor_path, "/decrypt" } },
-			_ta_encrypt_file        { _vfs_env, { _trust_anchor_path, "/encrypt" } },
-			_ta_generate_key_file   { _vfs_env, { _trust_anchor_path, "/generate_key" } },
-			_ta_initialize_file     { _vfs_env, { _trust_anchor_path, "/initialize" } },
-			_ta_hash_file           { _vfs_env, { _trust_anchor_path, "/hash" } };
+			_block_io_file          { _vfs_root, _block_io_path },
+			_crypto_add_key_file    { _vfs_root, { _crypto_path, "/add_key" } },
+			_crypto_remove_key_file { _vfs_root, { _crypto_path, "/remove_key" } },
+			_ta_decrypt_file        { _vfs_root, { _trust_anchor_path, "/decrypt" } },
+			_ta_encrypt_file        { _vfs_root, { _trust_anchor_path, "/encrypt" } },
+			_ta_generate_key_file   { _vfs_root, { _trust_anchor_path, "/generate_key" } },
+			_ta_initialize_file     { _vfs_root, { _trust_anchor_path, "/initialize" } },
+			_ta_hash_file           { _vfs_root, { _trust_anchor_path, "/hash" } };
 
 		Timer::Connection _timer { _env };
 		Constructible<Benchmark> _benchmark { };
@@ -492,7 +494,7 @@ class Tresor_tester::Main : Vfs::Env::User, Client_data_interface, Crypto_key_fi
 			ASSERT_NEVER_REACHED;
 		}
 
-		void _wakeup_back_end_services() { _vfs_env.io().commit(); }
+		void _wakeup_back_end_services() { _vfs_root.io().commit(); }
 
 		void _remove_snap_ref(Snapshot_reference &ref)
 		{
@@ -972,7 +974,7 @@ class Tresor_tester::Main : Vfs::Env::User, Client_data_interface, Crypto_key_fi
 		{
 			for (Constructible<Crypto_key> &key : _crypto_keys)
 				if (!key.constructed()) {
-					key.construct(_vfs_env, Tresor::Path { _crypto_path, "/keys" }, key_id);
+					key.construct(_vfs_root, Tresor::Path { _crypto_path, "/keys" }, key_id);
 					return;
 				}
 			ASSERT_NEVER_REACHED;
