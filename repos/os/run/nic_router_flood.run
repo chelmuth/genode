@@ -4,7 +4,7 @@ proc num_ping_rounds { } {
 	if {[have_spec sel4] && [have_spec x86]} {
 		return 10
 	}
-	if {[have_spec okl4] || [have_spec pistachio]} {
+	if {[have_spec okl4] || [have_spec pistachio] || [have_spec fiasco]} {
 		return 10
 	}
 	return 30
