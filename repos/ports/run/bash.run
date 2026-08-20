@@ -11,6 +11,7 @@ import_from_depot [depot_user]/src/[base_src] \
                   [depot_user]/src/coreutils \
                   [depot_user]/src/vfs \
                   [depot_user]/src/vfs_pipe \
+                  [depot_user]/src/vfs_import \
                   [depot_user]/src/nitpicker \
                   [depot_user]/src/fs_rom
 
@@ -75,24 +76,50 @@ config | verbose: yes
       + parent
       + any-child
 
-+ start vfs | caps: 120 | ram: 30M
++ start config_fs | caps: 120 | ram: 30M
   + provides | + service File_system
+  + binary vfs
   + config
-    + policy | label_prefix: vfs_rom | root: /
     + default-policy | root: / | writeable: yes
     + vfs
-      + tar coreutils.tar
-      + tar vim.tar
-      + tar bash.tar
-      + dir home  | + ram
-      + dir share | + dir vim | + rom vimrc
-      + dir tmp   | + ram
-      + dir pipe  | + pipe
-      + dir dev
-        + zero
-        + null
-        + terminal
-        + inline rtc | : 2018-01-01 00:01
+      + ram
+      + import
+        + inline vfs
+          + config
+            + vfs
+            | + tar coreutils.tar
+            | + tar vim.tar
+            | + tar bash.tar
+            | + dir config | + fs config -> /
+            | + dir home   | + ram
+            | + dir share  | + dir vim | + rom vimrc
+            | + dir tmp    | + ram
+            | + dir pipe   | + pipe
+            | + dir dev
+            |   + zero
+            |   + null
+            |   + log
+            |   + terminal
+            |   + inline rtc | : 2018-01-01 00:01
+            |
+            + policy | label_prefix: vfs_rom | root: /
+            + default-policy | root: / | writeable: yes
+
++ start config_rom | ram: 30M
+  + binary fs_rom
+  + provides | + service ROM
+  + config
+  + route
+    + service File_system | + child config_fs
+    + any-service         | + parent
+
++ start vfs | caps: 120 | ram: 30M
+  + provides | + service File_system
+  + route
+    + service File_system         | + child config_fs
+    + service Terminal            | + child terminal
+    + service ROM | label: config | + child config_rom | label: vfs
+    + any-service                 | + parent
 
 + start vfs_rom | ram: 30M
   + binary fs_rom
