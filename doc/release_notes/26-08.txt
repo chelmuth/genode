@@ -1,0 +1,458 @@
+
+
+              ===============================================
+              Release notes for the Genode OS Framework 26.08
+              ===============================================
+
+                               Genode Labs
+
+
+
+The release cycle of version 26.08 was largely dedicated to architectural
+refinements we identified as fundamental prerequisites for
+[https://genode.org/about/road-map - roadmap] items like versatile file
+management, desktop usability, and productive development workflow. On that
+account, the C runtime as well as the VFS infrastructure underwent a profound
+revision, which ultimately made the VFS reconfigurable at runtime. With the
+new version, as detailed in Section [Reconfigurable virtual file system], the
+structure of a virtual file system can be modified on the fly at any time
+transparently to the VFS-using applications. This makes the VFS not only
+vastly more flexible but is the stepping stone for fully pluggable file
+systems down the road.
+
+As another under-the-hood architectural refinement, we took the opportunity
+to revise the framework's timing and timeout handling. This rework simplifies
+the code, reduces the idle load of the system, while improving timing
+stability and API safety (Section [Timing and timeout handling revisited]).
+
+As one stunning outcome of the steadily maturing framework infrastructure, the
+initial version of an on-target SDK for Sculpt OS has emerged now.
+The Goa-based SDK announced in
+Section [Initial version of an on-target SDK for Sculpt OS] features Genode's
+regular C++ tool chain, Git, man pages for Goa's help commands, GNU make, as
+well as CMake. All these tools are living directly on Genode without depending
+on virtualization!
+
+Mentioning virtualization, the current release features a new port of
+VirtualBox 7 as a welcome replacement for the aging version 6. Besides the
+support for recent guest OSes, the new version scales much better with larger
+CPU counts (Section [New port of VirtualBox 7]). Also the lightweight
+alternative virtual machine monitor called Seoul received attention in the
+form of improved guest-host integration (Section [Seoul VMM]).
+
+Motivated by our aspiration of deploying our custom microkernel for the
+upcoming version of Sculpt OS by default, the kernel gained power-control
+features that were formerly implemented for the NOVA kernel only, and received
+numerous x86-specific performance optimizations like reducing the TLB
+footprint and improved SIMD support
+(Section [Execution on bare hardware (base-hw)]).
+
+Driver-wise, the release wraps up the upgrade of our Linux device-driver
+environment to kernel version 6.18.19 by covering ARM. So the drivers for
+NXP's i.MX family, Allwinner, and Zynq share the same kernel version now
+(Section [DDE Linux for ARM SoCs updated to 6.18.19]).
+
+Reconfigurable virtual file system
+##################################
+
+Genode's virtual file system (VFS) is key for the framework's extreme
+modularity. It complements the microkernel architecture that fosters
+modularity at component level by fine-grained modularity within a component.
+Unlike a central VFS in a traditional operating system, Genode's VFS is a
+library. Each application has its private instance, which is defined by its
+configuration and which can transparently be extended by pseudo file systems
+provided by so-called VFS plugins in the form of shared libraries. Moreover,
+VFS plugins can use each other, thereby forming chains of protocol stacks
+solely defined at integration time. Thereby all components using the VFS are
+inherently extensible.
+
+Over the years, VFS plugins have become the preferred way of integrating
+protocol stacks into Genode. For example, a TCP/IP stack is provided by the
+[https://genode.org/documentation/release-notes/17.02#Enhanced_VFS_infrastructure - lxip or lwip VFS plugins],
+which present a socket interface as pseudo file system, inspired by Plan9. Or
+as another example, the font renderer used by Sculpt OS is in fact a file
+system that provides the pixels for each glyph in a large virtual pseudo file
+that is rendered on demand.
+
+However, until now, the structure of the VFS had to be defined at the start
+time of a component and remained fixed over the component's lifetime. We found
+that this limitation impedes scenarios where file systems are expected to
+appear or disappear, like in a desktop environment where a USB stick can be
+inserted or removed at any time. With the current release, we overcome this
+limitation by making the VFS dynamically reconfigurable without disrupting the
+component. This feature required a substantial internal redesign that
+decouples client-specific state, such as the information about open files,
+from the lifetime of file-system instances. This ultimately led us to new
+semantics that have largely diverged from traditional POSIX. It has now become
+the job of the C runtime to bridge the gap between Genode's VFS and
+traditional POSIX, like maintaining seek positions. At places where no POSIX
+interoperability is needed, those complexities are no longer inherited.
+
+At the API level, the most visible change is the introduction of the
+'File_handle', 'Dir_handle', and 'Watch_handle' objects. Those handles are
+mere anchor points referring to paths but are no longer coupled to physical
+file-system objects. The link to the corresponding physical file or directory
+is established lazily and weakly when actual I/O is requested. Under the hood,
+those handles use the former 'Vfs_handle' objects as ephemeral references to
+the physical file-system content. Those references are transparently closed
+and re-opened during the VFS reconfiguration.
+
+Two notes of caution for implementers of VFS plugins: First, it is no longer
+possible to access VFS content in the construction/update phase of a file
+system. Accesses must be deferred to the regular operational stage where
+file I/O is processed. As a hook, when entering this stage, the
+'File_system::resume_after_update' method is executed, which allows a VFS
+plugin to re-wire. Second, the overhaul of the VFS internals is not yet
+wrapped up. In particular the 'Directory_service' interface will be subject to
+further changes.
+
+As the bottom line, users of the upcoming versions of Sculpt OS will become
+able to interactively tweak the VFS of any component with the same ease as
+other parts of the configuration. For a simpler playground, the bash.run
+scenario as provided by the ports repository exposes the configuration of the
+VFS server at _/config/vfs_, which can be edited on the fly now.
+
+
+Base framework and OS-level infrastructure
+##########################################
+
+Timing and timeout handling revisited
+=====================================
+
+The timeout API introduced in
+[https://genode.org/documentation/release-notes/17.05#New_API_for_user-level_timing - release 17.05]
+conveniently multiplexes an arbitrary number of periodic and one-shot timeouts
+at a single timer session. In this release, we addressed several shortcomings
+that we discovered over the years.
+
+One long-standing issue was that the handler method supplied to the
+'One_shot_timeout' and 'Periodic_timeout' objects was executed in the context
+of an I/O signal handler. In most situations, this is not desired and even
+leads to complications when combined with libc operations. We therefore
+renamed the former classes to 'One_shot_io_timeout' and 'Periodic_io_timeout',
+and re-implemented 'One_shot_timeout' and 'Periodic_timeout', which now employ
+application-level signal handling.
+
+Internally, we changed the semantics of the timeout scheduler from using
+relative deadlines to (session-local) absolute deadlines. This particularly
+improves the accuracy of periodic timeouts and allowed us to reuse the
+'Alarm_registry' introduced during the
+[https://genode.org/documentation/release-notes/24.05#Improved_timing_stability - rework of the timer drivers].
+The 'Alarm_registry' now lives in _base/include/util/alarm_registry.h_.
+As another side effect, we added a 'trigger_at(uint64_t us)' RPC to the
+timer session, which allows programming a timeout with an absolute deadline.
+For convenience and optimization, the RPC returns the current (session-local)
+time.
+
+Since all timer drivers employ rate-limiting and batching at the granularity
+of 250 microseconds, we followed suit on the client side. This means that we
+removed the minimum timeout value of 1000 microseconds on the client side.
+Moreover, deadlines which are less than 250 microseconds into the future are
+scheduled without involvement of the timer driver.
+
+Another part of the timeout API that received our attention is the clock
+interpolation behind 'Timer::Connection::curr_time()'. For this purpose, we
+implemented a 'Local_clock' utility that lives at
+_base/include/util/local_clock.h_:
+
+! struct Genode::Remote_clock { uint64_t us; };
+! struct Genode::Tsc          { uint64_t ticks; };
+!
+! class Genode::Local_clock
+! {
+!   /* [...] */
+!
+!   public:
+!
+!     Remote_clock predicted(auto const &remote_clock_fn, auto const &tsc_fn);
+! };
+
+The 'predicted()' method receives two functors. The (expensive)
+'remote_clock_fn' returns the current 'Remote_clock' that serves as the ground
+truth (e.g., 'Timer::Connection::elapsed_us()'). The 'tsc_fn' returns a
+(cheap) tick value (e.g., 'Trace::timestamp()'). Internally, the 'Local_clock'
+utility collects measurements of both time sources and estimates the relative
+tick frequency compared to the remote clock. Depending on the variance of the
+measurements, it decides whether to predict the current clock value based on
+the last reading of 'remote_clock_fn' or to call 'remote_clock_fn' for
+synchronization and further data collection.
+
+The 'Local_clock' utility only imposes a few constraints on the values
+returned by the two functors: Both must be monotonically increasing and the
+TSC frequency must be higher than the frequency of the remote clock at any
+time. This implies that the TSC frequency may vary but never fall below 1MHz.
+
+The 'Local_clock' utility is employed by 'Timer::Connection::curr_time()'. We
+kept the previous approach of omitting local clock predictions on ARM because
+the TSC stops counting during idle times of the CPU on some SoCs. The only
+exception is base-hw, where we use the 'Kernel::time()' syscall on ARM as a
+replacement for 'Trace::timestamp()'.
+
+With this new approach in place, we were able to noticeably reduce the idle
+load on the timer driver that resulted from the 500 ms synchronization
+interval applied by the former mechanism.
+
+
+Simplified file-watching mechanism
+==================================
+
+Our ambition of making the VFS reconfigurable at runtime
+(Section [Reconfigurable virtual file system]) prompted us to reconsider the
+design of the existing mechanism for delivering notifications about file
+and directory changes.
+
+As one design weakness of the original mechanism, the watched content had to
+exist at subscription time. Whenever a file of interest did not exist at that
+time, a lookup-failed error suggested to the client that it is best to watch
+the surrounding (existing) directory instead. This client-side logic had been
+rather complicated and error-prone. As the prospect of dynamic VFS structures
+would have further increased the error surface, a simplification was called
+for.
+
+In the new version, directory entries can be watched before they exist.
+The watch mechanism triggers as soon as an entry is created and each time
+a file is closed or synced after being modified. This way, watch handles
+are no longer tightly coupled to the lifetime of directory entries but can
+be held while files temporarily disappear and even across structural changes
+of the VFS.
+
+In tandem with this change, inside the VFS, the interfaces for watching
+and delivering notifications have been changed to eliminate the notion of
+watch handles altogether, relieving the VFS from internal state that was
+formerly scattered over different file-system implementations (VFS plugins).
+The former internal APIs have now been replaced by simple means to bubble
+up information about content changes towards the root of the VFS by talking
+about paths only. This way, watch handles can be managed at a central place
+and are no longer a concern of the various file-system implementations.
+
+The new mechanism is exercised by the new pkg/test-vfs_watch test located
+in the os repository.
+
+
+Libraries and applications
+##########################
+
+New port of VirtualBox 7
+========================
+
+Our port of VirtualBox 6.1 has reached the end of life status quite a while
+ago (January 2024). In order to address this situation, we started porting
+VirtualBox version 7 to Genode in an off-and-on manner during 2025. By early
+2026 there was finally enough time and resources available to push the project
+forward and over the finishing line.
+
+During the last couple of months, we initiated a testing phase within our
+community by offering several VirtualBox 7 packages based on Sculpt 26.04.
+Additionally, all of Genode's staff switched to VirtualBox 7 as a daily VM
+driver. Therefore, we are happy to announce official support for
+[https://www.virtualbox.org/wiki/Changelog-7.2 - VirtualBox 7.2.14]
+with Genode's release 26.08.
+
+The list of improvements offered by VirtualBox 7 is a longer one. To name a
+few, newer Linux kernels (up to version 7.2) are supported, Wayland-based
+Linux distributions are working, multicore performance has been vastly
+improved upon, meaning the VMM scales beyond four VCPUs (eight+), and UEFI has
+become the standard firmware instead of legacy BIOS.
+
+As a further enhancement, we have enabled/ported the Trusted Platform Module
+(TPM 2.0) and the Secure Boot features within VirtualBox. This makes it
+possible to Secure Boot any Linux distribution supporting it as well as
+Windows 11 (if desired).
+
+Thanks to everyone for testing. In case you want to try out the new version,
+our [https://genode.discourse.group/t/virtualbox-for-the-brave/338 - Forum] is
+a good place to get started.
+
+
+Seoul VMM
+=========
+
+The [https://github.com/alex-ab/seoul - Seoul VMM] got principal support for
+virtio-fs and experimental virtio-net. With virtio-fs available, it now
+becomes more comfortable to exchange files on Sculpt OS.
+
+The Seoul VMM has supported MSI/MSI-X from the beginning but the feature was
+not considered for virtio models in the past. By enabling MSI-X support also
+for virtio, the sharing of PCI interrupts between VMM models is not required
+anymore.
+
+
+Software provided via the Genode-world repository
+=================================================
+
+We created a port of OpenSSL-3.5.7 and adjusted all users, e.g., rsyslog,
+within world to make use of _api/openssl3_. Besides libcrypto and libssl the
+'openssl(1)' command line program is also made available and in turn is used
+for automatic testing. Eventually, this port will replace our ancient
+OpenSSL-1.1.1w port that is still used by some components in the main
+repository.
+
+Two newcomers to the Genode-world repository, which were formerly maintained
+as private Goa project endeavors, make use of the freshly introduced OpenSSL-3
+port already. First, the curl-8.21.0 port provides the well known network
+library and also includes the 'curl(1)' command line program. Second, with the
+removal of the unmaintained 'ssh_client' component, we were left without means
+for accessing remote systems via the SSH protocol. Therefore, we ported the
+common OpenSSH-10.3p1 client to fill this gap. Although the port contains most
+OpenSSH programs, only 'ssh(1)' and 'ssh-keygen(1)' are expected to work for
+the moment.
+
+We also added ports of 'tcl' and 'expect', which are used by the experimental
+Goa Offline SDK.
+
+
+Device drivers
+##############
+
+Human input devices
+===================
+
+With the increasing application of Genode on more and more modern PC
+notebooks, we identified and improved some properties of our input-device
+handling that are fairly annoying during daily use. First, our touchpad driver
+now supports palm detection based on device-firmware hints. Second, clickable
+touchpads are now enabled with a software-button area on the lower border of
+the pad. So, the clickpad emits button events for left, middle, and right
+buttons based on the horizontal position of the finger when clicked. The
+emission of left-button click on short touches in the main area of the pad is
+still supported. Last, we extended our PS/2 scancodes with some exotic keys
+that are emitted by the Fn-key row of notebooks and, more prominently, the
+latest thing called Copilot key, which is an emulated key combination of Left
+ALT, Shift, and F23 in the firmware.
+
+
+Wifi
+====
+
+Prompted by community appeal, we felt encouraged to further extend the device
+support in the pc_wifi driver and enabled the MediaTek MT7922 driver. Devices
+supported by this driver are normally found in AMD-based machines such as the
+laptops produced by Framework.
+
+At the same time, we retired 32-bit support in the wifi driver as Sculpt OS is
+only available for 64-bit systems and genuine x86_32 machines have become a
+rarity.
+
+
+DDE Linux for ARM SoCs updated to 6.18.19
+=========================================
+
+In the
+[https://genode.org/documentation/release-notes/26.05#Linux_device-driver_environment__DDE__updated_to_kernel_6.18.19 - previous release],
+we updated the DDE Linux-based driver components for the PC platform. In
+accordance with our road map, the drivers for the various ARM SoCs now follow
+suit:
+
+* The _a64_linux_ variant used for the Pine A64 LTS board and PinePhone is
+  now based on orange-pi-6.18-20260105-0049 that correlates to 6.18.3
+  and includes the usual A64-related patches made by Ondřej Jirman.
+
+* The _imx_linux_ variant shares the vanilla 6.18.19 version with pc_linux
+  and includes the necessary patches and adaptations for the MNT Reform
+  and MNT Pocket Reform taken from the reform-debian-packages repository.
+
+* The _zynq_linux_ variant also shares the vanilla 6.18.19 version.
+
+We did not stop there, though and also cleaned-up the existing DDE Linux
+variants and removed the ones that used old(er) Linux versions and were of
+limited use.
+
+For one that concerns _rpi_linux_, which used to provide the 'rpi_usb_host'
+driver. Due to having _virt_linux_ removed for ARMv6 already and the practical
+non-existing demand of running Genode on old Raspberry Pi 1 boards, this
+should not come as a surprise.
+
+For the other, it affects _fus_linux_, which is only used for the framebuffer
+driver on one i.MX8MP Armstone board, and was still based on an 5.15.x vendor
+kernel. It goes without saying that re-enabling support in the future is
+possible given sufficient demand.
+
+Having all DDE Linux based components aligned with the 6.18.x LTS branch now,
+we were able to remove various kernel-version checks scattered across our
+emulation layer, and thus, streamlining its implementation.
+
+
+Platforms
+#########
+
+Execution on bare hardware (base-hw)
+====================================
+
+The bare-hardware execution environment got improved to execute faster on the
+x86 architecture. In order to achieve this, our custom kernel now assigns
+PCIDs per native component, which helps to tag entries of the
+translation-lookaside-buffer (TLB), and minimizes the impact of component
+switches with regard to TLB usage. Moreover, we prevent the usage of CPU
+extensions in our custom kernel, like x87 FPU and SSE, and thereby do not need
+to save and restore the FPU state on every kernel entry and exit anymore.
+Additionally, supported CPU extensions got supplemented by the AVX and AVX-512
+extensions.
+
+Since
+[https://genode.org/documentation/release-notes/23.11#PC_power__frequency__temperature_sensing_and_control - release 23.11]
+dynamic support to sense and control CPU power and frequency is part of Genode's
+core component's API - for
+[https://genode.org/documentation/release-notes/22.02#Restricting_physical_memory_information_to_device_drivers_only - managing_system privileged]
+clients. But since then, only the Nova-kernel-based core component implemented
+this feature. With this release, our custom kernel becomes able to control CPU
+power and frequency at runtime as well.
+
+Several internal cleanup efforts have been pursued within the bare-hardware
+execution environment. One of the side effects is the re-organization,
+extension, and buffering of CPU identification information on x86 platforms.
+This information is then used to re-order the logically named CPU cores such
+that more energy-efficient - and potentially less performant cores - now
+receive greater logical CPU numbers.
+
+
+Linux
+=====
+
+After _linux_slirp_nic_ entered the picture with
+[https://genode.org/documentation/release-notes/26.05#Linux - release 26.05],
+we adapted _pkg/drivers_nic-linux_ and the corresponding run scripts
+accordingly in order to make use of the user-level network driver throughout
+the framework. Ultimately, we were able to enable networking for the Sculpt
+scenario when executed on base-linux.
+
+In the course of this switch, we also made the driver independent of the
+host's libslirp version by adding a libslirp port to build a static library
+that is linked against the host's glib-2.0 instead.
+
+Note that the former _linux_nic_ driver is still available for scenarios where
+the additional overhead cannot be afforded.
+
+
+Build system and tooling
+########################
+
+Initial version of an on-target SDK for Sculpt OS
+=================================================
+
+The initial version of a Goa-based on-target SDK for Sculpt OS, which was
+first announced with [https://genode.org/news/sculpt-os-release-26.04 - Sculpt 26.04],
+now supports the 'goa help' command (using a port of the 'man' tool) as well
+as basic CMake-based Goa projects in addition to the previously supported GNU
+make Goa projects.
+
+An updated experimental 'goa_offline_sdk' Sculpt package can be found in the
+'cproc' depot for Sculpt 26.04. If you'd like to give it a try, feel free to
+share any questions or feedback in the [https://genode.discourse.group/ - Users Forum].
+
+
+Goa SDK
+=======
+
+The Goa SDK received a bit of polishing in the form of minor bug fixes and
+adaptations.
+
+Feature-wise, Goa gained a new 'import-metadata' command that prints a digest
+of the _import_ file. The command is an analog to the _tool/ports/metadata_
+tool in the Genode repository.
+
+In addition, Goa now evaluates the 'CROSS_DEV_PREFIX' environment variable as
+an alternative to the 'cross_dev_prefix' configuration option.
+
+You may switch to the new version of Goa with the 'update-goa' command:
+
+! $ goa update-goa 26.04
