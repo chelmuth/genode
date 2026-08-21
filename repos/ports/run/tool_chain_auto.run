@@ -156,7 +156,7 @@ config | verbose: yes
     |   + symlink sh | target: bash
     + default-policy | root: / | writeable: yes
 
-+ start vfs_rom | ram: 60M
++ start vfs_rom | ram: 65M
   + binary cached_fs_rom
   + provides | + service ROM
   + config
