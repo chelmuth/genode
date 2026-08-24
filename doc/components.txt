@@ -615,7 +615,8 @@ Runtime environments
   of Genode subsystems via a session interface. For further information,
   refer to _os/src/server/loader/README_.
 
-:_ports/src/virtualbox6/_: VirtualBox running on top of the NOVA hypervisor.
+:_ports/src/virtualbox7/_: VirtualBox running on top of the NOVA hypervisor
+  or the base-hw microkernel.
 
 :_os/src/server/vmm/_: A virtual machine monitor that is based on
   hardware-assisted virtualization of ARM platforms. It is supported on
