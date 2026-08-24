@@ -155,11 +155,13 @@ config | verbose: yes | prio_levels: 2
   |   + dir var
   |     + dir run
   |      + dir chrony
-  |        + inline chronyd.pid
-  |        + inline chronyd.sock
-  |        + inline drift
+  |        + ram
+  |        | . chronyd tries to create several files in this directory,
+  |        | . chronyd.pid, chronyd.sock and drift, and their initial
+  |        | . content is of no concern.
   |     + dir log
-  |       + inline tracking.log
+  |       + ram
+  |       | . create log file in ram
   + route
     + service Nic   | + child nic_router
     + service Rtc   | + child system_rtc
