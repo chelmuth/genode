@@ -4,6 +4,44 @@
                                ===========
 
 
+Genode OS Framework release 26.08 | 2026-08-25
+##############################################
+
+| The highlights of Genode 26.08 are VirtualBox 7, improved PC performance of
+| our custom microkernel, the new ability to transparently reconfigure
+| virtual file systems, revised timing and timeout handling, and a Linux
+| 6.18.19 device-driver environment for ARM. Furthermore, the first version of
+| a Goa-based SDK has become natively available for Sculpt OS.
+
+As a preparatory step for the addition of new features, the mid-summer release
+has been focused on consolidation. The arsenal of drivers ported from Linux
+has now been harmonized by consistently using kernel version 6.18.19 across
+all ARM and x86 platforms. The mechanisms for timing and timeout handling
+underwent a deep revision to the effect of reduced idle load and improved
+timing stability. Our custom kernel received numerous code-rigidity
+improvements and optimizations. And the C runtime as well as the VFS underwent
+the most profound rework since their introduction.
+
+The VFS-related work in particular unlocks several features as envisioned on
+our road map, in particular the accommodation of use cases where storage
+devices and file systems dynamically appear and disappear. With the new
+version, virtual file systems can be reconfigured and restructured at any time
+in a way that is transparent to VFS-using applications.
+
+Feature-wise the new version introduces a new port of VirtualBox 7, which
+noticeably improves the performance over version 6 while supporting a wider
+variety of guest operating systems. Also related to virtualization, the
+light-weight Seoul VMM received new support for exchanging files between host
+and guest.
+
+As a glimpse in the direction of the future of hosting productive development
+workflows directly on Genode, Genode 26.08 comes with the initial version of a
+software development kit that runs directly on Sculpt OS.
+
+Find these and further topics of the current release covered in the
+[https:/documentation/release-notes/26.08 - release documentation of version 26.08...]
+
+
 Meet us at FroSCon during August 15-16 | 2026-07-30
 ###################################################
 
