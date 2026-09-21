@@ -1,0 +1,6 @@
+option
+
++ child test-smartcard | pkg: genodelabs/pkg/test-smartcard/2026-09-17 | priority: default
+  + connect
+    + usb | + child usb
+-

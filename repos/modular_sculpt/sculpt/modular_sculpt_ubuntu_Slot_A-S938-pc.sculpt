@@ -15,3 +15,6 @@ import: raw/vbox_files
 
 # options not referenced by deploy preset
 option: test-webcam
+
+# provided by Genode World
+#option: test-smartcard
