@@ -271,6 +271,11 @@ unsigned Device::msi_alloc(bool msix)
 		                                     : Platform::Device::Irq::Type::MSI,
 		                            0, device_unique_number));
 		msi_number = device_unique_number;
+
+		/*
+		 * Once MSI(-x) got allocated, no GSIs can be used anymore
+		 */
+		_irq_usage = Interrupt_usage::MSI;
 	});
 
 	return msi_number;

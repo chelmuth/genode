@@ -145,6 +145,9 @@ class Lx_kit::Device : List<Device>::Element
 		Constructible<Pci_config>       _pci_config {};
 		Constructible<Platform::Device> _pdev       {};
 
+		enum class Interrupt_usage {
+			GSI, MSI } _irq_usage { Interrupt_usage::GSI };
+
 		Index _device_index = { 0 };
 
 		unsigned _num_msi  = 0;
@@ -211,8 +214,14 @@ class Lx_kit::Device : List<Device>::Element
 			for (Io_port * i = _io_ports.first(); i; i = i->next()) fn(*i); }
 
 		template <typename FN>
-		void for_each_irq(FN const &fn) {
-			for (Irq * i = _irqs.first(); i; i = i->next()) fn(*i); }
+		void for_each_irq(FN const &fn)
+		{
+			for (Irq * i = _irqs.first(); i; i = i->next()) {
+				if (_irq_usage != Interrupt_usage::MSI ||
+				    i->number >= MSI_OFFSET)
+					fn(*i);
+			}
+		}
 
 		template <typename FN>
 		void for_pci_config(FN const &fn) {
