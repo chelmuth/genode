@@ -1,0 +1,74 @@
+option
+
++ child platform | binary: init | caps: 1500 | ram: 32M | managing_system: yes
+  + provides
+    + dma
+    + dma nic
+    + dma wifi
+    + dma audio
+    + dma acpica
+    + platform
+    + platform nic
+    + platform wifi
+    + platform audio
+    + platform acpica
+  + connect
+    + io_mem            | + parent | . attached to hardware node in the graph
+    + io_port           | + parent
+    + irq               | + parent
+    + rom config        | + child model  | label: child/platform
+    + rom system        | + child model  | label: system
+    + rom sleep_states  | + child report | label: acpi_support/sleep_states
+    + report            | + child report
+    + rm                | + parent
+    + rom ld.lib.so     | + parent
+    + rom report_rom    | + parent
+    + rom rom_reporter  | + parent
+    + rom acpi          | + parent
+    + rom pci_decode    | + parent
+    + rom pc_platform   | + parent
+    + rom platform_info | + parent
+
++ child discover_report | binary: fs_report | ram: 2M | caps: 100
+  + provides | + report
+  + config | + vfs | + fs
+  + connect
+    + fs             | + child model | identity: rw
+    + rom vfs.lib.so | + parent
+
++ child discover | binary: pc_discover | ram: 1M | caps: 100
+  + config
+  + connect
+    + report            | + child discover_report | label: option -> board
+    + rom devices       | + child report          | label: platform/devices
+    + rom board         | + child model           | label: option/board
+    + rom platform_info | + parent
+
++ child touchpad | pkg: pc_i2c_hid | caps: 150 | priority: default
+  + config
+    + i2c_slave  | irq: 128 | bus_addr: 44 | hid_addr: 32 | gpio_chip: INTC1083 | . HP ZBook Core Ultra Series 2
+    + i2c_master | bus_speed_hz: 400 | + fmcn | hcnt: 115 | lcnt: 120 | hold_time: 35 | . Meteor/Arrow Lake
+  + heartbeat | restart_after_skipped: 4
+  + connect
+    + dma      | + child platform     | label: touchpad
+    + platform | + child platform     | label: touchpad
+    + event    | + child event_filter | label: touchpad
+
++ child boot_fb | binary: boot_fb | ram: 32M | caps: 200 | priority: media | enabled: yes
+  + connect
+    + rom config        | + child model | label: fb
+    + rom platform_info | + parent      | label: platform_info
+    + io_mem            | + parent
+    + capture           | + child gui
+    + report            | + child report
+
++ child ps2 | binary: ps2 | ram: 1M | caps: 100 | priority: media | enabled: yes
+  + config | capslock_led: rom | numlock_led: rom | system: yes
+  + connect
+    + dma          | + child platform     | label: ps2
+    + platform     | + child platform     | label: ps2
+    + rom capslock | + child report       | label: global_keys/capslock
+    + rom numlock  | + child report       | label: global_keys/numlock
+    + rom system   | + child model        | label: system
+    + event        | + child event_filter | label: ps2
+-

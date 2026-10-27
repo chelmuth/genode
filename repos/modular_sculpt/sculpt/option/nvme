@@ -1,0 +1,9 @@
+option
++ child nvme | binary: nvme | ram: 16M | caps: 200 | priority: default
+  + provides
+    + block
+  + config
+  + connect
+    + dma        | + child platform | label: nvme
+    + platform   | + child platform | label: nvme
+-

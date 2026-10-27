@@ -1,0 +1,9 @@
+deploy
++ option board   | required: yes
++ option sculpt  | required: yes
++ option managed | required: yes
+
++ option acpi_support
++ option black_hole
++ option log_view
+-

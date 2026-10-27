@@ -1,0 +1,10 @@
+option
++ child usb | binary: pc_usb_host | ram: 16M | caps: 200 | priority: media
+  + provides
+    + usb
+  + connect
+    + dma        | + child platform | label: usb
+    + platform   | + child platform | label: usb
+    + report     | + child report
+    + rom config | + child model    | label: child/usb
+-

@@ -1,0 +1,16 @@
+board:        g1i-usb
+deploy:       modular_sculpt_usb
+gpu:          empty
+event_filter: modular_sculpt
+manager:      use_ram_fs
+network:      modular_sculpt
+platform:     g1i-usb
+ram_fs:       modular_sculpt_usb
+system:       pc
+usb:          Slot_A
+
+import: pkg/sculpt_drivers-pc
+
+option: usb usb_hid nvme
+
+build: driver/nvme
